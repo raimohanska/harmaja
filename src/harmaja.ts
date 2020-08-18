@@ -65,14 +65,13 @@ export function flattenElement(e: VDOMElement): FlattenedDOMElement {
 }
 
 // Our custom React interface for JSX
+// TODO: typings for JSX
 export const React = {
     createElement
 }
 
-// TODO: typings for JSX
 export function mount(ve: FlattenedDOMElement | any, root: HTMLElement) {
-    const replacementElement = renderHTML(ve)
-    root.parentElement!.replaceChild(replacementElement, root)
+    root.parentElement!.replaceChild(renderHTML(ve), root)
 }
 
 export function renderHTML(ve: FlattenedDOMChild): HTMLElement | Text {
@@ -112,9 +111,7 @@ export function renderHTML(ve: FlattenedDOMChild): HTMLElement | Text {
             })
             attachUnsub(el, unsub)
         }
-        setProp(el, key, value as string)
-        
-
+        setProp(el, key, value as string)        
     }
     
     for (const child of ve.children || []) {
