@@ -11,6 +11,8 @@ An experimental web frontend framework named after a lighthouse. It maybe easies
 
 The documentation here is lacking, and it will help if you're already familiar with Redux, Calmm.js and Bacon.js (or other reactive library such as RxJs).
 
+Published on NPM: https://www.npmjs.com/package/harmaja
+
 ## Key concepts
 
 *Reactive Property* (also known as a signal or a behaviour) is an object that encapsulates a changing value. Please check out the [Bacon.js intro](https://baconjs.github.io/api3/index.html) if you're not familiar with the concept. In Harmaja, reactive properties are the main way of storing and passing application state.
