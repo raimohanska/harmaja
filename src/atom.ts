@@ -11,6 +11,8 @@ export interface Atom<A> extends B.Property<A> {
     modify(fn: (a: A) => A): this;
     view<K extends keyof A>(key: K): K extends number ? Atom<A[K] | undefined> : Atom<A[K]>,
     view<B>(lens: Lens<A, B>): Atom<B>,
+    // TODO: Freezing is a bit hacky. Would be nicer if there was another way
+    // to prevent crashing when an element is removed and should no longer be rendered
     freezeUnless<E extends A>(fn: (a: A) => a is E): Atom<E>
     freezeUnless(fn: (a: A) => boolean): Atom<A>
 }
@@ -83,7 +85,6 @@ function mkAtom<A>(observable: B.Property<A>, get: () => A, modify: ( (fn: (a : 
     return theAtom
 }
 
-// TODO skipUndefined is a hack, for freezing views into undefined objects
 function lensedAtom<A, B>(root: Atom<A>, lens: Lens<A, B>): Atom<B> {
     const theAtom = root.map(value => lens.get(value)) as any
     const get = () => lens.get(root.get())
