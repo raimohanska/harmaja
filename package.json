@@ -1,0 +1,29 @@
+{
+  "name": "parceltest",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/jest": "^26.0.10",
+    "babel-jest": "^26.3.0",
+    "jest": "^26.4.0",
+    "ts-jest": "^26.2.0",
+    "typescript": "^3.9.7"
+  },
+  "dependencies": {
+    "@types/react": "^16.9.46",
+    "@types/react-dom": "^16.9.8",
+    "baconjs": "^3.0.13",
+    "parcel-bundler": "^1.12.4"
+  },
+  "scripts": {
+    "example-first": "yarn build && parcel --out-dir dist/examples examples/first/index.html",
+    "example-todoapp": "yarn build && parcel --out-dir dist/examples examples/todoapp/index.html",
+    "example-todoapp-atoms": "yarn build && parcel --out-dir dist/examples examples/todoapp-atoms/index.html",
+    "example-consultants": "yarn build && mkdir -p dist/examples && cp -R examples/consultants/public/* dist/examples && parcel --out-dir dist/examples examples/consultants/index.html",
+    "build": "tsc",
+    "test": "jest",
+    "test:watch": "jest --watchAll"
+  }
+}
