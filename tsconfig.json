@@ -18,11 +18,13 @@
       "jsx": "react",
       "allowJs": false,
       "downlevelIteration": true,
+      "jsxFactory": "JSX.createElement",
       "outDir": "dist",
       "declaration": true
     },
     "include": [
-      "src/index.ts"
+      "src/index.ts",
+      "examples/first/index.tsx"
     ]
   }
   

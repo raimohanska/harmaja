@@ -14,8 +14,6 @@
     "baconjs": "^3"
   },
   "dependencies": {
-    "@types/react": "^16.9.46",
-    "@types/react-dom": "^16.9.8"    
   },
   "peerDependencies": {
     "baconjs": "^3"
@@ -27,6 +25,7 @@
     "example-consultants": "yarn build && mkdir -p dist/examples && cp -R examples/consultants/public/* dist/examples && parcel --out-dir dist/examples examples/consultants/index.html",
     "build": "tsc",
     "test": "jest",
-    "test:watch": "jest --watchAll"
+    "test:watch": "jest --watchAll",
+    "tsc:watch": "tsc --watch"
   }
 }

@@ -1,5 +1,6 @@
+import * as JSX from "../../src/jsxfactory"
 import * as Bacon from "baconjs"
-import { React, mount, ListView } from "../.."
+import { mount, ListView } from "../../src/index"
 
 const numbers = new Bacon.Bus<number>()
 
@@ -21,6 +22,10 @@ const Minus = ({bus} : {bus: Bacon.Bus<number>}) => {
     return <button onClick={() => bus.push(-1)}>-</button>
 }
 
+const Reactive = () => {
+    return Bacon.constant(<span>reactive</span>)
+}
+
 const TickerWithMultiplier = ({ multiplier, ticker } : { multiplier: number, ticker: Bacon.Property<number>}) => {
     console.log("Recreating with new multiplier", multiplier)
     return <em>{ticker.map(n => n * multiplier)}</em>
@@ -28,6 +33,10 @@ const TickerWithMultiplier = ({ multiplier, ticker } : { multiplier: number, tic
 
 const Root = () =>
     <div id="root">
+        <Reactive/>
+        
+        <Plus bus={numbers}/>   
+             
         <H1>Hello <b>World { multiplier.map(multiplier => <TickerWithMultiplier {...{multiplier, ticker}}/>) }</b>!</H1>
         Multiplier <Plus bus={numbers}/>{ multiplier }<Minus bus={numbers}/>
         <br/> Naive array handling 
@@ -35,7 +44,7 @@ const Root = () =>
         <br/> Smart array handling 
         <ListView {...{ 
             observable: dots, 
-            renderItem: ((n: number) => <span>{ticker.map(m => m * n)} </span>) as any, // TODO any typing required for now
+            renderItem: ((n: number) => <span>{ticker.map(m => m * n)} </span>),
             equals: (x, y) => x === y
         }}/>
         <br/>Handling nulls { null } { Bacon.constant(null) }
