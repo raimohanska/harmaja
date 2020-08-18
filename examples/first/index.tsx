@@ -8,9 +8,9 @@ const multiplier = numbers.scan(1, (a, b) => a + b)
 
 const ticker = Bacon.interval(3000, 1).scan(1, (a, b) => a + b)
 
-const dots = multiplier.map(count => range(1, count))
+const dots: Bacon.Property<number[]> = multiplier.map(count => range(1, count))
 
-const H1 = ({children} : {children: any[]}) => {
+const H1 = ({children} : {children?: any[]}) => {
     return <h1 onClick={() => console.log("Clicked")}>{children}</h1>
 }
 
