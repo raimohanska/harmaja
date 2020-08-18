@@ -39,19 +39,19 @@ Finally a bit more involved example featuring a "CRM": [examples/consultants/ind
 
 For the longest time I've been pondering different state management solutions for React. As some may know, I'm pretty deep into Observables and FRP (functional reactive programming) and have authored the Bacon.js library back in the day. So one day I had some spare time and couldn't go anywhere so I started drafting on what would be my ideal "state management solution". I wrote down the design goals, which are in no particular priority order at the moment.
 
-G1 Intuitive: construction, updates, teardown
-G2 Safe: no accidental updates to nonexisting components
-G3 Type-safe (Typescript)
-G4 Immutable data all the way
-G5 Minimum magic (no behind-the-scenes watching of js object property changes etc)
-G6 Small API surface area
-G7 Small runtime footprint    
-G8 Easy mapping of (changing) array of data items to UI elements
-G9 Easy to interact with code outside the "framework": don't get in the way, this is just programming
-GA Minimal boilerplate
-GB Composability, state decomposition (Redux is composing, Calmm.js with lenses is decomposing)
-GC Easy and intuitive way of creating local state (and pushing it up the tree when need arises)
-GD Performant updates with minimal hassle. No rendering the full page when something changes
+- G1 Intuitive: construction, updates, teardown
+- G2 Safe: no accidental updates to nonexisting components
+- G3 Type-safe (Typescript)
+- G4 Immutable data all the way
+- G5 Minimum magic (no behind-the-scenes watching of js object property changes etc)
+- G6 Small API surface area
+- G7 Small runtime footprint    
+- G8 Easy mapping of (changing) array of data items to UI elements
+- G9 Easy to interact with code outside the "framework": don't get in the way, this is just programming
+- GA Minimal boilerplate
+- GB Composability, state decomposition (Redux is composing, Calmm.js with lenses is decomposing)
+- GC Easy and intuitive way of creating local state (and pushing it up the tree when need arises)
+- GD Performant updates with minimal hassle. No rendering the full page when something changes
 
 Calmm.js, by [Vesa] (https://github.com/polytypic), is pretty close! It uses Atoms and Observables for state management and treats React function components essentially as constructors. This approach makes it straightforward to introduce, for example, local state variables as regular javascript variables in the "constructor" function. It treats local and global state similarly and makes it easy to refactor when something needs to change from local to higher-up in the tree.
 
