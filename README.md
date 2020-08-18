@@ -40,7 +40,7 @@ Finally a bit more involved example featuring a "CRM": [examples/consultants/ind
 For the longest time I've been pondering different state management solutions for React. As some may know, I'm pretty deep into Observables and FRP (functional reactive programming) and have authored the Bacon.js library back in the day. So one day I had some spare time and couldn't go anywhere so I started drafting on what would be my ideal "state management solution". I wrote down the design goals, which are in no particular priority order at the moment.
 
 - G1 Intuitive: construction, updates, teardown
-- G2 Safe: no accidental updates to nonexisting components
+- G2 Safe: no accidental updates to nonexisting components etc.
 - G3 Type-safe (Typescript)
 - G4 Immutable data all the way
 - G5 Minimum magic (no behind-the-scenes watching of js object property changes etc)
