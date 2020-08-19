@@ -141,7 +141,7 @@ As mentioned above, I find it convenient to be able to put state to different sc
 const TextInput = ({value}: {text: B.Property<string>}) => {
     return <input value={text} />
 }
-```
+```
 
 (the B there stands for `import * as B from "baconjs"`)
 
