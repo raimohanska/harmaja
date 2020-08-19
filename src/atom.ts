@@ -18,8 +18,23 @@ export interface Atom<A> extends B.Property<A> {
     freezeUnless(fn: (a: A) => boolean): Atom<A>
 }
 
+/**
+ * Create an independent atom, with given initial atom
+ * 
+ * @param initial 
+ */
 export function atom<A>(initial: A): Atom<A>
 
+/**
+ * Create a dependent atom that reflects the value of the given Property. The `onChange` function
+ * is supposed to eventually cause the `input` property to be updated to the new value.
+ * 
+ * This constructor provides a bridge between atom-based components and "unidirectional data flow"
+ * style state management.
+ * 
+ * @param input      Property to reflect
+ * @param onChange   Function to be called when `atom.set` is called
+ */
 export function atom<A>(input: B.Property<A>, onChange: (updatedValue: A) => void): Atom<A>
 
 export function atom<A>(x: any, y?: any): Atom<A> {
