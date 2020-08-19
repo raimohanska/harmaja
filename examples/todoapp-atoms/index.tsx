@@ -52,7 +52,7 @@ const ItemList = ({ items }: { items: Atom<TodoItem[]>}) => {
 };
 
 const Item = ({ item, removeItem }: { item: Atom<TodoItem>, removeItem: () => void }) => {  
-  const completed = item.view("completed")
+  const completed: Atom<boolean> = item.view("completed")
   
   return (
     <span>
