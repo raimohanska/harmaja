@@ -1,5 +1,6 @@
 import * as A from "./atom"
 import * as B from "baconjs"
+import { getCurrentValue } from "./harmaja"
 
 describe("Atom", () => {
     describe("Array index lenses", () => {
@@ -53,9 +54,21 @@ describe("Dependent Atom", () => {
         var b = new B.Bus()
         var prop = b.toProperty("1")
         var atom = A.atom(prop, newValue => b.push(newValue))
-        atom.subscribe() // TODO: currently needs this
+        prop.subscribe() // Dependent atoms need a subscription to remain up-to-date
         expect(atom.get()).toEqual("1")
         atom.set("2")
         expect(atom.get()).toEqual("2")
+    })
+
+    it("Can be frozen on unwanted values", () => {
+        var b = new B.Bus()
+        var prop = b.toProperty("1")
+        var atom = A.atom(prop, newValue => b.push(newValue)).freezeUnless(a => a !== null)
+        prop.subscribe() // Dependent atoms need a subscription to remain up-to-date
+
+        atom.set("world")
+        expect(atom.get()).toEqual("world")
+        atom.set(null)
+        expect(atom.get()).toEqual("world")        
     })
 })

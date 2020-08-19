@@ -32,6 +32,9 @@ export function atom<A>(initial: A): Atom<A>
  * This constructor provides a bridge between atom-based components and "unidirectional data flow"
  * style state management.
  * 
+ * Note: unlike an independent atom, the dependent atom is lazy. This means that it will keep its
+ * value up-to-date only if there is a subscriber to it or the underlying property.
+ * 
  * @param input      Property to reflect
  * @param onChange   Function to be called when `atom.set` is called
  */
@@ -39,6 +42,7 @@ export function atom<A>(input: B.Property<A>, onChange: (updatedValue: A) => voi
 
 export function atom<A>(x: any, y?: any): Atom<A> {
     if (arguments.length == 1) {
+        // Create an independent Atom
         const initial = x as A
         const bus = new B.Bus<(a: A) => A>()
         const theAtom: any = bus.scan(initial, (v, fn) => { 
@@ -60,6 +64,7 @@ export function atom<A>(x: any, y?: any): Atom<A> {
             
         return mkAtom<A>(theAtom, get, modify)
     } else {
+        // Create a dependent Atom
         const property = x as B.Property<A>
         const onChange: (updatedValue: A) => void = y
         const theAtom = property.map(x => x).skipDuplicates((a, b) => a === b)
@@ -72,11 +77,10 @@ export function atom<A>(x: any, y?: any): Atom<A> {
             set(f(get()))
             return theAtom as Atom<A>
         }
+        get() // Sanity check: the given property must have an initial value
         return mkAtom(property, get, modify, set) 
     }
 }
-
-const valueMissing = {}
 
 function mkAtom<A>(observable: B.Property<A>, get: () => A, modify: ( (fn: (a : A) => A) => Atom<A>), set?: (a: A) => Atom<A>): Atom<A> {
     const theAtom: any = observable
@@ -87,7 +91,20 @@ function mkAtom<A>(observable: B.Property<A>, get: () => A, modify: ( (fn: (a : 
     theAtom.modify = modify    
     theAtom.get = get
     theAtom.freezeUnless = (freezeUnlessFn: (a: A) => boolean) => {
-        return atom(theAtom.filter(freezeUnlessFn), newValue => theAtom.set(newValue))
+        let previousValue = getCurrentValue(observable)
+        if (!freezeUnlessFn(previousValue)) {
+            throw Error("Cannot create frozen atom with initial value not passing the given filter function")
+        }
+        
+        let fa = atom(theAtom.filter(freezeUnlessFn), newValue => theAtom.set(newValue))
+        fa.get = () => {
+            let wouldBeValue = getCurrentValue(observable)
+            if (freezeUnlessFn(wouldBeValue)) {
+                previousValue = wouldBeValue
+            }
+            return previousValue
+        }
+        return fa
     }
     theAtom.view = (view: any) => {
         if (typeof view === "string") {
