@@ -45,7 +45,7 @@ Unidirectional data flow, popularized by Redux, is a leading state management pa
 
 In Typescript, you could represent these concepts in the context of a Todo App like this:
 
-```
+```typescript
 type Item = {}
 type Event = {type:"add", item:Item } | {type:"remove", item:Item }
 type State = {items: Item[]}
@@ -77,7 +77,7 @@ Other interesting examples of Unidirectional data flow include [Elm](https://elm
 
 In Harmaja, you can implement Unidirectional data flow too. Sticking with the Todo App example, you define your events as *buses*:
 
-```
+```typescript
 import * as B from "baconjs"
 
 const addItemBus = new B.Bus<TodoItem>();
@@ -86,7 +86,7 @@ const removeItemBus = new B.Bus<TodoItem>();
 
 The bus objects allow you to dispatch an event by calling their `push` method. From the events, the application state can be reduced like thus:
 
-```
+```typescript
 const allItems: B.Property<TodoItem[]> = B.update([], 
     [addItemBus, (items, item) => items.concat(item)],
     [removeItemBus, (items, item) => items.filter(i => i.id !== item.id)]
@@ -95,7 +95,7 @@ const allItems: B.Property<TodoItem[]> = B.update([],
 
 You can, if you like, then encapsulate all this into something like
 
-```
+```typescript
 interface TodoStore {
     add: B.Bus<TodoItem>()
     remove: B.Bus<TodoItem>()
@@ -113,7 +113,7 @@ See the full example [here](examples/todoapp/index.tsx).
 
 As mentioned above, I find it convenient to be able to put state to different scopes instead of having everything in a global megablob. Also, I find the event-reducer-state model a bit cumbersome for some cases. When you're *editing* data, you'll have a lot of components that practically need read-write access to data. Let's say you are doing something really simple, such as an text input component for editing a single string.
 
-```
+```typescript
 const TextInput = ({value}: {text: B.Property<string>}) => {
     return <input value={text} />
 }
@@ -125,7 +125,7 @@ This component has a reactive property `text` as a prop and it renders the curre
 Anyway, we somehow need to pass changes back from this component to the store. One way to do it would be to pass a `onChange: string => void` parameter so that the change to this field would be passed to the "global reducer" and state change applied. However, you don't generally want to be handling individual strings in your big time reducers do you? More likely you'll be using this input component as a part of something larger, like
 
 
-```
+```typescript
 type Address = {
     name: string,
     addressLine1: string,
@@ -145,7 +145,7 @@ And from this component you may want to dispatch an *address changed* event some
 clicks "Save". And you'll wish changing between these two alternatives is not too hard, right. If I had introduced the `onChange` bus to TextInput, the AddressEditor might end up something like this.
 
 
-```
+```typescript
     const nameChanged = (name) => address.take(1).forEach(a => onChange({ ...a, name })
     return <div>
         <TextInput value={address.map(a => a.name)} onChange={nameChanged}>
@@ -155,7 +155,7 @@ clicks "Save". And you'll wish changing between these two alternatives is not to
 
 Or a little shorter using the `getCurrentValue` helper function:
 
-```
+```typescript
 const AddressEditor = ({ address, onChange } : { address : B.Property<Address>, onChange: (a: Address) => void }) => {
     const nameChanged = (name) => onChange({ ...getCurrentValue(address), name })
     return <div>
@@ -166,7 +166,7 @@ const AddressEditor = ({ address, onChange } : { address : B.Property<Address>, 
 
 Still it feels clumsy and gets dirtier when you have more fields in your AddressEditor. This is where atoms and lenses come handy. An Atom represents a two-way interface to data: it extends Bacon.Property and adds a `set` method for changing the value. Hence it's a very convenient abstraction for editing stuff. Let's change our TextInput to
 
-```
+```typescript
 import { Atom } from "harmaja"
 const TextInput = ({value}: {text: Atom<string>}) => {
     return <input value={text} onInput={e => text.set(e.target.value)} />
@@ -175,7 +175,7 @@ const TextInput = ({value}: {text: Atom<string>}) => {
 
 This is the full implementation. Now we can change AddressEditor to this:
 
-```
+```typescript
 const AddressEditor = ({ address } : { address : Atom<Address> }) => {
     return <div>
         <TextInput value={address.view("name")}>
@@ -187,7 +187,7 @@ const AddressEditor = ({ address } : { address : Atom<Address> }) => {
 And that's also the full implementation! I hope this demonstrates the power of the Atom abstraction. The `view` method there is particularly interesting (I redacted methods and the support for array keys for brevity):
 
 
-```
+```typescript
 export interface Atom<A> extends B.Property<A> {
     set(newValue: A): this;
     get(): A
@@ -197,21 +197,21 @@ export interface Atom<A> extends B.Property<A> {
 
 Using `view` you can get another atom that gives read-write access to one field of Address and done this in a type-safe manner (compiler errors in case you misspelled a field name). Now, to use AddressEditor as a standalone component you can just
 
-```
+```typescript
     const address: Atom<Address> = atom({name: "", addressLine1: ""})
     <AddressEditor address={address}>
 ```
 
 And it's turtles all the way down btw. You can define your full application state as an Atom and them `view` your way into details. Like
 
-```
+```typescript
     const appState = atom({ shippingAddress: { name: "", addressLine1: ""}})
     <AddressEditor address={appState.view("shippingAddress")}>
 ```
 
 To plug an Atom editor (pun intended) into a Unified data flow system, I have introduced Dependent Atom. In the AddressEditor case you may want to use the editor for editing a shipping address that's actually stored in the reducer-based global state. Let's imagine we had a event/reducer setup like this:
 
-```
+```typescript
 const setShippingAddress = new B.Bus<Address>()
 const orderState = B.update( 
     { shippingAddress: { name: "", addressLine1: "" }},
@@ -221,7 +221,7 @@ const orderState = B.update(
 
 Now to create a component that allows editing of an address and finally sends that to global state you could do
 
-```
+```typescript
 const OrderForm = () => {
     const shippingAddress: B.Property<Address> = orderState.map(s => s.shippingAddress)
     const address: Atom<Address> = atom(shippingAddress, address => setShippingAddress.push(address))
@@ -239,7 +239,7 @@ Efficient and convenient way of working with arrays of data is a necessary step 
 
 Imagine again you're building a Todo App (who isnt'!). Your model and state is essentially this.
 
-```
+```typescript
 type TodoItem = {
     name: string,
     id: number,
@@ -255,7 +255,7 @@ const allItems: B.Property<TodoItem[]> = B.update([],
 
 To render the TodoItems represented by the `allItems` property you can use ListView thus:
 
-```
+```typescript
 <ListView 
     observable={allItems} 
     renderObservable={ (item: B.Property<TodoItem>) => (
@@ -273,13 +273,13 @@ What ListView does here is that it observes `allItems` for changes and renders e
 
 ListView also supports read-write access using `Atom`. So if you have
 
-```
+```typescript
 const allItems: Atom<TodoItem[]> = atom([])
 ```
 
 You can have read-write access to the items by using ListView thus:
 
-```
+```typescript
 <ListView 
     atom={items} 
     renderAtom={(item, removeItem) => {
@@ -291,7 +291,7 @@ You can have read-write access to the items by using ListView thus:
 
 As you can see ListView provides a `removeItem` callback for Atom based views, so that in your ItemView you can implement removal simply thus:
 
-```
+```typescript
 const Item = ({ item, removeItem }: { item: Atom<TodoItem>, removeItem: () => void }) => (
     <span>
       <span className="name">{item.view("name")}</span>      
@@ -304,7 +304,7 @@ const Item = ({ item, removeItem }: { item: Atom<TodoItem>, removeItem: () => v
 
 This item view implementation only gives a readonly view with a remove link. To make the name editable, you could now easily use the TextInput component we created earlierly:
 
-```
+```typescript
 const Item = ({ item, removeItem }: { item: Atom<TodoItem>, removeItem: () => void }) => (
     <span>
       <TextInput value={item.view("name")} />
@@ -319,7 +319,7 @@ See the full atomic implementation of TodoApp in [examples/todoapp-atoms/index.t
 
 There's a third variation of TextView still, for read-only views:
 
-```
+```typescript
 <ListView 
     observable={items} 
     renderItem={(item: TodoItem) => <li><Item item={item}/></li>}
