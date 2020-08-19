@@ -101,8 +101,10 @@ const ItemList2 = ({ items }: { items: B.Property<TodoItem[]>}) => {
 };
 
 const Item2 = ({ item }: { item: B.Property<TodoItem> }) => {  
-  // Use the 2-ary version of atom, where you can specify what happens when the value is changed. In
+  // Use a "dependent atom", where you can specify what happens when the value is changed. In
   // this case we push changes to the bus which will then cause state changes to propagate back here.
+  // A dependent atom provides a bridge between atom-based components and "unidirectional data flow"
+  // style state management.
   const completed = atom(
     item.map(i => i.completed), 
     completed => setCompletedBus.push([getCurrentValue(item), completed])
@@ -130,7 +132,7 @@ const NewItem = () => {
   );
 };
 
-const Input = (props: { value: B.Atom<string> } & any) => {
+const Input = (props: { value: Atom<string> } & any) => {
   return <input {...{ 
           type: "text", 
           onChange: e => { 
