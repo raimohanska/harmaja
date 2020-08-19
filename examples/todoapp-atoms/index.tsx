@@ -58,7 +58,7 @@ const Item = ({ item, removeItem }: { item: Atom<TodoItem>, removeItem: () => v
     <span>
       <span className="name">{item.view("name")}</span>
       <Checkbox checked={completed}/>
-      <a className="removeItem" onClick={() => { removeItem()}}>
+      <a className="removeItem" onClick={removeItem}>
         remove
       </a>
     </span>

@@ -94,7 +94,7 @@ const ItemList2 = ({ items }: { items: B.Property<TodoItem[]>}) => {
       <ListView 
         observable={items} 
         renderObservable={(item: B.Property<TodoItem>) => <li><Item2 item={item}/></li>}
-        equals={(a, b) => a === b}
+        equals={(a: TodoItem, b: TodoItem) => a.id === b.id}
       />
     </ul>
   );
