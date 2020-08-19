@@ -37,33 +37,7 @@ Then there's the same application using Atoms [examples/todoapp-atoms/index.tsx]
 
 Finally a bit more involved example featuring a "CRM": [examples/consultants/index.tsx](examples/consultants/index.tsx). It features some harder problems like dealing with asynchronous (and randomly failing!) server calls as well as edit/save/cancel.
 
-## Motivation and background
-
-For a long time I've been pondering different state management solutions for React. My thinkin in this field is strongly affected byt the fact that I'm pretty deep into Observables and FRP (functional reactive programming) and have authored the Bacon.js library back in the day. I've seen many approaches to frontend state management and haven't been entirely satisfied with any of them. This has lead into spending lots of time considering how I could apply FRP to state management in an "optimal" way.
-
-So one day I had some spare time and couldn't go anywhere so I started drafting on what would be my ideal "state management solution". I wrote down the design goals, which are in no particular priority order at the moment.
-
-- G1 Intuitive: construction, updates, teardown
-- G2 Safe: no accidental updates to nonexisting components etc.
-- G3 Type-safe (Typescript)
-- G4 Immutable data all the way
-- G5 Minimum magic (no behind-the-scenes watching of js object property changes etc)
-- G6 Small API surface area
-- G7 Small runtime footprint    
-- G8 Easy mapping of (changing) array of data items to UI elements
-- G9 Easy to interact with code outside the "framework": don't get in the way, this is just programming
-- GA Minimal boilerplate
-- GB Composability, state decomposition (Redux is composing, Calmm.js with lenses is decomposing)
-- GC Easy and intuitive way of creating local state (and pushing it up the tree when need arises)
-- GD Performant updates with minimal hassle. No rendering the full page when something changes
-
-Calmm.js, by [Vesa] (https://github.com/polytypic), is pretty close! It uses Atoms and Observables for state management and treats React function components essentially as constructors. This approach makes it straightforward to introduce, for example, local state variables as regular javascript variables in the "constructor" function. It treats local and global state similarly and makes it easy to refactor when something needs to change from local to higher-up in the tree.
-
-Yet, it's not type-safe and is hard to make thus. Especially the highly flexible [partial.lenses](https://github.com/calmm-js/partial.lenses) proves hard. Also, when looking at it more closely, it goes against the grain of how React is usually used, which will make it a bit awkward for React users. Suddenly you have yet another kind of component at your disposal, which expects you not to call it again on each render. In fact, I felt that Calmm.js doesn't really need anything from React which is more in the way instead of being helpful. 
-
-A while ago Vesa once-gain threw a mindblowing demonstration of how he had adapted the Calmm approach to WPF using C#. This opened my eyes to the fact that you don't need a VDOM diffing framework to do this. It's essentially just about calling component constructors and passing reactive variables down the tree.
-
-After some hours of coding I had ~200 lines of Typescript which already rendered function components and allowed embedding reactive values into the VDOM, replacing actual DOM nodes when the reactive value changed. After some more hours of coding I have a prototype-level library that you can also try out. Let me hear your thoughts!
+Examples covered also in the chapters below, with some context.
 
 ## Unidirectional data flow
 
@@ -360,6 +334,35 @@ In fact, I should rename equals to make a clear distinction between "id equality
 ## Cool FRP things
 
 TODO. Dealing with asynchronicity. For example request/response. Debounce. Flatmaplatest.
+
+## Motivation and background
+
+For a long time I've been pondering different state management solutions for React. My thinkin in this field is strongly affected byt the fact that I'm pretty deep into Observables and FRP (functional reactive programming) and have authored the Bacon.js library back in the day. I've seen many approaches to frontend state management and haven't been entirely satisfied with any of them. This has lead into spending lots of time considering how I could apply FRP to state management in an "optimal" way.
+
+So one day I had some spare time and couldn't go anywhere so I started drafting on what would be my ideal "state management solution". I wrote down the design goals, which are in no particular priority order at the moment.
+
+- G1 Intuitive: construction, updates, teardown
+- G2 Safe: no accidental updates to nonexisting components etc.
+- G3 Type-safe (Typescript)
+- G4 Immutable data all the way
+- G5 Minimum magic (no behind-the-scenes watching of js object property changes etc)
+- G6 Small API surface area
+- G7 Small runtime footprint    
+- G8 Easy mapping of (changing) array of data items to UI elements
+- G9 Easy to interact with code outside the "framework": don't get in the way, this is just programming
+- GA Minimal boilerplate
+- GB Composability, state decomposition (Redux is composing, Calmm.js with lenses is decomposing)
+- GC Easy and intuitive way of creating local state (and pushing it up the tree when need arises)
+- GD Performant updates with minimal hassle. No rendering the full page when something changes
+
+Calmm.js, by [Vesa] (https://github.com/polytypic), is pretty close! It uses Atoms and Observables for state management and treats React function components essentially as constructors. This approach makes it straightforward to introduce, for example, local state variables as regular javascript variables in the "constructor" function. It treats local and global state similarly and makes it easy to refactor when something needs to change from local to higher-up in the tree.
+
+Yet, it's not type-safe and is hard to make thus. Especially the highly flexible [partial.lenses](https://github.com/calmm-js/partial.lenses) proves hard. Also, when looking at it more closely, it goes against the grain of how React is usually used, which will make it a bit awkward for React users. Suddenly you have yet another kind of component at your disposal, which expects you not to call it again on each render. In fact, I felt that Calmm.js doesn't really need anything from React which is more in the way instead of being helpful. 
+
+A while ago Vesa once-gain threw a mindblowing demonstration of how he had adapted the Calmm approach to WPF using C#. This opened my eyes to the fact that you don't need a VDOM diffing framework to do this. It's essentially just about calling component constructors and passing reactive variables down the tree.
+
+After some hours of coding I had ~200 lines of Typescript which already rendered function components and allowed embedding reactive values into the VDOM, replacing actual DOM nodes when the reactive value changed. After some more hours of coding I have a prototype-level library that you can also try out. Let me hear your thoughts!
+
 
 ## Status
 
