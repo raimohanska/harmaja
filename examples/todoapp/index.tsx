@@ -38,46 +38,10 @@ const App = () => {
   return (
     <div>
       <h1>TODO App</h1>
-      <ItemList2 items={allItems} />
+      <ItemList items={allItems} />
       <NewItem />
       <JsonView json={allItems} />
     </div>
-  );
-};
-
-/*
-
-ItemList here uses the "static" variant of ListView, where the renderItem function is given
-a TodoItem. It will replace the item views completely when they are changed. This variant is thus
-mostly suitable for read-only views, because replacing elements will cause input elements to lose focus.
-See ItemList2 below for a more dynamic alternative.
-
-*/
-const ItemList = ({ items }: { items: B.Property<TodoItem[]>}) => {
-  return (
-    <ul>
-      {/* when using this variant of ListView (renderItem) the items
-          will be completely replaced with changed (based on the given `equals`) */}
-      <ListView 
-        observable={items} 
-        renderItem={(item: TodoItem) => <li><Item item={item}/></li>}
-        equals={(a, b) => a === b}
-      />
-    </ul>
-  );
-};
-
-const Item = ({ item }: { item: TodoItem }) => {  
-  const completed = atom(item.completed)
-  completed.changes().forEach(c => setCompletedBus.push([item, c]))
-  return (
-    <span>
-      <span className="name">{item.name}</span>
-      <Checkbox checked={completed}/>
-      <a className="removeItem" onClick={() => removeItemBus.push(item)}>
-        remove
-      </a>
-    </span>
   );
 };
 
@@ -86,21 +50,21 @@ ItemList2 uses the "observable" version of ListView. Here the renderObservable f
 Property<TodoItem> and is thus able to observe changes in the item. Now we don't have to replace
 the whole item view when something changes.
 */
-const ItemList2 = ({ items }: { items: B.Property<TodoItem[]>}) => {
+const ItemList = ({ items }: { items: B.Property<TodoItem[]>}) => {
   return (
     <ul>
       {/* when using this variant of ListView (renderItem) the items
           will be completely replaced with changed (based on the given `equals`) */}
       <ListView 
         observable={items} 
-        renderObservable={(item: B.Property<TodoItem>) => <li><Item2 item={item}/></li>}
+        renderObservable={(item: B.Property<TodoItem>) => <li><ItemView item={item}/></li>}
         equals={(a: TodoItem, b: TodoItem) => a.id === b.id}
       />
     </ul>
   );
 };
 
-const Item2 = ({ item }: { item: B.Property<TodoItem> }) => {  
+const ItemView = ({ item }: { item: B.Property<TodoItem> }) => {  
   // Use a "dependent atom", where you can specify what happens when the value is changed. In
   // this case we push changes to the bus which will then cause state changes to propagate back here.
   // A dependent atom provides a bridge between atom-based components and "unidirectional data flow"
