@@ -87,16 +87,7 @@ function mkAtom<A>(observable: B.Property<A>, get: () => A, modify: ( (fn: (a : 
     theAtom.modify = modify    
     theAtom.get = get
     theAtom.freezeUnless = (freezeUnlessFn: (a: A) => boolean) => {
-        let value: A | {} = valueMissing
-        let frozenAtom: any = mkAtom(
-            observable.filter((x : A) => freezeUnlessFn(x)).doAction((v: A) => { value = v }), 
-            () => value as any,
-            (fn: (a: A) => A) => { modify(fn); return frozenAtom}
-        )
-        if (value === valueMissing) {
-            throw new Error("Initial value missing or matches freezing criteria, unable to construct Atom")
-        }
-        return frozenAtom
+        return atom(theAtom.filter(freezeUnlessFn), newValue => theAtom.set(newValue))
     }
     theAtom.view = (view: any) => {
         if (typeof view === "string") {
@@ -104,7 +95,7 @@ function mkAtom<A>(observable: B.Property<A>, get: () => A, modify: ( (fn: (a : 
                 get: (root: A) => (root as any)[view],
                 set: (root: A, newValue: any) => ({ ...root, [view]: newValue})
             }
-            return lensedAtom(theAtom.freezeUnless((a : any) => a !== undefined), lens)
+            return lensedAtom(theAtom, lens)
         }
         else if (typeof view === "number") {            
             const index = view
@@ -114,7 +105,7 @@ function mkAtom<A>(observable: B.Property<A>, get: () => A, modify: ( (fn: (a : 
                     ? [...nums.slice(0, index), ...nums.slice(index+1)]
                     : [...nums.slice(0, index), newValue, ...nums.slice(index+1)]
             }
-            return lensedAtom(theAtom.freezeUnless((a : any) => a !== undefined), lens)
+            return lensedAtom(theAtom, lens)
         } else {
             const lens = view
             return lensedAtom(theAtom, lens)

@@ -1,4 +1,5 @@
 import * as A from "./atom"
+import * as B from "baconjs"
 
 describe("Atom", () => {
     describe("Array index lenses", () => {
@@ -37,11 +38,24 @@ describe("Atom", () => {
 
     it("Can be frozen on unwanted values", () => {
         const a = A.atom<string | null>("hello").freezeUnless(a => a !== null)
+        a.subscribe() // TODO currently needs this!
         a.set("world")
         expect(a.get()).toEqual("world")
         a.set(null)
         expect(a.get()).toEqual("world")
         
         expect(a.set("hello")).toEqual(a)
+    })
+})
+
+describe("Dependent Atom", () => {
+    it("Works", () => {
+        var b = new B.Bus()
+        var prop = b.toProperty("1")
+        var atom = A.atom(prop, newValue => b.push(newValue))
+        atom.subscribe() // TODO: currently needs this
+        expect(atom.get()).toEqual("1")
+        atom.set("2")
+        expect(atom.get()).toEqual("2")
     })
 })

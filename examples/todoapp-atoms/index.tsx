@@ -1,5 +1,5 @@
 import * as B from "baconjs"
-import { React, mount, ListView, Atom, atom } from "../../dist"
+import { React, mount, ListView, Atom, atom } from "../../src/index"
 import itemAddedFromSocketE from "./fake-socket";
 
 // The domain object constructor
