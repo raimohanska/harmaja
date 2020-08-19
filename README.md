@@ -104,6 +104,8 @@ Other interesting examples of Unidirectional data flow include [Elm](https://elm
 In Harmaja, you can implement Unidirectional data flow too. Sticking with the Todo App example, you define your events as *buses*:
 
 ```
+import * as B from "baconjs"
+
 const addItemBus = new B.Bus<TodoItem>();
 const removeItemBus = new B.Bus<TodoItem>();
 ```
@@ -143,7 +145,6 @@ const TextInput = ({value}: {text: B.Property<string>}) => {
 }
 ```
 
-(the B there stands for `import * as B from "baconjs"`)
 
 This component has a reactive property `text` as a prop and it renders the current value into the `value` attribute of the input element. Notice that in Harmaja, you can in fact just embed a reactive property into your VDOM! As a result the DOM element will be automatically updated when the `text` property changes. Note also that this TextInput function is treated like a constructor instead of being called everytime something changes.
 
@@ -192,6 +193,7 @@ const AddressEditor = ({ address, onChange } : { address : B.Property<Address>, 
 Still it feels clumsy and gets dirtier when you have more fields in your AddressEditor. This is where atoms and lenses come handy. An Atom represents a two-way interface to data: it extends Bacon.Property and adds a `set` method for changing the value. Hence it's a very convenient abstraction for editing stuff. Let's change our TextInput to
 
 ```
+import { Atom } from "harmaja"
 const TextInput = ({value}: {text: Atom<string>}) => {
     return <input value={text} onInput={e => text.set(e.target.value)} />
 }
