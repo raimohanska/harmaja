@@ -96,13 +96,12 @@ export function flattenElement(e) {
     return createElement.apply(void 0, __spread([e.type, e.props], (e.children || [])));
 }
 // Our custom React interface for JSX
+// TODO: typings for JSX
 export var React = {
     createElement: createElement
 };
-// TODO: typings for JSX
 export function mount(ve, root) {
-    var replacementElement = renderHTML(ve);
-    root.parentElement.replaceChild(replacementElement, root);
+    root.parentElement.replaceChild(renderHTML(ve), root);
 }
 export function renderHTML(ve) {
     var e_1, _a, e_2, _b;

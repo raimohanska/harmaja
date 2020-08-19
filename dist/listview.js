@@ -49,7 +49,7 @@ export function ListView(props) {
                 return props.renderAtom(nonNullableAtom, removeItem);
             }
             if ("renderObservable" in props) {
-                return props.renderObservable(observable.map(function (items) { return items[index]; }).skipDuplicates());
+                return props.renderObservable(observable.map(function (items) { return items[index]; }).filter(function (item) { return item !== undefined; }).skipDuplicates());
             }
             return props.renderItem(values[index]);
         }

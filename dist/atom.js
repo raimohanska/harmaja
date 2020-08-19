@@ -30,38 +30,66 @@ var __spread = (this && this.__spread) || function () {
     return ar;
 };
 import * as B from "baconjs";
-export function atom(initial) {
-    var bus = new B.Bus();
-    var theAtom = bus.scan(initial, function (v, fn) {
-        var newValue = fn(v);
-        theAtom.value = newValue;
-        return newValue;
-    }).skipDuplicates(function (a, b) { return a === b; });
-    theAtom.value = initial;
-    var get = function () { return theAtom.value; };
-    var modify = function (f) {
-        bus.push(f);
-        return theAtom;
-    };
-    return mkAtom(theAtom, get, modify);
+import { getCurrentValue } from "./harmaja";
+export function atom(x, y) {
+    if (arguments.length == 1) {
+        // Create an independent Atom
+        var initial = x;
+        var bus_1 = new B.Bus();
+        var theAtom_1 = bus_1.scan(initial, function (v, fn) {
+            var newValue = fn(v);
+            theAtom_1.value = newValue;
+            return newValue;
+        }).skipDuplicates(function (a, b) { return a === b; });
+        theAtom_1.value = initial;
+        var get = function () { return theAtom_1.value; };
+        var modify = function (f) {
+            bus_1.push(f);
+            return theAtom_1;
+        };
+        theAtom_1.subscribe(function () { });
+        return mkAtom(theAtom_1, get, modify);
+    }
+    else {
+        // Create a dependent Atom
+        var property = x;
+        var onChange_1 = y;
+        var theAtom_2 = property.map(function (x) { return x; }).skipDuplicates(function (a, b) { return a === b; });
+        var get_1 = function () { return getCurrentValue(theAtom_2); };
+        var set_1 = function (newValue) {
+            onChange_1(newValue);
+            return theAtom_2;
+        };
+        var modify = function (f) {
+            set_1(f(get_1()));
+            return theAtom_2;
+        };
+        get_1(); // Sanity check: the given property must have an initial value
+        return mkAtom(property, get_1, modify, set_1);
+    }
 }
-var valueMissing = {};
-function mkAtom(observable, get, modify) {
+function mkAtom(observable, get, modify, set) {
     var theAtom = observable;
     theAtom.set = function (newValue) {
         theAtom.modify(function () { return newValue; });
         return theAtom;
     };
     theAtom.modify = modify;
-    theAtom.subscribe(function () { });
     theAtom.get = get;
     theAtom.freezeUnless = function (freezeUnlessFn) {
-        var value = valueMissing;
-        var frozenAtom = mkAtom(observable.filter(function (x) { return freezeUnlessFn(x); }).doAction(function (v) { value = v; }), function () { return value; }, function (fn) { modify(fn); return frozenAtom; });
-        if (value === valueMissing) {
-            throw new Error("Initial value missing or matches freezing criteria, unable to construct Atom");
+        var previousValue = getCurrentValue(observable);
+        if (!freezeUnlessFn(previousValue)) {
+            throw Error("Cannot create frozen atom with initial value not passing the given filter function");
         }
-        return frozenAtom;
+        var fa = atom(theAtom.filter(freezeUnlessFn), function (newValue) { return theAtom.set(newValue); });
+        fa.get = function () {
+            var wouldBeValue = getCurrentValue(observable);
+            if (freezeUnlessFn(wouldBeValue)) {
+                previousValue = wouldBeValue;
+            }
+            return previousValue;
+        };
+        return fa;
     };
     theAtom.view = function (view) {
         if (typeof view === "string") {
@@ -72,7 +100,7 @@ function mkAtom(observable, get, modify) {
                     return (__assign(__assign({}, root), (_a = {}, _a[view] = newValue, _a)));
                 }
             };
-            return lensedAtom(theAtom.freezeUnless(function (a) { return a !== undefined; }), lens);
+            return lensedAtom(theAtom, lens);
         }
         else if (typeof view === "number") {
             var index_1 = view;
@@ -81,7 +109,7 @@ function mkAtom(observable, get, modify) {
                 set: function (nums, newValue) { return newValue === undefined
                     ? __spread(nums.slice(0, index_1), nums.slice(index_1 + 1)) : __spread(nums.slice(0, index_1), [newValue], nums.slice(index_1 + 1)); }
             };
-            return lensedAtom(theAtom.freezeUnless(function (a) { return a !== undefined; }), lens);
+            return lensedAtom(theAtom, lens);
         }
         else {
             var lens = view;
@@ -90,7 +118,6 @@ function mkAtom(observable, get, modify) {
     };
     return theAtom;
 }
-// TODO skipUndefined is a hack, for freezing views into undefined objects
 function lensedAtom(root, lens) {
     var theAtom = root.map(function (value) { return lens.get(value); });
     var get = function () { return lens.get(root.get()); };
