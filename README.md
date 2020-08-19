@@ -197,7 +197,7 @@ import { Atom } from "harmaja"
 const TextInput = ({value}: {text: Atom<string>}) => {
     return <input value={text} onInput={e => text.set(e.target.value)} />
 }
-```
+```
 
 This is the full implementation. Now we can change AddressEditor to this:
 
