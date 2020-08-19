@@ -255,7 +255,7 @@ const OrderForm = () => {
         <AddressEditor address={address}>
     </form>
 }
-```
+```
 
 The `atom(property, onChange)` call creates an atom that reflects the value of the given property and passes and value changes to the given function. It acts as a convenient bridge between global state and atom-based editors.
 
