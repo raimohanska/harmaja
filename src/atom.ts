@@ -1,4 +1,5 @@
 import * as B from "baconjs"
+import { getCurrentValue } from "./harmaja";
 
 export interface Lens<A, B> {
     get(root: A): B
@@ -17,36 +18,58 @@ export interface Atom<A> extends B.Property<A> {
     freezeUnless(fn: (a: A) => boolean): Atom<A>
 }
 
-export function atom<A>(initial: A): Atom<A> {
-    const bus = new B.Bus<(a: A) => A>()
-    const theAtom: any = bus.scan(initial, (v, fn) => { 
-        const newValue = fn(v);
-        (theAtom as any).value = newValue;
-        return newValue
-    }).skipDuplicates((a, b) => a === b)
+export function atom<A>(initial: A): Atom<A>
 
-    theAtom.value = initial
+export function atom<A>(input: B.Property<A>, onChange: (updatedValue: A) => void): Atom<A>
+
+export function atom<A>(x: any, y?: any): Atom<A> {
+    if (arguments.length == 1) {
+        const initial = x as A
+        const bus = new B.Bus<(a: A) => A>()
+        const theAtom: any = bus.scan(initial, (v, fn) => { 
+            const newValue = fn(v);
+            (theAtom as any).value = newValue;
+            return newValue
+        }).skipDuplicates((a, b) => a === b)
     
-    const get = () => theAtom.value
-
-    const modify = (f: (a: A) => A) => {
-        bus.push(f)
-        return theAtom
-    }
+        theAtom.value = initial
         
-    return mkAtom<A>(theAtom, get, modify)
+        const get = () => theAtom.value
+    
+        const modify = (f: (a: A) => A) => {
+            bus.push(f)
+            return theAtom
+        }
+
+        theAtom.subscribe(() => {})
+            
+        return mkAtom<A>(theAtom, get, modify)
+    } else {
+        const property = x as B.Property<A>
+        const onChange: (updatedValue: A) => void = y
+        const theAtom = property.map(x => x).skipDuplicates((a, b) => a === b)
+        const get = () => getCurrentValue(theAtom)
+        const set = (newValue: A) => {
+            onChange(newValue)
+            return theAtom as Atom<A>
+        }
+        const modify = (f: (a: A) => A) => {
+            set(f(get()))
+            return theAtom as Atom<A>
+        }
+        return mkAtom(property, get, modify, set) 
+    }
 }
 
 const valueMissing = {}
 
-function mkAtom<A>(observable: B.Property<A>, get: () => A, modify: ( (fn: (a : A) => A) => Atom<A>)): Atom<A> {
+function mkAtom<A>(observable: B.Property<A>, get: () => A, modify: ( (fn: (a : A) => A) => Atom<A>), set?: (a: A) => Atom<A>): Atom<A> {
     const theAtom: any = observable
     theAtom.set = (newValue: A) => {
         theAtom.modify(() => newValue)
         return theAtom
     }
-    theAtom.modify = modify
-    theAtom.subscribe(() => {})
+    theAtom.modify = modify    
     theAtom.get = get
     theAtom.freezeUnless = (freezeUnlessFn: (a: A) => boolean) => {
         let value: A | {} = valueMissing
