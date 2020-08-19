@@ -70,7 +70,7 @@ export function ListView<A>(props: ListViewProps<A>) {
                 return props.renderAtom(nonNullableAtom, removeItem)
             }
             if ("renderObservable" in props) {
-                return props.renderObservable(observable.map(items => items[index]).skipDuplicates())                   
+                return props.renderObservable(observable.map(items => items[index]).filter(item => item !== undefined).skipDuplicates())                   
             }
             return props.renderItem(values[index])            
         }
