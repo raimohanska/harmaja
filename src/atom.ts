@@ -60,15 +60,20 @@ export function atom<A>(x: any, y?: any): Atom<A> {
             return theAtom
         }
 
+        const set = (a: A) => {
+            bus.push(() => a)
+            return theAtom
+        }
+
         theAtom.subscribe(() => {})
             
-        return mkAtom<A>(theAtom, get, modify)
+        return mkAtom<A>(theAtom, get, modify, set)
     } else {
         // Create a dependent Atom
         const property = x as B.Property<A>
         const onChange: (updatedValue: A) => void = y
         const theAtom = property.map(x => x).skipDuplicates((a, b) => a === b)
-        const get = () => getCurrentValue(theAtom)
+        const get = () => getCurrentValue(property)
         const set = (newValue: A) => {
             onChange(newValue)
             return theAtom as Atom<A>
@@ -78,16 +83,14 @@ export function atom<A>(x: any, y?: any): Atom<A> {
             return theAtom as Atom<A>
         }
         get() // Sanity check: the given property must have an initial value
-        return mkAtom(property, get, modify, set) 
+        return mkAtom(theAtom, get, modify, set) 
     }
 }
 
-function mkAtom<A>(observable: B.Property<A>, get: () => A, modify: ( (fn: (a : A) => A) => Atom<A>), set?: (a: A) => Atom<A>): Atom<A> {
-    const theAtom: any = observable
-    theAtom.set = (newValue: A) => {
-        theAtom.modify(() => newValue)
-        return theAtom
-    }
+// Note: actually mutates the given observable into an Atom!
+function mkAtom<A>(observable: B.Property<A>, get: () => A, modify: ( (fn: (a : A) => A) => Atom<A>), set: (a: A) => Atom<A>): Atom<A> {
+    const theAtom = observable as Atom<A>
+    theAtom.set = set
     theAtom.modify = modify    
     theAtom.get = get
     theAtom.freezeUnless = (freezeUnlessFn: (a: A) => boolean) => {
@@ -95,8 +98,9 @@ function mkAtom<A>(observable: B.Property<A>, get: () => A, modify: ( (fn: (a : 
         if (!freezeUnlessFn(previousValue)) {
             throw Error("Cannot create frozen atom with initial value not passing the given filter function")
         }
-        
-        let fa = atom(theAtom.filter(freezeUnlessFn), newValue => theAtom.set(newValue))
+        let freezingProperty = theAtom.filter(freezeUnlessFn).doAction(v => {previousValue = v})
+        let onChange = (newValue: A) => theAtom.set(newValue)
+        let fa = atom(freezingProperty, onChange)
         fa.get = () => {
             let wouldBeValue = getCurrentValue(observable)
             if (freezeUnlessFn(wouldBeValue)) {
@@ -143,5 +147,11 @@ function lensedAtom<A, B>(root: Atom<A>, lens: Lens<A, B>): Atom<B> {
         })
         return theAtom
     }
-    return mkAtom(theAtom, get, modify)
+    const set = (b: B) => {
+        const currentRootValue = root.get()
+        const newRootValue = lens.set(currentRootValue, b)
+        root.set(newRootValue)
+        return theAtom
+    }
+    return mkAtom(theAtom, get, modify, set)
 }

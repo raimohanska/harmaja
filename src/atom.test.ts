@@ -1,6 +1,5 @@
-import * as A from "./atom"
 import * as B from "baconjs"
-import { getCurrentValue } from "./harmaja"
+import * as A from "./atom"
 
 describe("Atom", () => {
     describe("Array index lenses", () => {
@@ -37,16 +36,30 @@ describe("Atom", () => {
         })    
     })
 
-    it("Can be frozen on unwanted values", () => {
-        const a = A.atom<string | null>("hello").freezeUnless(a => a !== null)
-        a.subscribe() // TODO currently needs this!
-        a.set("world")
-        expect(a.get()).toEqual("world")
-        a.set(null)
-        expect(a.get()).toEqual("world")
-        
-        expect(a.set("hello")).toEqual(a)
+    describe("Freezing", () => {
+        it("Can be frozen on unwanted values", () => {
+            const a = A.atom<string | null>("hello").freezeUnless(a => a !== null)
+            
+            a.set("world")
+            expect(a.get()).toEqual("world")
+            a.set(null)
+            expect(a.get()).toEqual("world")
+            console.log(a.toString())
+            console.log(a.set("hello").toString())
+            expect(a.set("hello")).toEqual(a)
+        })
+    
+        it("Can be frozen on unwanted values (when not getting in between sets)", () => {
+            const atom = A.atom<string | null>("hello").freezeUnless(a => a !== null)    
+            atom.subscribe() // TODO: currently needs this. Should not!
+            atom.set("world")        
+            atom.set(null)
+            expect(atom.get()).toEqual("world")        
+
+            expect(atom.set("hello")).toEqual(atom)
+        })    
     })
+
 })
 
 describe("Dependent Atom", () => {
@@ -60,15 +73,29 @@ describe("Dependent Atom", () => {
         expect(atom.get()).toEqual("2")
     })
 
-    it("Can be frozen on unwanted values", () => {
-        var b = new B.Bus()
-        var prop = b.toProperty("1")
-        var atom = A.atom(prop, newValue => b.push(newValue)).freezeUnless(a => a !== null)
-        prop.subscribe() // Dependent atoms need a subscription to remain up-to-date
-
-        atom.set("world")
-        expect(atom.get()).toEqual("world")
-        atom.set(null)
-        expect(atom.get()).toEqual("world")        
+    describe("Freezing", () => {
+        it("Can be frozen on unwanted values", () => {
+            var b = new B.Bus()
+            var prop = b.toProperty("1")
+            var atom = A.atom(prop, newValue => b.push(newValue)).freezeUnless(a => a !== null)
+            prop.subscribe() // Dependent atoms need a subscription to remain up-to-date
+    
+            atom.set("world")
+            expect(atom.get()).toEqual("world")
+            atom.set(null)
+            expect(atom.get()).toEqual("world")
+        })
+    
+        it("Can be frozen on unwanted values (subscriber case)", () => {
+            var b = new B.Bus()
+            var prop = b.toProperty("1")
+            var atom = A.atom(prop, newValue => b.push(newValue)).freezeUnless(a => a !== null)
+            prop.subscribe() // Dependent atoms need a subscription to remain up-to-date
+            atom.subscribe()
+    
+            atom.set("world")        
+            atom.set(null)
+            expect(atom.get()).toEqual("world")        
+        })    
     })
 })
