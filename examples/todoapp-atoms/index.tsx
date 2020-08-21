@@ -83,7 +83,7 @@ const Input = (props: { value: Atom<string> } & any) => {
               props.value.set(e.target.value)
           },
           ...props, 
-          checked: props.checked 
+          value: props.value 
         }} />  
 };
 
@@ -94,7 +94,8 @@ const Checkbox = (props: { checked: Atom<boolean> } & any) => {
                 props.checked.set(e.target.checked)
             },
             ...props, 
-            value: props.value 
+            value: props.value,
+            checked: props.checked 
           }} />  
   };
 
