@@ -1,17 +1,13 @@
 import * as B from "baconjs"
 import { getCurrentValue } from "./harmaja";
-
-export interface Lens<A, B> {
-    get(root: A): B
-    set(root: A, newValue: B): A
-}
+import * as L from "./lens"
 
 export interface Atom<A> extends B.Property<A> {
     set(newValue: A): this;
     get(): A
     modify(fn: (a: A) => A): this;
     view<K extends keyof A>(key: K): K extends number ? Atom<A[K] | undefined> : Atom<A[K]>,
-    view<B>(lens: Lens<A, B>): Atom<B>,
+    view<B>(lens: L.Lens<A, B>): Atom<B>,
     // TODO: Freezing is a bit hacky. Would be nicer if there was another way
     // to prevent crashing when an element is removed and should no longer be rendered
     freezeUnless<E extends A>(fn: (a: A) => a is E): Atom<E>
@@ -110,23 +106,12 @@ function mkAtom<A>(observable: B.Property<A>, get: () => A, modify: ( (fn: (a : 
         }
         return fa
     }
-    theAtom.view = (view: any) => {
+    theAtom.view = (view: any): any => {
         if (typeof view === "string") {
-            const lens = {
-                get: (root: A) => (root as any)[view],
-                set: (root: A, newValue: any) => ({ ...root, [view]: newValue})
-            }
-            return lensedAtom(theAtom, lens)
+            return lensedAtom(theAtom, L.prop<A, any>(view))
         }
-        else if (typeof view === "number") {            
-            const index = view
-            const lens = {
-                get: (root: A) => (root as any)[view],
-                set: (nums: any, newValue: any) => newValue === undefined  
-                    ? [...nums.slice(0, index), ...nums.slice(index+1)]
-                    : [...nums.slice(0, index), newValue, ...nums.slice(index+1)]
-            }
-            return lensedAtom(theAtom, lens)
+        else if (typeof view === "number") {                        
+            return lensedAtom(theAtom, L.item(view as number) as any)
         } else {
             const lens = view
             return lensedAtom(theAtom, lens)
@@ -135,7 +120,7 @@ function mkAtom<A>(observable: B.Property<A>, get: () => A, modify: ( (fn: (a : 
     return theAtom
 }
 
-function lensedAtom<A, B>(root: Atom<A>, lens: Lens<A, B>): Atom<B> {
+function lensedAtom<A, B>(root: Atom<A>, lens: L.Lens<A, B>): Atom<B> {
     const theAtom = root.map(value => lens.get(value)) as any
     const get = () => lens.get(root.get())
     const modify = (fn: (b: B) => B) => {
