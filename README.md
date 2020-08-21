@@ -191,9 +191,9 @@ So it's easy to *decompose* data for viewing so that you can *compose* your appl
 But what about writes? Do they compose too? It would certainly be nice not to have to worry about every single
 detail in the high level "main reducer". Instead I find it an attractive idea to deal on a higher abstraction level.
 
-Let's try! It's intuitive to be to start with this:
+Let's try! It's intuitive to start with this:
 
-```
+```typescript
 updateTodoItem: B.Bus<TodoItem>()
 todoItems: B.Property<TodoItem[]> // impl redacted
 ```
