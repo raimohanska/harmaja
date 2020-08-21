@@ -127,7 +127,7 @@ In unidirectional data flow setups, there's always a way to reflect the store st
 Pretty soon after React started gaining popularity, my colleagues at Reaktor (and I later) started using a "Bacon megablob" architecture where events and the "store" are
 defined exactly as in the previous chapter, using Buses and a state Property. Thanks to React's relatively good performance with VDOM and diffing, 
 it's in most cases a viable choice. Sometimes though, it may prove too heavy to render everything everytime. If you have a "furry" (wide and deeply nested) data model,
-doing a full render on every keystroke just might not work. This has caused pain and various optimizations have been written.
+doing a full render on every keystroke just might not work. This has caused pain and various optimizations (often involving local state) have been written.
 
 However, it may make more sense to adopt the `useSelector`-like approach and instead of rendering the whole VDOM on all changes, 
 listen to relevant changes in your components and render on change. I wrote about one React Hooks based approach on the 
@@ -184,80 +184,94 @@ accessing global "stores" from your components as well.
 
 See the full Todo App example [here](examples/todoapp/index.tsx).
 
-## Beyond Unidirectional data flow
 
-As mentioned above, I find it convenient to be able to put state to different scopes instead of having everything in a global megablob. Also, I find the event-reducer-state model a bit cumbersome for some cases. When you're *editing* data, you'll have a lot of components that practically need read-write access to data. 
+## Composable read and write
 
-Let's say you are doing something really simple, such as an text input component for editing a single string.
+So it's easy to *decompose* data for viewing so that you can *compose* your application out of components.
+But what about writes? Do they compose too? It would certainly be nice not to have to worry about every single
+detail in the high level "main reducer". Instead I find it an attractive idea to deal on a higher abstraction level.
+
+Let's try! It's intuitive to be to start with this:
+
+```
+updateTodoItem: B.Bus<TodoItem>()
+todoItems: B.Property<TodoItem[]> // impl redacted
+```
+
+So instead of having to care about all the possible modifications to items on this level, there's a single `updateTodoItem` event that can be used to perform any update.
+
+As shown earlierly, decomposition works nicely as you can call `item.map(i => i.someField)` to get views into its components parts.
+Now let's revisit ItemView from the previous section and add a `onUpdate` callback.
 
 ```typescript
-const TextInput = ({value}: {text: B.Property<string>}) => {
-    return <input value={text} />
+import { React, mount } from "../.."
+
+const ItemView = ({ item, onChange}: { item: B.Property<TodoItem>, onChange: (i: TodoItem) => void }) => {  
+  const onNameChange = (newName: string) => { /* wat */ }
+  return (
+    <span>
+      <TextInput text={ item.map(i => i.name) } onChange = { onNameChange } />
+    </span>
+  );
+};
+
+const TextInput = ({value, onChange}: {text: B.Property<string>, onChange: (s: string) => void}) => {
+    return <input value={text} onInput={ e => onChange(e.target.value) } />
 }
 ```
 
-This component has a reactive property `text` as a prop and it renders the current value into the `value` attribute of the input element. Notice that in Harmaja, you can in fact just embed a reactive property into your VDOM. As a result the DOM element will be automatically updated when the `text` property changes. Note also that this TextInput function is treated like a constructor instead of being called everytime something changes.
+I added an simple TextInput components that renders the given `Property<string>` into an input element and calls
+its `onChange` listener. Yes, with Harmaja, you can embed reactive properties into DOM element props just like that.
+Now the question is, how to implement `onNameChange`, as well as the myriad similar functions you may need in your 
+more complex applications.
 
-Anyway, we somehow need to pass changes back from this component to the store. One way to do it would be to pass a `onChange: string => void` parameter so that the change to this field would be passed to the "global reducer" and state change applied. However, you don't generally want to be handling individual strings in your big time reducers do you? More likely you'll be using this input component as a part of something larger, like
+The tricky thing is that in the `onNameChange` function you don't really have the current full TodoItem at hand. 
+Instead you have a `Property<TodoItem>` which does not provide a method for extracting its current value.
+The [reason](https://github.com/baconjs/bacon.js/wiki/FAQ#how-do-i-get-the-latest-value-of-a-property) for this omission is that reactive properties are meant to be used in a reactive manner, i.e. by subscribing
+to them. If you don't subscribe, the property isn't necessarily kept up to date with its underlying data source.
 
+Yet, in this case we *know* that the property has a value and is active (the TextInput is subscribing to it to reflect
+changes). So we can use a little hack, which is the `getCurrentValue` function used by Harmaja under the hood for
+being able to render observables synchronously, and which it generously exports as well. So we can do this:
 
 ```typescript
-type Address = {
-    name: string,
-    addressLine1: string,
-    // etc
-}
-
-const AddressEditor = ({ address, onChange } : { address : B.Property<Address>, onChange: (a: Address) => void }) => {
-    return <div>
-        <TextInput value={address.map(a => a.name)}>
-        <TextInput value={address.map(a => a.addressLine1)}>
-        ...etc...
-    </div>
-}
+  const onNameChange = (newName: string) => { 
+      onChange({ ...getCurrentValue(item), name: newName })
+  }
 ```
 
-And from this component you may want to dispatch an *address changed* event somewheres. Possibly on each individual keystroke or alternatively, when the user
-clicks "Save". And you'll wish changing between these two alternatives is not too hard, right. If I had introduced the `onChange` bus to TextInput, the AddressEditor might end up something like this.
+So it's fully doable: you can use a higher level of abstraction in the top-level reducer and deal with individual field 
+updates in "mid-level" components such as the ItemView.
 
+Yet, it's far from elegant especially if you've ever worked with Atoms and Lenses with Calmm.js. Read on.
 
-```typescript
-    const nameChanged = (name) => address.take(1).forEach(a => onChange({ ...a, name })
-    return <div>
-        <TextInput value={address.map(a => a.name)} onChange={nameChanged}>
-    </div>
-}
-```
+## Welcome to the Atom Age
 
-Or a little shorter using the `getCurrentValue` helper function:
+So you're into decomposing read-write access into data. This is where atoms come handy. 
+An `Atom<A>` simply represents a two-way interface to data by extending `Bacon.Property<A>` and adding 
+a `set: (newValue: A)` method for changing the value. Let's try it by changing our TextInput to
 
 ```typescript
-const AddressEditor = ({ address, onChange } : { address : B.Property<Address>, onChange: (a: Address) => void }) => {
-    const nameChanged = (name) => onChange({ ...getCurrentValue(address), name })
-    return <div>
-        <TextInput value={address.map(a => a.name)} onChange={nameChanged}>
-    </div>
-}
-```
-
-Still it feels clumsy and gets dirtier when you have more fields in your AddressEditor. This is where atoms and lenses come handy. An Atom represents a two-way interface to data: it extends Bacon.Property and adds a `set` method for changing the value. Hence it's a very convenient abstraction for editing stuff. Let's change our TextInput to
-
-```typescript
-import { Atom } from "harmaja"
+import { Atom, atom } from "harmaja"
 const TextInput = ({value}: {text: Atom<string>}) => {
     return <input value={text} onInput={e => text.set(e.target.value)} />
 }
 ```
 
-This is the full implementation. Now we can change AddressEditor to this:
+This is the full implementation. Because Atom encapsulates both the view to the data (by being a Property) 
+and the callback for data update (through the `set` method), it can often be the sole prop an "editor" component needs. 
+To create an Atom in our unidirectional data flow context, we can simply construct it from a `Property` and a `set` function
+like so:
 
 ```typescript
-const AddressEditor = ({ address } : { address : Atom<Address> }) => {
-    return <div>
-        <TextInput value={address.view("name")}>
-        <TextInput value={address.view("addressLine1")}>
-    </div>
-}
+const ItemView = ({ item, onChange}: { item: B.Property<TodoItem>, onChange: (i: TodoItem) => void }) => {  
+  const itemAtom: Atom<TodoItem> = atom(item, updated => updateItemBus.push(updated))
+  return (
+    <span>
+      <TextInput value={itemAtom.view("name")} />
+    </span>
+  );
+};
 ```
 
 And that's also the full implementation! I hope this demonstrates the power of the Atom abstraction. The `view` method there is particularly interesting (I redacted methods and the support for array keys for brevity):
@@ -271,49 +285,97 @@ export interface Atom<A> extends B.Property<A> {
 }
 ```
 
-Using `view` you can get another atom that gives read-write access to one field of Address and done this in a type-safe manner (compiler errors in case you misspelled a field name). Now, to use AddressEditor as a standalone component you can just
+Using `view` you can get another atom that gives read-write access to one field of ther TodoItem and done this in a type-safe manner (compiler errors in case you misspelled a field name). 
+
+Finally, we have an abstraction that makes read-write data decomposition a breeze! Adding more editable fields is no longer a chore. And all this still with unidirectional data flow, immutable data and type-safety.
+
+The `view` method is actually based on the Lenses that's a concept been used in the functional programming world for quite a while. Yet, I haven't heard much talk about using Lenses in web application state management except for Calmm.js and before that the [Bacon.Model](https://github.com/baconjs/bacon.model) library. I could rant about lenses all night long but for now, I'll show you the full signature of the `view` method:
 
 ```typescript
-    const address: Atom<Address> = atom({name: "", addressLine1: ""})
-    <AddressEditor address={address}>
-```
-
-And it's turtles all the way down btw. You can define your full application state as an Atom and them `view` your way into details. Like
-
-```typescript
-    const appState = atom({ shippingAddress: { name: "", addressLine1: ""}})
-    <AddressEditor address={appState.view("shippingAddress")}>
-```
-
-To plug an Atom editor (pun intended) into a Unified data flow system, I have introduced Dependent Atom. In the AddressEditor case you may want to use the editor for editing a shipping address that's actually stored in the reducer-based global state. Let's imagine we had a event/reducer setup like this:
-
-```typescript
-const setShippingAddress = new B.Bus<Address>()
-const orderState = B.update( 
-    { shippingAddress: { name: "", addressLine1: "" }},
-    [ setShippingAddress, (state, shippingAddress) => ({ ...state, shippingAddress }]
-)
-```
-
-Now to create a component that allows editing of an address and finally sends that to global state you could do
-
-```typescript
-const OrderForm = () => {
-    const shippingAddress: B.Property<Address> = orderState.map(s => s.shippingAddress)
-    const address: Atom<Address> = atom(shippingAddress, address => setShippingAddress.push(address))
-    return <form>
-        <AddressEditor address={address}>
-    </form>
+export interface Atom<A> extends B.Property<A> {
+    // ...
+    view<K extends keyof A>(key: K): K extends number ? Atom<A[K] | undefined> : Atom<A[K]>,
+    view<B>(lens: L.Lens<A, B>): Atom<B>,
+    // ...
 }
 ```
 
-The `atom(property, onChange)` call creates an atom that reflects the value of the given property and passes and value changes to the given function. It acts as a convenient bridge between global state and atom-based editors.
+It reveals two things. First, it supports numbers for accessing array elements. But most importantly, you can create a view to an
+Atom with an arbitrary Lens. Which a really simple abstraction:
+
+```typescript
+export interface Lens<A, B> {
+    get(root: A): B
+    set(root: A, newValue: B): A
+}
+```
+
+But let's move on.
+
+## Local state
+
+So far, it's all been about Unidirectional Data Flow when there's a single source of truth which is a single reactive Property
+that's reduced from one or more events streams. Yet sometimes it makes sense to use some local state too. 
+That's when standalone Atoms come into play.
+
+To use our ItemView as a standalone component you can change it to use the Atom interface just like the lower level TextInput component:
+
+```typescript
+    const ItemView = ({ item }: { item: Atom<TodoItem> }) => {  
+        return (
+            <span>
+            <TextInput value={item.view("name")} />
+            </span>
+        );
+    };
+```
+
+and use it in your App like this:
+
+```typescript
+    const App = () => {
+        const item: Atom<TodoItem> = atom({id:1, name:"do stuff", completed:false})
+        return <ItemView item={item}/>
+    }    
+```
+
+See, I created an independent Atom in the App component. It's practically local state to App now. Remember that in Harmaja, just like with Calmm.js, component functions are to be treated like constructors. This means that the local variables created in the function
+will live as long as the component is mounted, and can thus be used for local state (unlike in ordinary react where they would be re-ininitialized on every VDOM render).
+
+That's all there is to local state in Harmaja, really. State can be defined globally, or in any level of the component tree. When you
+use Atoms, you can define them locally or accept them as props. You can even add a fallback:
+
+```typescript
+    const ItemView = ({ item }: { item: Atom<TodoItem> = atom(emptyTodoItem) }) => {  
+        ///
+    };
+```
+
+This component could be used with an external atom (often a view into a larger chunk of app state) or without it, in which case
+it would have it's private state.
+
+And it's turtles all the way down by the way. You can define your full application state as an Atom and them `view` your way into details. An example of fully Atom-based application state can be seen at [examples/todoapp-atoms](examples/todoapp-atoms).
+
+## Detaching and syncing state
+
+TODO: study on buffering local changes until commit / cancel
 
 ## Arrays
 
-Efficient and convenient way of working with arrays of data is a necessary step to success. In Harmaja, there's a `ListView` for just that. 
+Efficient and convenient way of working with arrays of data is a necessary step to success. When 
+there's a substantial number of items (say 1000) of some substantial complexity, performance is not trivial
+anymore. 
 
-Imagine again you're building a Todo App (who isnt'!). Your model and state is essentially this.
+React VDOM diffing will get its users to some point, but when that's not enough, you'll need to
+make sure that frequent operations (change to a single item, append new item, depends on use case) do not force 
+the full array VDOM to be re-rendered. This is fully possible with, for instance, react-redux: just make sure the
+component that renders the array doesn't re-render unless array size changes.
+
+In Harmaja, there's no VDOM diffing so relying on that is not an option. Therefore, a perfomant and ergonomic array view is
+key. So, I've included a `ListView` component for just that. 
+
+Imagine again you're building a Todo App again (who isnt'!) and you have the same data model that was introduced in the
+"Unidirectional data flow" chapter above. To recap, it's this.
 
 ```typescript
 type TodoItem = {
@@ -345,7 +407,7 @@ const ItemView = ({ item }: { item: B.Property<TodoItem> }) => {
 }
 ```
 
-What ListView does here is that it observes `allItems` for changes and renders each item using the ItemView component. When the list of items changes (something is replaced, added or removed) it uses the given `equals` function to determine whether to replace individual item views. With the given `equals` implementation it replaces views only when the `id` field doesn't match. Each item view gets a `Property<TodoItem>` so that they can update when the content in that particular TodoItem is changed. See full implementation in [examples/todoapp/index.ts](examples/todoapp/index.ts).
+What ListView does here is that it observes `allItems` for changes and renders each item using the ItemView component. When the list of items changes (something is replaced, added or removed) it uses the given `equals` function to determine whether to replace individual item views. With the given `equals` implementation it replaces views only when the `id` field doesn't match, i.e. the view no longer represents the same item. Each item view gets a `Property<TodoItem>` so that they can update when the content in that particular TodoItem is changed. See full implementation in [examples/todoapp/index.ts](examples/todoapp/index.ts).
 
 ListView also supports read-write access using `Atom`. So if you have
 
@@ -409,7 +471,19 @@ In fact, I should rename equals to make a clear distinction between "id equality
 
 ## Cool FRP things
 
-TODO. Dealing with asynchronicity. For example request/response. Debounce. Flatmaplatest.
+TODO where FRP really shines. It's not just a Redux replacement. 
+
+Dealing with asynchronicity. For example request/response. Debounce. Flatmaplatest.
+
+## Category theory view
+
+TODO this is a nice opportunity to introduce some Category theoretic concepts as well
+
+Functor (Co-variant) for state Decomposition read-only
+Contravariant functor for state Decomposition write-only
+Applicative functor for state Composition
+Profunctors for lenses
+Monads?
 
 ## Motivation and background
 

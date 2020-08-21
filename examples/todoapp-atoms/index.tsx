@@ -43,7 +43,7 @@ const ItemList = ({ items }: { items: Atom<TodoItem[]>}) => {
         renderAtom={(item, removeItem) => {
           // This variant of ListView (with renderAtom) gives a read-write
           // view for each item view. It also gives you a handle for removing the item
-          return <li><Item {...{item, removeItem}}/></li>          
+          return <li><ItemView {...{item, removeItem}}/></li>          
         }}
         equals={(a, b) => a.id === b.id}
       />
@@ -51,7 +51,7 @@ const ItemList = ({ items }: { items: Atom<TodoItem[]>}) => {
   );
 };
 
-const Item = ({ item, removeItem }: { item: Atom<TodoItem>, removeItem: () => void }) => {  
+const ItemView = ({ item, removeItem }: { item: Atom<TodoItem>, removeItem: () => void }) => {  
   const completed: Atom<boolean> = item.view("completed")
   
   return (
@@ -70,13 +70,13 @@ const NewItem = () => {
   const addNew = () => addItem(name.get())
   return (
     <div className="newItem">
-      <Input placeholder="new item name" value={name} />
+      <TextInput placeholder="new item name" value={name} />
       <button onClick={addNew}>Add new item</button>
     </div>
   );
 };
 
-const Input = (props: { value: Atom<string> } & any) => {
+const TextInput = (props: { value: Atom<string> } & any) => {
   return <input {...{ 
           type: "text", 
           onChange: e => { 

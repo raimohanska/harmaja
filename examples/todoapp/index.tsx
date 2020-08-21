@@ -22,7 +22,7 @@ const initialItems = ["learn typescript", "fix handbrake"].map(s => todoItem(s))
 // Events/actions
 const addItemBus = new B.Bus<string>();
 const removeItemBus = new B.Bus<TodoItem>();
-const setCompletedBus = new B.Bus<[TodoItem, boolean]>();
+const updateItemBus = new B.Bus<TodoItem>();
 // New items event stream is merged from use events and events from "server"
 // Merging two streams of strings and finally mapping them into TodoItem objects
 const newItemE = itemAddedFromSocketE.merge(addItemBus).map(todoItem)
@@ -30,8 +30,8 @@ const newItemE = itemAddedFromSocketE.merge(addItemBus).map(todoItem)
 // The state "megablob" reactive property created by reducing from events
 const allItems: B.Property<TodoItem[]> = B.update(initialItems, 
     [newItemE, (items, item) => items.concat(item)],
-    [removeItemBus, (items, item) => items.filter(i => i.id !== item.id)],
-    [setCompletedBus, (items, [item, completed]) => items.map(i => i.id === item.id ? { ...item, completed} : i)]
+    [removeItemBus, (items, removedItem) => items.filter(i => i.id !== removedItem.id)],
+    [updateItemBus, (items, updatedItem) => items.map(i => i.id === updatedItem.id ? updatedItem : i)]
 )
 
 const App = () => {
@@ -69,15 +69,12 @@ const ItemView = ({ item }: { item: B.Property<TodoItem> }) => {
   // this case we push changes to the bus which will then cause state changes to propagate back here.
   // A dependent atom provides a bridge between atom-based components and "unidirectional data flow"
   // style state management.
-  const completed = atom(
-    item.map(i => i.completed), 
-    completed => setCompletedBus.push([getCurrentValue(item), completed])
-  )
+  const itemAtom = atom(item, updated => updateItemBus.push(updated))
   
   return (
     <span>
-      <span className="name">{item.map(i => i.name)}</span>
-      <Checkbox checked={completed}/>
+      <span className="name"><TextInput value={itemAtom.view("name")} /></span>
+      <Checkbox checked={itemAtom.view("completed")}/>
       <a className="removeItem" onClick={() => removeItemBus.push(getCurrentValue(item))}>
         remove
       </a>
@@ -90,16 +87,16 @@ const NewItem = () => {
   const addNew = () => addItemBus.push(name.get())
   return (
     <div className="newItem">
-      <Input placeholder="new item name" value={name} />
+      <TextInput placeholder="new item name" value={name} />
       <button onClick={addNew}>Add new item</button>
     </div>
   );
 };
 
-const Input = (props: { value: Atom<string> } & any) => {
+const TextInput = (props: { value: Atom<string> } & any) => {
   return <input {...{ 
           type: "text", 
-          onChange: e => { 
+          onInput: e => { 
               props.value.set(e.target.value)
           },
           ...props, 
