@@ -201,7 +201,7 @@ todoItems: B.Property<TodoItem[]> // impl redacted
 So instead of having to care about all the possible modifications to items on this level, there's a single `updateTodoItem` event that can be used to perform any update.
 
 As shown earlierly, decomposition works nicely as you can call `item.map(i => i.someField)` to get views into its components parts.
-Now let's revisit ItemView from the previous section and add a `onUpdate` callback.
+Now let's revisit ItemView from the previous section and add a `onUpdate` callback.
 
 ```typescript
 import { React, mount } from "../.."
