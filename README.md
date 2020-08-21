@@ -9,9 +9,14 @@ An experimental web frontend framework named after a lighthouse. It maybe easies
 - Uses Bacon.js for observables at the moment
 - Strongly inspired by [Calmm.js](https://github.com/calmm-js/documentation/blob/master/introduction-to-calmm.md). If you're familiar with Calmm, you can think of Harmaja as "Calmm, but with types and no React dependency
 
+Published on NPM: https://www.npmjs.com/package/harmaja
+
 The documentation here is lacking, and it will help if you're already familiar with Redux, Calmm.js and Bacon.js (or other reactive library such as RxJs).
 
-Published on NPM: https://www.npmjs.com/package/harmaja
+This document contains a lot of discussion on state management concepts such as unidirectional data flow, as well as existing implementations that I'm aware of. 
+I present my views on these topics openly, with the goal to paint the whole picture of how I see application state management. So don't expect this to be a focused
+API document, but more like a research project. I'm very open to discussion and criticism so correct me if I'm wrong. On the other hand, I hope you to understand
+that many topics here are subjective and I'm presenting my own views of the day.
 
 ## Key concepts
 
@@ -75,6 +80,8 @@ It's not a silver bullet though. Especially when using a single global store wit
 
 Other interesting examples of Unidirectional data flow include [Elm](https://elm-lang.org/) and [Cycle.js](https://cycle.js.org/).
 
+## Unidirectional data flow with Harmaja
+
 In Harmaja, you can implement Unidirectional data flow too. Sticking with the Todo App example, you define your events as *buses*:
 
 ```typescript
@@ -105,13 +112,83 @@ interface TodoStore {
 
 ...so you have an encapsulation of this piece of application state, and you can pass this store to your UI components.
 
-A notable different to Redux is that there are no action creators and reducers per se. You define distinct events a derive state from them. You can also define the buses and the derived state properties in your components if you want to have scoped state. There is no such thing as *react context* in Harmaja, so everything has to be passed explicitly or defined in a global scope, at least for now. 
+A notable difference in this store setup to Redux is, that there are no action creators and reducers per se. 
+You define distinct events a derive state from them. 
+You can also define the buses and the derived state properties in your components if you want to have scoped state. 
+There is no such thing as *react context* in Harmaja, so everything has to be passed explicitly or defined in a global scope, at least for now. 
 
-See the full example [here](examples/todoapp/index.tsx).
+## From store to view
+
+In unidirectional data flow setups, there's always a way to reflect the store state in your UI. For instance,
+
+- In [react-redux](https://github.com/reduxjs/react-redux) you can use the `useSelector` hook for extracting the parts of global state your component needs
+- In Elm and Cycle.js the whole state is always rendered from the root and you trust the framework to be effient in VDOM diffing
+
+Pretty soon after React started gaining popularity, my colleagues at Reaktor (and I later) started using a "Bacon megablob" architecture where events and the "store" are
+defined exactly as in the previous chapter, using Buses and a state Property. Thanks to React's relatively good performance with VDOM and diffing, 
+it's in most cases a viable choice. Sometimes though, it may prove too heavy to render everything everytime. If you have a "furry" (wide and deeply nested) data model,
+doing a full render on every keystroke just might not work. This has caused pain and various optimizations have been written.
+
+However, it may make more sense to adopt the `useSelector`-like approach and instead of rendering the whole VDOM on all changes, 
+listen to relevant changes in your components and render on change. I wrote about one React Hooks based approach on the 
+[Reaktor blog](https://www.reaktor.com/blog/make-react-reactive-by-using-hooks/) earlierly.
+
+Now if we consider the case of Harmaja, the situation is different from any React based approaches. First of all, Harmaja doesn't have VDOM diffing or Hooks. But the
+fact that you can pass reactive properties as props fits the bill very nicely, so in the case of a TodoItem view, you can
+
+```typescript
+import { React, mount } from "../.."
+
+const ItemView = ({ item }: { item: B.Property<TodoItem> }) => {  
+  return (
+    <span>
+      <span className="name">{item.map(i => i.name)}</span>      
+    </span>
+  );
+};
+```
+
+The first big difference to Redux is that instead of asking for stuff from the global state in your component implementation, you actually require the relevant data
+in the function signature (how revolutionary!). This rather obviously makes the component easier to reason about, use in different context, test and so on. So just from
+the function signature you can easily decuce that this component will render a TodoItem and reflect any changes that are effected to that particular TodoItem (because
+the input is a reactive property).
+
+In the implementation, the `map` method of the `Property<TodoItem>` is used to get a `Property<string>` which then can be directly embedded into the resulting DOM,
+because Harmaja natively renders Properties. When the value of `name` changes, the updated value will be applied to DOM.
+
+Think: *you can pick a part of your Store and use it as a Store*. This removes the need for the component to *know where the data is* in the global store. 
+In react-redux all components that actually *react* to store changes, need to know the "location" of their data in the store to be able to get it using `useSelector`.
+In contrast using the Property abstraction you can easily `map` out the data from the store and give a handle to your components.
+
+Another big difference is that store data and local data are the same. No separate mechanism for dealing with local state. Instead, you can declare more Properties in
+your component constructors as you go, to flexibly define data stores at different application layers. Which arguably makes it easier to make changes too, as you don't
+need to change the mechanism when moving from local to global. More on this topic below.
+
+Anyway, let's put the Todo App together right now! To simplify a bit, if were were just rendering the first TodoItem (There's a chapter on array rendering down there), the root element of the application could look like this:
+
+```typescript
+const App = () => {
+    const firstItem: Property<TodoItem> = allItems.map(items => items[0])
+    return <ItemView item={firstItem}/>
+}
+```
+
+Then you can mount it and it'll start reacting to changes in the store:
+
+```typescript
+mount(<App/>, document.getElementById("root")!)
+```
+
+Although I prefer components that get all of their required inputs in their constructor (this is called dependency injection), there's nothing to prevent you from
+accessing global "stores" from your components as well. 
+
+See the full Todo App example [here](examples/todoapp/index.tsx).
 
 ## Beyond Unidirectional data flow
 
-As mentioned above, I find it convenient to be able to put state to different scopes instead of having everything in a global megablob. Also, I find the event-reducer-state model a bit cumbersome for some cases. When you're *editing* data, you'll have a lot of components that practically need read-write access to data. Let's say you are doing something really simple, such as an text input component for editing a single string.
+As mentioned above, I find it convenient to be able to put state to different scopes instead of having everything in a global megablob. Also, I find the event-reducer-state model a bit cumbersome for some cases. When you're *editing* data, you'll have a lot of components that practically need read-write access to data. 
+
+Let's say you are doing something really simple, such as an text input component for editing a single string.
 
 ```typescript
 const TextInput = ({value}: {text: B.Property<string>}) => {
@@ -119,8 +196,7 @@ const TextInput = ({value}: {text: B.Property<string>}) => {
 }
 ```
 
-
-This component has a reactive property `text` as a prop and it renders the current value into the `value` attribute of the input element. Notice that in Harmaja, you can in fact just embed a reactive property into your VDOM! As a result the DOM element will be automatically updated when the `text` property changes. Note also that this TextInput function is treated like a constructor instead of being called everytime something changes.
+This component has a reactive property `text` as a prop and it renders the current value into the `value` attribute of the input element. Notice that in Harmaja, you can in fact just embed a reactive property into your VDOM. As a result the DOM element will be automatically updated when the `text` property changes. Note also that this TextInput function is treated like a constructor instead of being called everytime something changes.
 
 Anyway, we somehow need to pass changes back from this component to the store. One way to do it would be to pass a `onChange: string => void` parameter so that the change to this field would be passed to the "global reducer" and state change applied. However, you don't generally want to be handling individual strings in your big time reducers do you? More likely you'll be using this input component as a part of something larger, like
 
