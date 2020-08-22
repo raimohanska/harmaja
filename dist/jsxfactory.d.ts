@@ -1,9 +1,9 @@
 import * as B from "baconjs";
 import * as CSS from 'csstype';
 import * as H from "./harmaja";
-declare type ChildrenType = H.VDOMChild;
-declare type CreateElementOutput = H.VDOMElement;
-export declare function h(type: H.VDOMType, props: H.VDOMProps, ...children: (H.VDOMChild | H.VDOMChild[])[]): CreateElementOutput;
+declare type ChildrenType = H.HarmajaChild;
+declare type CreateElementOutput = H.DOMElement;
+export declare function h(type: H.JSXElementType, props: H.HarmajaProps, ...children: (H.HarmajaChild | H.HarmajaChild[])[]): CreateElementOutput;
 declare type WithObservablesInFields<T> = {
     [K in keyof T]: T[K] | B.Property<T[K]>;
 };
@@ -22,7 +22,7 @@ declare type NativeWheelEvent = WheelEvent;
 declare type Booleanish = boolean | 'true' | 'false';
 declare global {
     namespace JSX {
-        function h(type: H.VDOMType, props: H.VDOMProps, ...children: (H.VDOMChild | H.VDOMChild[])[]): CreateElementOutput;
+        function h(type: H.JSXElementType, props: H.HarmajaProps, ...children: (H.HarmajaChild | H.HarmajaChild[])[]): CreateElementOutput;
         interface IntrinsicElements {
             a: DetailedHTMLProps<AnchorHTMLAttributes<HTMLAnchorElement>, HTMLAnchorElement>;
             abbr: DetailedHTMLProps<HTMLAttributes<HTMLElement>, HTMLElement>;

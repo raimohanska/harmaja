@@ -1,82 +1,42 @@
 import * as Bacon from "baconjs"
 
-export type VDOMComponent = (props: VDOMProps) => VDOMElement
-export type VDOMType = string | VDOMComponent
-export type VDOMProps = Record<string, any>
-export type VDOMChild = VDOMElement | string | number | VDOMObservableChild | null
-export type VDOMStandardElement = { type: string, props: VDOMProps, children: VDOMChild[] }
-export type VDOMElement = VDOMStandardElement | VDOMCustomElement
-export type VDOMObservableChild = Bacon.Property<VDOMElement | string>
-export type VDOMCustomElement = { type: "_custom_", renderHTML: () => any, key: "", props: {} } // the boilerplate is for JSX compatibility
+export type HarmajaComponent = (props: HarmajaProps) => DOMElement
+export type JSXElementType = string | HarmajaComponent
 
-export function createElement(type: VDOMType, props: VDOMProps, ...children: (VDOMChild | VDOMChild[])[]): VDOMElement {
+export type HarmajaProps = Record<string, any>
+export type HarmajaChild = HarmajaObservableChild | DOMElement | string | number | null
+export type HarmajaObservableChild = Bacon.Property<HarmajaChild>
+
+export type DOMElement = HTMLElement | Text
+
+export function mount(ve: DOMElement, root: HTMLElement) {
+    root.parentElement!.replaceChild(ve, root)
+}
+
+export function createElement(type: JSXElementType, props: HarmajaProps, ...children: (HarmajaChild | HarmajaChild[])[]): DOMElement {
     const flattenedChildren = children.flatMap(flattenChildren)
     if (props && props.children) {
         delete props.children // TODO: ugly hack, occurred in todoapp example
     }
     if (typeof type == "function") {        
-        const constructor = type as VDOMComponent
+        const constructor = type as HarmajaComponent
         return constructor({...props, children: flattenedChildren})
     } else if (typeof type == "string") {
-        return {type, props, children: flattenedChildren } 
+        return renderHTMLElement(type, props, flattenedChildren)
     } else {
         console.error("Unexpected createElement call with arguments", arguments)
         throw Error(`Unknown type ${type}`)
     }
 }
 
-function flattenChildren(child: VDOMChild | VDOMChild[]): VDOMChild[] {
+function flattenChildren(child: HarmajaChild | HarmajaChild[]): HarmajaChild[] {
     if (child instanceof Array) return child.flatMap(flattenChildren)
     return [child]
 }
 
-function isElement(x: any): x is VDOMElement {
-    return typeof x === "object" && typeof x.type === "string"
-}
-
-function isCustomElement(e: any): e is VDOMCustomElement {
-    return e.type === "_custom_"
-}
-
-// Our custom React interface for JSX
-// TODO: typings for JSX
-export const React = {
-    createElement
-}
-
-export function mount(ve: VDOMElement | any, root: HTMLElement) {
-    root.parentElement!.replaceChild(renderHTML(ve), root)
-}
-
-export function renderHTML(ve: VDOMChild): HTMLElement | Text {
-    if (typeof ve === "string" || typeof ve === "number") {
-        return document.createTextNode(ve.toString())
-    }
-    if (ve instanceof Bacon.Property) {
-        const observable = ve as Bacon.Property<VDOMElement | string>
-        const currentValue: string | VDOMElement = getCurrentValue(observable)
-        let element: HTMLElement | Text = renderHTML(currentValue as any)
-        const unsub = observable.skipDuplicates().changes().forEach((currentValue: VDOMElement | string )=> {
-            let oldElement = element
-            element = renderHTML(currentValue as any)
-            // TODO: can we handle a case where the observable yields multiple elements? Currently not.
-            //console.log("Replacing element", oldElement)
-            replaceElement(oldElement, element)
-            attachUnsub(element, unsub)
-        })
-        attachUnsub(element, unsub)
-        return element
-    }
-
-    if (ve === null) {
-        return document.createTextNode("")
-    }
-    if (isCustomElement(ve)) {
-        return ve.renderHTML()
-    }
-
-    const el = document.createElement(ve.type)
-    for (let [key, value] of Object.entries(ve.props || {})) {
+function renderHTMLElement(type: string, props: HarmajaProps, children: HarmajaChild[]): HTMLElement {
+    const el = document.createElement(type)
+    for (let [key, value] of Object.entries(props || {})) {
         if (value instanceof Bacon.Property) {
             const observable: Bacon.Property<string> = value
             value = getCurrentValue(observable)
@@ -88,12 +48,36 @@ export function renderHTML(ve: VDOMChild): HTMLElement | Text {
         setProp(el, key, value as string)        
     }
     
-    for (const child of ve.children || []) {
-        el.appendChild(renderHTML(child))
+    for (const child of children || []) {
+        el.appendChild(renderChild(child))
     }
     return el
 }
 
+function renderChild(ve: HarmajaChild): DOMElement {
+    if (typeof ve === "string" || typeof ve === "number") {
+        return document.createTextNode(ve.toString())
+    }
+    if (ve === null) {
+        return document.createTextNode("")
+    }
+    if (ve instanceof Bacon.Property) {
+        const observable = ve as HarmajaObservableChild
+        const currentValue: HarmajaChild = getCurrentValue(observable)
+        let element: DOMElement = renderChild(currentValue)
+        const unsub = observable.skipDuplicates().changes().forEach((currentValue: HarmajaChild )=> {
+            let oldElement = element
+            element = renderChild(currentValue)
+            // TODO: can we handle a case where the observable yields multiple elements? Currently not.
+            //console.log("Replacing element", oldElement)
+            replaceElement(oldElement, element)
+            attachUnsub(element, unsub)
+        })
+        attachUnsub(element, unsub)
+        return element
+    }
+    return ve
+}
 
 function setProp(el: HTMLElement, key: string, value: string) {
     if (key.startsWith("on")) {
@@ -151,8 +135,12 @@ export function getCurrentValue<A>(observable: Bacon.Property<A>): A {
     let currentV: any = valueMissing;
     if ((observable as any).get) {
       currentV = (observable as any).get(); // For Atoms
-    } else {
-      const unsub = observable.onValue(v => (currentV = v));
+    } else {        
+      const unsub = observable.subscribeInternal(e => {
+          if (Bacon.hasValue(e)) {
+              currentV = e.value;
+          }
+      })       
       unsub();
     }
     if (currentV === valueMissing) {
@@ -161,16 +149,6 @@ export function getCurrentValue<A>(observable: Bacon.Property<A>): A {
     }      
     return currentV;
   };
-
-
-export function createCustomElement(renderHTML: () => HTMLElement | Text) {
-    return {
-        key: "", // key, props, type needed for JSX to work
-        type: "_custom_",
-        props: {},
-        renderHTML
-    }
-}
 
 export function replaceElement(oldElement: ChildNode, newElement: HTMLElement | Text) {
     unsubObservablesInChildElements(oldElement)

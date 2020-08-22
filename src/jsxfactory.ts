@@ -3,10 +3,10 @@ import * as CSS from 'csstype';
 
 import * as H from "./harmaja"
 
-type ChildrenType = H.VDOMChild
-type CreateElementOutput = H.VDOMElement
+type ChildrenType = H.HarmajaChild
+type CreateElementOutput = H.DOMElement
 
-export function h(type: H.VDOMType, props: H.VDOMProps, ...children: (H.VDOMChild | H.VDOMChild[])[]): CreateElementOutput {
+export function h(type: H.JSXElementType, props: H.HarmajaProps, ...children: (H.HarmajaChild | H.HarmajaChild[])[]): CreateElementOutput {
     return H.createElement(type, props, ...children)
 }
 
@@ -33,7 +33,7 @@ type Booleanish = boolean | 'true' | 'false';
 
 declare global {
     namespace JSX {
-        function h(type: H.VDOMType, props: H.VDOMProps, ...children: (H.VDOMChild | H.VDOMChild[])[]): CreateElementOutput;
+        function h(type: H.JSXElementType, props: H.HarmajaProps, ...children: (H.HarmajaChild | H.HarmajaChild[])[]): CreateElementOutput;
     
         export interface IntrinsicElements {
             // HTML

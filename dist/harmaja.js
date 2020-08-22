@@ -37,6 +37,9 @@ var __read = (this && this.__read) || function (o, n) {
     return ar;
 };
 import * as Bacon from "baconjs";
+export function mount(ve, root) {
+    root.parentElement.replaceChild(ve, root);
+}
 export function createElement(type, props) {
     var children = [];
     for (var _i = 2; _i < arguments.length; _i++) {
@@ -51,7 +54,7 @@ export function createElement(type, props) {
         return constructor(__assign(__assign({}, props), { children: flattenedChildren }));
     }
     else if (typeof type == "string") {
-        return { type: type, props: props, children: flattenedChildren };
+        return renderHTMLElement(type, props, flattenedChildren);
     }
     else {
         console.error("Unexpected createElement call with arguments", arguments);
@@ -63,47 +66,9 @@ function flattenChildren(child) {
         return child.flatMap(flattenChildren);
     return [child];
 }
-function isElement(x) {
-    return typeof x === "object" && typeof x.type === "string";
-}
-function isCustomElement(e) {
-    return e.type === "_custom_";
-}
-// Our custom React interface for JSX
-// TODO: typings for JSX
-export var React = {
-    createElement: createElement
-};
-export function mount(ve, root) {
-    root.parentElement.replaceChild(renderHTML(ve), root);
-}
-export function renderHTML(ve) {
+function renderHTMLElement(type, props, children) {
     var e_1, _a, e_2, _b;
-    if (typeof ve === "string" || typeof ve === "number") {
-        return document.createTextNode(ve.toString());
-    }
-    if (ve instanceof Bacon.Property) {
-        var observable = ve;
-        var currentValue = getCurrentValue(observable);
-        var element_1 = renderHTML(currentValue);
-        var unsub_1 = observable.skipDuplicates().changes().forEach(function (currentValue) {
-            var oldElement = element_1;
-            element_1 = renderHTML(currentValue);
-            // TODO: can we handle a case where the observable yields multiple elements? Currently not.
-            //console.log("Replacing element", oldElement)
-            replaceElement(oldElement, element_1);
-            attachUnsub(element_1, unsub_1);
-        });
-        attachUnsub(element_1, unsub_1);
-        return element_1;
-    }
-    if (ve === null) {
-        return document.createTextNode("");
-    }
-    if (isCustomElement(ve)) {
-        return ve.renderHTML();
-    }
-    var el = document.createElement(ve.type);
+    var el = document.createElement(type);
     var _loop_1 = function (key, value) {
         if (value instanceof Bacon.Property) {
             var observable = value;
@@ -116,7 +81,7 @@ export function renderHTML(ve) {
         setProp(el, key, value);
     };
     try {
-        for (var _c = __values(Object.entries(ve.props || {})), _d = _c.next(); !_d.done; _d = _c.next()) {
+        for (var _c = __values(Object.entries(props || {})), _d = _c.next(); !_d.done; _d = _c.next()) {
             var _e = __read(_d.value, 2), key = _e[0], value = _e[1];
             _loop_1(key, value);
         }
@@ -129,9 +94,9 @@ export function renderHTML(ve) {
         finally { if (e_1) throw e_1.error; }
     }
     try {
-        for (var _f = __values(ve.children || []), _g = _f.next(); !_g.done; _g = _f.next()) {
+        for (var _f = __values(children || []), _g = _f.next(); !_g.done; _g = _f.next()) {
             var child = _g.value;
-            el.appendChild(renderHTML(child));
+            el.appendChild(renderChild(child));
         }
     }
     catch (e_2_1) { e_2 = { error: e_2_1 }; }
@@ -142,6 +107,30 @@ export function renderHTML(ve) {
         finally { if (e_2) throw e_2.error; }
     }
     return el;
+}
+function renderChild(ve) {
+    if (typeof ve === "string" || typeof ve === "number") {
+        return document.createTextNode(ve.toString());
+    }
+    if (ve === null) {
+        return document.createTextNode("");
+    }
+    if (ve instanceof Bacon.Property) {
+        var observable = ve;
+        var currentValue = getCurrentValue(observable);
+        var element_1 = renderChild(currentValue);
+        var unsub_1 = observable.skipDuplicates().changes().forEach(function (currentValue) {
+            var oldElement = element_1;
+            element_1 = renderChild(currentValue);
+            // TODO: can we handle a case where the observable yields multiple elements? Currently not.
+            //console.log("Replacing element", oldElement)
+            replaceElement(oldElement, element_1);
+            attachUnsub(element_1, unsub_1);
+        });
+        attachUnsub(element_1, unsub_1);
+        return element_1;
+    }
+    return ve;
 }
 function setProp(el, key, value) {
     if (key.startsWith("on")) {
@@ -227,7 +216,11 @@ export function getCurrentValue(observable) {
         currentV = observable.get(); // For Atoms
     }
     else {
-        var unsub = observable.onValue(function (v) { return (currentV = v); });
+        var unsub = observable.subscribeInternal(function (e) {
+            if (Bacon.hasValue(e)) {
+                currentV = e.value;
+            }
+        });
         unsub();
     }
     if (currentV === valueMissing) {
@@ -237,14 +230,6 @@ export function getCurrentValue(observable) {
     return currentV;
 }
 ;
-export function createCustomElement(renderHTML) {
-    return {
-        key: "",
-        type: "_custom_",
-        props: {},
-        renderHTML: renderHTML
-    };
-}
 export function replaceElement(oldElement, newElement) {
     unsubObservablesInChildElements(oldElement);
     if (!oldElement.parentElement) {

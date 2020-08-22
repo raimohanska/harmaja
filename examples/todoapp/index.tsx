@@ -1,6 +1,6 @@
 import * as B from "baconjs"
 
-import { h, mount, ListView, Atom, atom, getCurrentValue } from "../.."
+import { h, mount, ListView, Atom, atom, getCurrentValue } from "../../src/index"
 import itemAddedFromSocketE from "./fake-socket";
 
 // The domain object constructor

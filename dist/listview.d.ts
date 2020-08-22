@@ -13,9 +13,4 @@ export declare type ListViewProps<A> = {
     renderAtom: (x: Atom<A>, remove: () => void) => any;
     equals: (x: A, y: A) => boolean;
 };
-export declare function ListView<A>(props: ListViewProps<A>): {
-    key: string;
-    type: string;
-    props: {};
-    renderHTML: () => HTMLElement | Text;
-};
+export declare function ListView<A>(props: ListViewProps<A>): HTMLSpanElement;

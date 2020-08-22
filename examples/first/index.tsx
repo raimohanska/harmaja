@@ -39,7 +39,6 @@ const Root = () =>
         <Reactive/>
         <ReactiveProps/>
         <Plus bus={numbers}/>   
-             
         <H1>Hello <b>World { multiplier.map(multiplier => <TickerWithMultiplier {...{multiplier, ticker}}/>) }</b>!</H1>
         Multiplier <Plus bus={numbers}/>{ multiplier }<Minus bus={numbers}/>
         <br/> Naive array handling 
