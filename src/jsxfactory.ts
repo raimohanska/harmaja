@@ -14,9 +14,9 @@ type WithObservablesInFields<T> = {
     [K in keyof T]: T[K] | B.Property<T[K]>
 }
 
-// TODO: remove the React name eventually from everywhere
 // Notice the types below are copied from https://github.com/DefinitelyTyped/DefinitelyTyped/blob/master/types/react/index.d.ts
-
+// TODO: bivarianceHack!?
+type NativeEvent = Event
 type NativeAnimationEvent = AnimationEvent;
 type NativeClipboardEvent = ClipboardEvent;
 type NativeCompositionEvent = CompositionEvent;
@@ -220,181 +220,29 @@ declare global {
     // Event System
     // ----------------------------------------------------------------------
     // TODO: change any to unknown when moving to TS v3
-    interface BaseSyntheticEvent<E = object, C = any, T = any> {
-        nativeEvent: E;
-        currentTarget: C;
-        target: T;
-        bubbles: boolean;
-        cancelable: boolean;
-        defaultPrevented: boolean;
-        eventPhase: number;
-        isTrusted: boolean;
-        preventDefault(): void;
-        isDefaultPrevented(): boolean;
-        stopPropagation(): void;
-        isPropagationStopped(): boolean;
-        persist(): void;
-        timeStamp: number;
-        type: string;
-    }
+    
 
-    /**
-     * currentTarget - a reference to the element on which the event listener is registered.
-     *
-     * target - a reference to the element from which the event was originally dispatched.
-     * This might be a child element to the element on which the event listener is registered.
-     * If you thought this should be `EventTarget & T`, see https://github.com/DefinitelyTyped/DefinitelyTyped/issues/11508#issuecomment-256045682
-     */
-    interface SyntheticEvent<T = Element, E = Event> extends BaseSyntheticEvent<E, EventTarget & T, EventTarget> {}
-
-    interface ClipboardEvent<T = Element> extends SyntheticEvent<T, NativeClipboardEvent> {
-        clipboardData: DataTransfer;
-    }
-
-    interface CompositionEvent<T = Element> extends SyntheticEvent<T, NativeCompositionEvent> {
-        data: string;
-    }
-
-    interface DragEvent<T = Element> extends MouseEvent<T, NativeDragEvent> {
-        dataTransfer: DataTransfer;
-    }
-
-    interface PointerEvent<T = Element> extends MouseEvent<T, NativePointerEvent> {
-        pointerId: number;
-        pressure: number;
-        tangentialPressure: number;
-        tiltX: number;
-        tiltY: number;
-        twist: number;
-        width: number;
-        height: number;
-        pointerType: 'mouse' | 'pen' | 'touch';
-        isPrimary: boolean;
-    }
-
-    interface FocusEvent<T = Element> extends SyntheticEvent<T, NativeFocusEvent> {
-        relatedTarget: EventTarget | null;
-        target: EventTarget & T;
-    }
-
-    // tslint:disable-next-line:no-empty-interface
-    interface FormEvent<T = Element> extends SyntheticEvent<T> {
-    }
-
-    interface InvalidEvent<T = Element> extends SyntheticEvent<T> {
-        target: EventTarget & T;
-    }
-
-    interface ChangeEvent<T = Element> extends SyntheticEvent<T> {
-        target: EventTarget & T;
-    }
-
-    interface KeyboardEvent<T = Element> extends SyntheticEvent<T, NativeKeyboardEvent> {
-        altKey: boolean;
-        /** @deprecated */
-        charCode: number;
-        ctrlKey: boolean;
-        /**
-         * See [DOM Level 3 Events spec](https://www.w3.org/TR/uievents-key/#keys-modifier). for a list of valid (case-sensitive) arguments to this method.
-         */
-        getModifierState(key: string): boolean;
-        /**
-         * See the [DOM Level 3 Events spec](https://www.w3.org/TR/uievents-key/#named-key-attribute-values). for possible values
-         */
-        key: string;
-        /** @deprecated */
-        keyCode: number;
-        locale: string;
-        location: number;
-        metaKey: boolean;
-        repeat: boolean;
-        shiftKey: boolean;
-        /** @deprecated */
-        which: number;
-    }
-
-    interface MouseEvent<T = Element, E = NativeMouseEvent> extends UIEvent<T, E> {
-        altKey: boolean;
-        button: number;
-        buttons: number;
-        clientX: number;
-        clientY: number;
-        ctrlKey: boolean;
-        /**
-         * See [DOM Level 3 Events spec](https://www.w3.org/TR/uievents-key/#keys-modifier). for a list of valid (case-sensitive) arguments to this method.
-         */
-        getModifierState(key: string): boolean;
-        metaKey: boolean;
-        movementX: number;
-        movementY: number;
-        pageX: number;
-        pageY: number;
-        relatedTarget: EventTarget | null;
-        screenX: number;
-        screenY: number;
-        shiftKey: boolean;
-    }
-
-    interface TouchEvent<T = Element> extends UIEvent<T, NativeTouchEvent> {
-        altKey: boolean;
-        changedTouches: TouchList;
-        ctrlKey: boolean;
-        /**
-         * See [DOM Level 3 Events spec](https://www.w3.org/TR/uievents-key/#keys-modifier). for a list of valid (case-sensitive) arguments to this method.
-         */
-        getModifierState(key: string): boolean;
-        metaKey: boolean;
-        shiftKey: boolean;
-        targetTouches: TouchList;
-        touches: TouchList;
-    }
-
-    interface UIEvent<T = Element, E = NativeUIEvent> extends SyntheticEvent<T, E> {
-        detail: number;
-        view: AbstractView;
-    }
-
-    interface WheelEvent<T = Element> extends MouseEvent<T, NativeWheelEvent> {
-        deltaMode: number;
-        deltaX: number;
-        deltaY: number;
-        deltaZ: number;
-    }
-
-    interface AnimationEvent<T = Element> extends SyntheticEvent<T, NativeAnimationEvent> {
-        animationName: string;
-        elapsedTime: number;
-        pseudoElement: string;
-    }
-
-    interface TransitionEvent<T = Element> extends SyntheticEvent<T, NativeTransitionEvent> {
-        elapsedTime: number;
-        propertyName: string;
-        pseudoElement: string;
-    }
-
+    
     //
     // Event Handler Types
     // ----------------------------------------------------------------------
 
-    type EventHandler<E extends SyntheticEvent<any>> = { bivarianceHack(event: E): void }["bivarianceHack"];
+    type EventHandler<E extends NativeEvent> = { bivarianceHack(event: E): void }["bivarianceHack"];
 
-    type ReactEventHandler<T = Element> = EventHandler<SyntheticEvent<T>>;
-
-    type ClipboardEventHandler<T = Element> = EventHandler<ClipboardEvent<T>>;
-    type CompositionEventHandler<T = Element> = EventHandler<CompositionEvent<T>>;
-    type DragEventHandler<T = Element> = EventHandler<DragEvent<T>>;
-    type FocusEventHandler<T = Element> = EventHandler<FocusEvent<T>>;
-    type FormEventHandler<T = Element> = EventHandler<FormEvent<T>>;
-    type ChangeEventHandler<T = Element> = EventHandler<ChangeEvent<T>>;
-    type KeyboardEventHandler<T = Element> = EventHandler<KeyboardEvent<T>>;
-    type MouseEventHandler<T = Element> = EventHandler<MouseEvent<T>>;
-    type TouchEventHandler<T = Element> = EventHandler<TouchEvent<T>>;
-    type PointerEventHandler<T = Element> = EventHandler<PointerEvent<T>>;
-    type UIEventHandler<T = Element> = EventHandler<UIEvent<T>>;
-    type WheelEventHandler<T = Element> = EventHandler<WheelEvent<T>>;
-    type AnimationEventHandler<T = Element> = EventHandler<AnimationEvent<T>>;
-    type TransitionEventHandler<T = Element> = EventHandler<TransitionEvent<T>>;
+    type ClipboardEventHandler<T = Element> = EventHandler<ClipboardEvent>;
+    type CompositionEventHandler<T = Element> = EventHandler<CompositionEvent>;
+    type DragEventHandler<T = Element> = EventHandler<DragEvent>;
+    type FocusEventHandler<T = Element> = EventHandler<FocusEvent>;
+    
+    
+    type KeyboardEventHandler<T = Element> = EventHandler<KeyboardEvent>;
+    type MouseEventHandler<T = Element> = EventHandler<MouseEvent>;
+    type TouchEventHandler<T = Element> = EventHandler<TouchEvent>;
+    type PointerEventHandler<T = Element> = EventHandler<PointerEvent>;
+    type UIEventHandler<T = Element> = EventHandler<UIEvent>;
+    type WheelEventHandler<T = Element> = EventHandler<WheelEvent>;
+    type AnimationEventHandler<T = Element> = EventHandler<AnimationEvent>;
+    type TransitionEventHandler<T = Element> = EventHandler<TransitionEvent>;
 
     //
     // Props / DOM Attributes
@@ -455,25 +303,11 @@ declare global {
         onBlur?: FocusEventHandler<T>;
         onBlurCapture?: FocusEventHandler<T>;
 
-        // Form Events
-        onChange?: FormEventHandler<T>;
-        onChangeCapture?: FormEventHandler<T>;
-        onBeforeInput?: FormEventHandler<T>;
-        onBeforeInputCapture?: FormEventHandler<T>;
-        onInput?: FormEventHandler<T>;
-        onInputCapture?: FormEventHandler<T>;
-        onReset?: FormEventHandler<T>;
-        onResetCapture?: FormEventHandler<T>;
-        onSubmit?: FormEventHandler<T>;
-        onSubmitCapture?: FormEventHandler<T>;
-        onInvalid?: FormEventHandler<T>;
-        onInvalidCapture?: FormEventHandler<T>;
-
         // Image Events
-        onLoad?: ReactEventHandler<T>;
-        onLoadCapture?: ReactEventHandler<T>;
-        onError?: ReactEventHandler<T>; // also a Media Event
-        onErrorCapture?: ReactEventHandler<T>; // also a Media Event
+        onLoad?: EventHandler<NativeEvent>;
+        onLoadCapture?: EventHandler<NativeEvent>;
+        onError?: EventHandler<NativeEvent>; // also a Media Event
+        onErrorCapture?: EventHandler<NativeEvent>; // also a Media Event
 
         // Keyboard Events
         onKeyDown?: KeyboardEventHandler<T>;
@@ -484,50 +318,50 @@ declare global {
         onKeyUpCapture?: KeyboardEventHandler<T>;
 
         // Media Events
-        onAbort?: ReactEventHandler<T>;
-        onAbortCapture?: ReactEventHandler<T>;
-        onCanPlay?: ReactEventHandler<T>;
-        onCanPlayCapture?: ReactEventHandler<T>;
-        onCanPlayThrough?: ReactEventHandler<T>;
-        onCanPlayThroughCapture?: ReactEventHandler<T>;
-        onDurationChange?: ReactEventHandler<T>;
-        onDurationChangeCapture?: ReactEventHandler<T>;
-        onEmptied?: ReactEventHandler<T>;
-        onEmptiedCapture?: ReactEventHandler<T>;
-        onEncrypted?: ReactEventHandler<T>;
-        onEncryptedCapture?: ReactEventHandler<T>;
-        onEnded?: ReactEventHandler<T>;
-        onEndedCapture?: ReactEventHandler<T>;
-        onLoadedData?: ReactEventHandler<T>;
-        onLoadedDataCapture?: ReactEventHandler<T>;
-        onLoadedMetadata?: ReactEventHandler<T>;
-        onLoadedMetadataCapture?: ReactEventHandler<T>;
-        onLoadStart?: ReactEventHandler<T>;
-        onLoadStartCapture?: ReactEventHandler<T>;
-        onPause?: ReactEventHandler<T>;
-        onPauseCapture?: ReactEventHandler<T>;
-        onPlay?: ReactEventHandler<T>;
-        onPlayCapture?: ReactEventHandler<T>;
-        onPlaying?: ReactEventHandler<T>;
-        onPlayingCapture?: ReactEventHandler<T>;
-        onProgress?: ReactEventHandler<T>;
-        onProgressCapture?: ReactEventHandler<T>;
-        onRateChange?: ReactEventHandler<T>;
-        onRateChangeCapture?: ReactEventHandler<T>;
-        onSeeked?: ReactEventHandler<T>;
-        onSeekedCapture?: ReactEventHandler<T>;
-        onSeeking?: ReactEventHandler<T>;
-        onSeekingCapture?: ReactEventHandler<T>;
-        onStalled?: ReactEventHandler<T>;
-        onStalledCapture?: ReactEventHandler<T>;
-        onSuspend?: ReactEventHandler<T>;
-        onSuspendCapture?: ReactEventHandler<T>;
-        onTimeUpdate?: ReactEventHandler<T>;
-        onTimeUpdateCapture?: ReactEventHandler<T>;
-        onVolumeChange?: ReactEventHandler<T>;
-        onVolumeChangeCapture?: ReactEventHandler<T>;
-        onWaiting?: ReactEventHandler<T>;
-        onWaitingCapture?: ReactEventHandler<T>;
+        onAbort?: EventHandler<NativeEvent>;
+        onAbortCapture?: EventHandler<NativeEvent>;
+        onCanPlay?: EventHandler<NativeEvent>;
+        onCanPlayCapture?: EventHandler<NativeEvent>;
+        onCanPlayThrough?: EventHandler<NativeEvent>;
+        onCanPlayThroughCapture?: EventHandler<NativeEvent>;
+        onDurationChange?: EventHandler<NativeEvent>;
+        onDurationChangeCapture?: EventHandler<NativeEvent>;
+        onEmptied?: EventHandler<NativeEvent>;
+        onEmptiedCapture?: EventHandler<NativeEvent>;
+        onEncrypted?: EventHandler<NativeEvent>;
+        onEncryptedCapture?: EventHandler<NativeEvent>;
+        onEnded?: EventHandler<NativeEvent>;
+        onEndedCapture?: EventHandler<NativeEvent>;
+        onLoadedData?: EventHandler<NativeEvent>;
+        onLoadedDataCapture?: EventHandler<NativeEvent>;
+        onLoadedMetadata?: EventHandler<NativeEvent>;
+        onLoadedMetadataCapture?: EventHandler<NativeEvent>;
+        onLoadStart?: EventHandler<NativeEvent>;
+        onLoadStartCapture?: EventHandler<NativeEvent>;
+        onPause?: EventHandler<NativeEvent>;
+        onPauseCapture?: EventHandler<NativeEvent>;
+        onPlay?: EventHandler<NativeEvent>;
+        onPlayCapture?: EventHandler<NativeEvent>;
+        onPlaying?: EventHandler<NativeEvent>;
+        onPlayingCapture?: EventHandler<NativeEvent>;
+        onProgress?: EventHandler<NativeEvent>;
+        onProgressCapture?: EventHandler<NativeEvent>;
+        onRateChange?: EventHandler<NativeEvent>;
+        onRateChangeCapture?: EventHandler<NativeEvent>;
+        onSeeked?: EventHandler<NativeEvent>;
+        onSeekedCapture?: EventHandler<NativeEvent>;
+        onSeeking?: EventHandler<NativeEvent>;
+        onSeekingCapture?: EventHandler<NativeEvent>;
+        onStalled?: EventHandler<NativeEvent>;
+        onStalledCapture?: EventHandler<NativeEvent>;
+        onSuspend?: EventHandler<NativeEvent>;
+        onSuspendCapture?: EventHandler<NativeEvent>;
+        onTimeUpdate?: EventHandler<NativeEvent>;
+        onTimeUpdateCapture?: EventHandler<NativeEvent>;
+        onVolumeChange?: EventHandler<NativeEvent>;
+        onVolumeChangeCapture?: EventHandler<NativeEvent>;
+        onWaiting?: EventHandler<NativeEvent>;
+        onWaitingCapture?: EventHandler<NativeEvent>;
 
         // MouseEvents
         onAuxClick?: MouseEventHandler<T>;
@@ -568,8 +402,8 @@ declare global {
         onMouseUpCapture?: MouseEventHandler<T>;
 
         // Selection Events
-        onSelect?: ReactEventHandler<T>;
-        onSelectCapture?: ReactEventHandler<T>;
+        onSelect?: EventHandler<NativeEvent>;
+        onSelectCapture?: EventHandler<NativeEvent>;
 
         // Touch Events
         onTouchCancel?: TouchEventHandler<T>;
@@ -824,12 +658,6 @@ declare global {
     }
 
     interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes<T> {
-        // React-specific Attributes
-        defaultChecked?: boolean;
-        defaultValue?: string | number | ReadonlyArray<string>;
-        suppressContentEditableWarning?: boolean;
-        suppressHydrationWarning?: boolean;
-
         // Standard HTML Attributes
         accessKey?: string;
         className?: string;
@@ -1071,7 +899,7 @@ declare global {
 
     interface DetailsHTMLAttributes<T> extends HTMLAttributes<T> {
         open?: boolean;
-        onToggle?: ReactEventHandler<T>;
+        onToggle?: EventHandler<NativeEvent>;
     }
 
     interface DelHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1182,8 +1010,6 @@ declare global {
         type?: string;
         value?: string | ReadonlyArray<string> | number;
         width?: number | string;
-
-        onChange?: ChangeEventHandler<T>;
     }
 
     interface KeygenHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1332,7 +1158,6 @@ declare global {
         required?: boolean;
         size?: number;
         value?: string | ReadonlyArray<string> | number;
-        onChange?: ChangeEventHandler<T>;
     }
 
     interface SourceHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1373,8 +1198,6 @@ declare global {
         rows?: number;
         value?: string | ReadonlyArray<string> | number;
         wrap?: string;
-
-        onChange?: ChangeEventHandler<T>;
     }
 
     interface TdHTMLAttributes<T> extends HTMLAttributes<T> {

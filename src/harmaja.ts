@@ -32,6 +32,7 @@ export function createElement(type: JSXElementType, props: HarmajaProps, ...chil
 function flattenChildren(child: HarmajaChild | HarmajaChild[]): HarmajaChild[] {
     if (child instanceof Array) return child.flatMap(flattenChildren)
     return [child]
+    
 }
 
 function renderHTMLElement(type: string, props: HarmajaProps, children: HarmajaChild[]): HTMLElement {
