@@ -220,7 +220,7 @@ const TextInput = ({value, onChange}: {text: B.Property<string>, onChange: (s: s
 }
 ```
 
-I added an simple TextInput components that renders the given `Property<string>` into an input element and calls
+I added an simple TextInput component that renders the given `Property<string>` into an input element and calls
 its `onChange` listener. Yes, with Harmaja, you can embed reactive properties into DOM element props just like that.
 Now the question is, how to implement `onNameChange`, as well as the myriad similar functions you may need in your 
 more complex applications.
