@@ -150,7 +150,7 @@ function ConsultantCard({ consultant, editState }: { consultant: B.Property<Cons
   return (
     <div
       style={cardState.map(s => { 
-        const disabledStyle = (s === "disabled") ? { opacity: 0.5, pointerEvents: "none" } : {}
+        const disabledStyle = (s === "disabled") ? { opacity: 0.5, pointerEvents: "none" as any /* TODO: really weird that this value is not accepted */ } : {}
         const style = {
           ...{
             display: "flex",
@@ -161,7 +161,7 @@ function ConsultantCard({ consultant, editState }: { consultant: B.Property<Cons
           ...disabledStyle
         }
         return style
-    }) as any}
+    })}
     >
       <img alt={consultantToShow.map(c => c.name)} src="profile-placeholder.png" style={{ maxWidth: "100px" }} />
       <div
@@ -191,21 +191,21 @@ function ConsultantCard({ consultant, editState }: { consultant: B.Property<Cons
             </span>
           ) : (
             null
-          )) as any}
+          ))}
         </div>
         <input
           contentEditable="true"
           onInput={e => {
-            applyUpdate({ ...getCurrentValue(consultantToShow), name: e.target.value })
+            applyUpdate({ ...getCurrentValue(consultantToShow), name: e.currentTarget.value })
           }}
           style={{ display: "inline-block", minWidth: "10em", border: "none" }}
-          value={consultantToShow.map(c => c.name) as any}
+          value={consultantToShow.map(c => c.name)}
         />
         <span style={{ marginLeft: "1em", textAlign: "left", width: "100%" }}>
           <textarea
-            value={consultantToShow.map(c => c.description) as any}
+            value={consultantToShow.map(c => c.description)}
             onInput={e => {
-              applyUpdate({ ...getCurrentValue(consultantToShow), description: e.target.value })              
+              applyUpdate({ ...getCurrentValue(consultantToShow), description: e.currentTarget.value })              
             }}
             style={{
               height: "100%",

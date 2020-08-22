@@ -1,7 +1,12 @@
+import * as B from "baconjs";
 import * as CSS from 'csstype';
 import * as H from "./harmaja";
-export declare function h(type: H.VDOMType, props: H.VDOMProps, ...children: (H.VDOMChild | H.VDOMChild[])[]): H.FlattenedDOMElement;
-declare type ReactNode = H.VDOMChild;
+declare type ChildrenType = H.VDOMChild;
+declare type CreateElementOutput = H.FlattenedDOMElement;
+export declare function h(type: H.VDOMType, props: H.VDOMProps, ...children: (H.VDOMChild | H.VDOMChild[])[]): CreateElementOutput;
+declare type WithObservablesInFields<T> = {
+    [K in keyof T]: T[K] | B.Property<T[K]>;
+};
 declare type NativeAnimationEvent = AnimationEvent;
 declare type NativeClipboardEvent = ClipboardEvent;
 declare type NativeCompositionEvent = CompositionEvent;
@@ -17,7 +22,7 @@ declare type NativeWheelEvent = WheelEvent;
 declare type Booleanish = boolean | 'true' | 'false';
 declare global {
     namespace JSX {
-        function h(type: H.VDOMType, props: H.VDOMProps, ...children: (H.VDOMChild | H.VDOMChild[])[]): H.FlattenedDOMElement;
+        function h(type: H.VDOMType, props: H.VDOMProps, ...children: (H.VDOMChild | H.VDOMChild[])[]): CreateElementOutput;
         interface IntrinsicElements {
             a: DetailedHTMLProps<AnchorHTMLAttributes<HTMLAnchorElement>, HTMLAnchorElement>;
             abbr: DetailedHTMLProps<HTMLAttributes<HTMLElement>, HTMLElement>;
@@ -363,17 +368,16 @@ declare global {
          * ```
          */
         interface Props<T> {
-            children?: ReactNode;
+            children?: ChildrenType;
             key?: Key;
             ref?: LegacyRef<T>;
         }
         interface HTMLProps<T> extends AllHTMLAttributes<T>, ClassAttributes<T> {
         }
-        type DetailedHTMLProps<E extends HTMLAttributes<T>, T> = ClassAttributes<T> & E;
-        interface SVGProps<T> extends SVGAttributes<T>, ClassAttributes<T> {
-        }
+        type DetailedHTMLProps<E extends HTMLAttributes<T>, T> = ClassAttributes<T> & WithObservablesInFields<E>;
+        type SVGProps<T> = ClassAttributes<T> & WithObservablesInFields<SVGAttributes<T>>;
         interface DOMAttributes<T> {
-            children?: ReactNode;
+            children?: ChildrenType;
             dangerouslySetInnerHTML?: {
                 __html: string;
             };
@@ -1524,7 +1528,6 @@ declare global {
         type Ref<T> = RefCallback<T> | null;
         type LegacyRef<T> = string | Ref<T>;
         interface Attributes {
-            key?: Key | null;
         }
         interface RefAttributes<T> extends Attributes {
             ref?: Ref<T>;

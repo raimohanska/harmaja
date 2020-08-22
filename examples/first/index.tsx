@@ -25,6 +25,10 @@ const Reactive = () => {
     return Bacon.constant(<span>reactive</span>)
 }
 
+const ReactiveProps = () => {
+    return <input value={ticker} style={Bacon.constant({"background": "black"})}/>
+}
+
 const TickerWithMultiplier = ({ multiplier, ticker } : { multiplier: number, ticker: Bacon.Property<number>}) => {
     console.log("Recreating with new multiplier", multiplier)
     return <em>{ticker.map(n => n * multiplier)}</em>
@@ -33,7 +37,7 @@ const TickerWithMultiplier = ({ multiplier, ticker } : { multiplier: number, tic
 const Root = () =>
     <div id="root">
         <Reactive/>
-        
+        <ReactiveProps/>
         <Plus bus={numbers}/>   
              
         <H1>Hello <b>World { multiplier.map(multiplier => <TickerWithMultiplier {...{multiplier, ticker}}/>) }</b>!</H1>

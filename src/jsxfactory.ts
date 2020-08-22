@@ -1,14 +1,20 @@
-import * as Bacon from "baconjs"
+import * as B from "baconjs"
 import * as CSS from 'csstype';
 
 import * as H from "./harmaja"
 
-export function h(type: H.VDOMType, props: H.VDOMProps, ...children: (H.VDOMChild | H.VDOMChild[])[]): H.FlattenedDOMElement {
+type ChildrenType = H.VDOMChild
+type CreateElementOutput = H.FlattenedDOMElement
+
+export function h(type: H.VDOMType, props: H.VDOMProps, ...children: (H.VDOMChild | H.VDOMChild[])[]): CreateElementOutput {
     return H.createElement(type, props, ...children)
 }
 
-type ReactNode = H.VDOMChild // TODO: remove the React name eventually
+type WithObservablesInFields<T> = {
+    [K in keyof T]: T[K] | B.Property<T[K]>
+}
 
+// TODO: remove the React name eventually from everywhere
 // Notice the types below are copied from https://github.com/DefinitelyTyped/DefinitelyTyped/blob/master/types/react/index.d.ts
 
 type NativeAnimationEvent = AnimationEvent;
@@ -27,7 +33,7 @@ type Booleanish = boolean | 'true' | 'false';
 
 declare global {
     namespace JSX {
-        function h(type: H.VDOMType, props: H.VDOMProps, ...children: (H.VDOMChild | H.VDOMChild[])[]): H.FlattenedDOMElement;
+        function h(type: H.VDOMType, props: H.VDOMProps, ...children: (H.VDOMChild | H.VDOMChild[])[]): CreateElementOutput;
     
         export interface IntrinsicElements {
             // HTML
@@ -409,7 +415,7 @@ declare global {
      * ```
      */
     interface Props<T> {
-        children?: ReactNode;
+        children?: ChildrenType;
         key?: Key;
         ref?: LegacyRef<T>;
     }
@@ -417,13 +423,12 @@ declare global {
     interface HTMLProps<T> extends AllHTMLAttributes<T>, ClassAttributes<T> {
     }
 
-    type DetailedHTMLProps<E extends HTMLAttributes<T>, T> = ClassAttributes<T> & E;
+    type DetailedHTMLProps<E extends HTMLAttributes<T>, T> = ClassAttributes<T> & WithObservablesInFields<E>;
 
-    interface SVGProps<T> extends SVGAttributes<T>, ClassAttributes<T> {
-    }
+    type SVGProps<T> = ClassAttributes<T> & WithObservablesInFields<SVGAttributes<T>>    
 
     interface DOMAttributes<T> {
-        children?: ReactNode;
+        children?: ChildrenType;
         dangerouslySetInnerHTML?: {
             __html: string;
         };
@@ -1701,7 +1706,7 @@ declare global {
     type Ref<T> = RefCallback<T> | null;
     type LegacyRef<T> = string | Ref<T>;        
     interface Attributes {
-        key?: Key | null;
+        
     }
     interface RefAttributes<T> extends Attributes {
         ref?: Ref<T>;
