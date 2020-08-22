@@ -29,3 +29,4 @@ export declare function atom<A>(initial: A): Atom<A>;
  * @param onChange   Function to be called when `atom.set` is called
  */
 export declare function atom<A>(input: B.Property<A>, onChange: (updatedValue: A) => void): Atom<A>;
+export declare function isAtom<A>(x: any): x is Atom<A>;

@@ -9,17 +9,6 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
-var __values = (this && this.__values) || function(o) {
-    var s = typeof Symbol === "function" && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) return m.call(o);
-    if (o && typeof o.length === "number") return {
-        next: function () {
-            if (o && i >= o.length) o = void 0;
-            return { value: o && o[i++], done: !o };
-        }
-    };
-    throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
-};
 var __read = (this && this.__read) || function (o, n) {
     var m = typeof Symbol === "function" && o[Symbol.iterator];
     if (!m) return o;
@@ -36,11 +25,27 @@ var __read = (this && this.__read) || function (o, n) {
     }
     return ar;
 };
+var __values = (this && this.__values) || function(o) {
+    var s = typeof Symbol === "function" && Symbol.iterator, m = s && o[s], i = 0;
+    if (m) return m.call(o);
+    if (o && typeof o.length === "number") return {
+        next: function () {
+            if (o && i >= o.length) o = void 0;
+            return { value: o && o[i++], done: !o };
+        }
+    };
+    throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
+};
 import * as Bacon from "baconjs";
+import { isAtom } from "./atom";
+import { reportValueMissing, valueMissing } from "./utilities";
 export function mount(ve, root) {
     root.parentElement.replaceChild(ve, root);
 }
+var unmountCallbacks = [];
+var unmountE = null;
 export function createElement(type, props) {
+    var e_1, _a;
     var children = [];
     for (var _i = 2; _i < arguments.length; _i++) {
         children[_i - 2] = arguments[_i];
@@ -51,7 +56,28 @@ export function createElement(type, props) {
     }
     if (typeof type == "function") {
         var constructor = type;
-        return constructor(__assign(__assign({}, props), { children: flattenedChildren }));
+        unmountCallbacks = [];
+        unmountE = null;
+        // TODO: test unmount callbacks, observable scoping
+        var mappedProps = props && Object.fromEntries(Object.entries(props).map(function (_a) {
+            var _b = __read(_a, 2), key = _b[0], value = _b[1];
+            return [key, applyComponentScopeToObservable(value)];
+        }));
+        var element = constructor(__assign(__assign({}, mappedProps), { children: flattenedChildren }));
+        try {
+            for (var unmountCallbacks_1 = __values(unmountCallbacks), unmountCallbacks_1_1 = unmountCallbacks_1.next(); !unmountCallbacks_1_1.done; unmountCallbacks_1_1 = unmountCallbacks_1.next()) {
+                var callback = unmountCallbacks_1_1.value;
+                attachUnsub(element, callback);
+            }
+        }
+        catch (e_1_1) { e_1 = { error: e_1_1 }; }
+        finally {
+            try {
+                if (unmountCallbacks_1_1 && !unmountCallbacks_1_1.done && (_a = unmountCallbacks_1.return)) _a.call(unmountCallbacks_1);
+            }
+            finally { if (e_1) throw e_1.error; }
+        }
+        return element;
     }
     else if (typeof type == "string") {
         return renderHTMLElement(type, props, flattenedChildren);
@@ -61,24 +87,53 @@ export function createElement(type, props) {
         throw Error("Unknown type " + type);
     }
 }
+function applyComponentScopeToObservable(value) {
+    if (value instanceof Bacon.Observable && !(value instanceof Bacon.Bus) && !(isAtom(value))) {
+        return value.takeUntil(unmountEvent());
+    }
+    return value;
+}
+export function onUnmount(callback) {
+    unmountCallbacks.push(callback);
+}
+export function unmountEvent() {
+    if (!unmountE) {
+        var event_1 = new Bacon.Bus();
+        onUnmount(function () {
+            event_1.push();
+            event_1.end();
+        });
+        unmountE = event_1;
+    }
+    return unmountE;
+}
 function flattenChildren(child) {
     if (child instanceof Array)
         return child.flatMap(flattenChildren);
     return [child];
 }
 function renderHTMLElement(type, props, children) {
-    var e_1, _a, e_2, _b;
+    var e_2, _a, e_3, _b;
     var el = document.createElement(type);
     var _loop_1 = function (key, value) {
         if (value instanceof Bacon.Property) {
             var observable = value;
-            value = getCurrentValue(observable);
-            var unsub = observable.skipDuplicates().changes().forEach(function (newValue) {
-                setProp(el, key, newValue);
+            value = valueMissing;
+            var unsub = observable.skipDuplicates().subscribeInternal(function (event) {
+                if (Bacon.hasValue(event)) {
+                    value = event.value;
+                    setProp(el, key, event.value);
+                }
             });
+            if (value === valueMissing) {
+                unsub();
+                reportValueMissing(observable);
+            }
             attachUnsub(el, unsub);
         }
-        setProp(el, key, value);
+        else {
+            setProp(el, key, value);
+        }
     };
     try {
         for (var _c = __values(Object.entries(props || {})), _d = _c.next(); !_d.done; _d = _c.next()) {
@@ -86,12 +141,12 @@ function renderHTMLElement(type, props, children) {
             _loop_1(key, value);
         }
     }
-    catch (e_1_1) { e_1 = { error: e_1_1 }; }
+    catch (e_2_1) { e_2 = { error: e_2_1 }; }
     finally {
         try {
             if (_d && !_d.done && (_a = _c.return)) _a.call(_c);
         }
-        finally { if (e_1) throw e_1.error; }
+        finally { if (e_2) throw e_2.error; }
     }
     try {
         for (var _f = __values(children || []), _g = _f.next(); !_g.done; _g = _f.next()) {
@@ -99,12 +154,12 @@ function renderHTMLElement(type, props, children) {
             el.appendChild(renderChild(child));
         }
     }
-    catch (e_2_1) { e_2 = { error: e_2_1 }; }
+    catch (e_3_1) { e_3 = { error: e_3_1 }; }
     finally {
         try {
             if (_g && !_g.done && (_b = _f.return)) _b.call(_f);
         }
-        finally { if (e_2) throw e_2.error; }
+        finally { if (e_3) throw e_3.error; }
     }
     return el;
 }
@@ -117,16 +172,26 @@ function renderChild(ve) {
     }
     if (ve instanceof Bacon.Property) {
         var observable = ve;
-        var currentValue = getCurrentValue(observable);
-        var element_1 = renderChild(currentValue);
-        var unsub_1 = observable.skipDuplicates().changes().forEach(function (currentValue) {
-            var oldElement = element_1;
-            element_1 = renderChild(currentValue);
-            // TODO: can we handle a case where the observable yields multiple elements? Currently not.
-            //console.log("Replacing element", oldElement)
-            replaceElement(oldElement, element_1);
-            attachUnsub(element_1, unsub_1);
+        var element_1 = null;
+        var unsub_1 = observable.skipDuplicates().subscribeInternal(function (event) {
+            if (Bacon.hasValue(event)) {
+                if (!element_1) {
+                    element_1 = renderChild(event.value);
+                }
+                else {
+                    var oldElement = element_1;
+                    element_1 = renderChild(event.value);
+                    // TODO: can we handle a case where the observable yields multiple elements? Currently not.
+                    //console.log("Replacing element", oldElement)
+                    replaceElement(oldElement, element_1);
+                    attachUnsub(element_1, unsub_1);
+                }
+            }
         });
+        if (!element_1) {
+            unsub_1();
+            reportValueMissing(observable);
+        }
         attachUnsub(element_1, unsub_1);
         return element_1;
     }
@@ -168,7 +233,7 @@ function toKebabCase(inputString) {
         .join('');
 }
 function unsubObservablesInChildElements(element) {
-    var e_3, _a, e_4, _b;
+    var e_4, _a, e_5, _b;
     if (element instanceof Text)
         return;
     try {
@@ -177,28 +242,28 @@ function unsubObservablesInChildElements(element) {
             var elementAny = child;
             if (elementAny.unsubs) {
                 try {
-                    for (var _e = (e_4 = void 0, __values(elementAny.unsubs)), _f = _e.next(); !_f.done; _f = _e.next()) {
+                    for (var _e = (e_5 = void 0, __values(elementAny.unsubs)), _f = _e.next(); !_f.done; _f = _e.next()) {
                         var unsub = _f.value;
                         unsub();
                     }
                 }
-                catch (e_4_1) { e_4 = { error: e_4_1 }; }
+                catch (e_5_1) { e_5 = { error: e_5_1 }; }
                 finally {
                     try {
                         if (_f && !_f.done && (_b = _e.return)) _b.call(_e);
                     }
-                    finally { if (e_4) throw e_4.error; }
+                    finally { if (e_5) throw e_5.error; }
                 }
             }
             unsubObservablesInChildElements(child);
         }
     }
-    catch (e_3_1) { e_3 = { error: e_3_1 }; }
+    catch (e_4_1) { e_4 = { error: e_4_1 }; }
     finally {
         try {
             if (_d && !_d.done && (_a = _c.return)) _a.call(_c);
         }
-        finally { if (e_3) throw e_3.error; }
+        finally { if (e_4) throw e_4.error; }
     }
 }
 export function attachUnsub(element, unsub) {
@@ -208,28 +273,7 @@ export function attachUnsub(element, unsub) {
     }
     elementAny.unsubs.push(unsub);
 }
-var valueMissing = {};
 // TODO: separate low-level API
-export function getCurrentValue(observable) {
-    var currentV = valueMissing;
-    if (observable.get) {
-        currentV = observable.get(); // For Atoms
-    }
-    else {
-        var unsub = observable.subscribeInternal(function (e) {
-            if (Bacon.hasValue(e)) {
-                currentV = e.value;
-            }
-        });
-        unsub();
-    }
-    if (currentV === valueMissing) {
-        console.log("Current value not found!", observable);
-        throw new Error("Current value missing. Cannot render. " + observable);
-    }
-    return currentV;
-}
-;
 export function replaceElement(oldElement, newElement) {
     unsubObservablesInChildElements(oldElement);
     if (!oldElement.parentElement) {

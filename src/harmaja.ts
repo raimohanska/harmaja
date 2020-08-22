@@ -1,5 +1,6 @@
 import * as Bacon from "baconjs"
 import { isAtom } from "./atom"
+import { reportValueMissing, valueMissing } from "./utilities"
 
 export type HarmajaComponent = (props: HarmajaProps) => DOMElement
 export type JSXElementType = string | HarmajaComponent
@@ -75,13 +76,21 @@ function renderHTMLElement(type: string, props: HarmajaProps, children: HarmajaC
     for (let [key, value] of Object.entries(props || {})) {
         if (value instanceof Bacon.Property) {
             const observable: Bacon.Property<string> = value
-            value = getCurrentValue(observable)
-            const unsub = observable.skipDuplicates().changes().forEach((newValue: string) => {
-                setProp(el, key, newValue)    
+            value = valueMissing
+            const unsub = observable.skipDuplicates().subscribeInternal(event => {
+                if (Bacon.hasValue(event)) {
+                    value = event.value
+                    setProp(el, key, event.value)        
+                }
             })
+            if (value === valueMissing) {
+                unsub()
+                reportValueMissing(observable)
+            }
             attachUnsub(el, unsub)
+        } else {
+            setProp(el, key, value as string)        
         }
-        setProp(el, key, value as string)        
     }
     
     for (const child of children || []) {
@@ -98,17 +107,26 @@ function renderChild(ve: HarmajaChild): DOMElement {
         return document.createTextNode("")
     }
     if (ve instanceof Bacon.Property) {
-        const observable = ve as HarmajaObservableChild
-        const currentValue: HarmajaChild = getCurrentValue(observable)
-        let element: DOMElement = renderChild(currentValue)
-        const unsub = observable.skipDuplicates().changes().forEach((currentValue: HarmajaChild )=> {
-            let oldElement = element
-            element = renderChild(currentValue)
-            // TODO: can we handle a case where the observable yields multiple elements? Currently not.
-            //console.log("Replacing element", oldElement)
-            replaceElement(oldElement, element)
-            attachUnsub(element, unsub)
+        const observable = ve as HarmajaObservableChild        
+        let element: DOMElement | null = null
+        const unsub = observable.skipDuplicates().subscribeInternal(event => {
+            if (Bacon.hasValue(event)) {
+                if (!element) {
+                    element = renderChild(event.value)
+                } else {
+                    let oldElement = element
+                    element = renderChild(event.value)
+                    // TODO: can we handle a case where the observable yields multiple elements? Currently not.
+                    //console.log("Replacing element", oldElement)
+                    replaceElement(oldElement, element)
+                    attachUnsub(element, unsub)    
+                }    
+            }
         })
+        if (!element) {
+            unsub()
+            reportValueMissing(observable)
+        }
         attachUnsub(element, unsub)
         return element
     }
@@ -164,27 +182,8 @@ export function attachUnsub(element: HTMLElement | Text, unsub: Bacon.Unsub) {
     elementAny.unsubs.push(unsub)
 }
 
-const valueMissing = {}
-
 // TODO: separate low-level API
-export function getCurrentValue<A>(observable: Bacon.Property<A>): A {
-    let currentV: any = valueMissing;
-    if ((observable as any).get) {
-      currentV = (observable as any).get(); // For Atoms
-    } else {        
-      const unsub = observable.subscribeInternal(e => {
-          if (Bacon.hasValue(e)) {
-              currentV = e.value;
-          }
-      })       
-      unsub();
-    }
-    if (currentV === valueMissing) {
-        console.log("Current value not found!", observable);
-        throw new Error("Current value missing. Cannot render. " + observable);
-    }      
-    return currentV;
-  };
+
 
 export function replaceElement(oldElement: ChildNode, newElement: HTMLElement | Text) {
     unsubObservablesInChildElements(oldElement)

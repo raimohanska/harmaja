@@ -1,6 +1,6 @@
 import * as B from "baconjs";
-import { getCurrentValue } from "./harmaja";
 import * as L from "./lens";
+import { getCurrentValue } from "./utilities";
 export function atom(x, y) {
     if (arguments.length == 1) {
         // Create an independent Atom
@@ -41,6 +41,9 @@ export function atom(x, y) {
         get_1(); // Sanity check: the given property must have an initial value
         return mkAtom(theAtom_2, get_1, modify, set_1);
     }
+}
+export function isAtom(x) {
+    return !!((x instanceof B.Property) && x.get && (x.freezeUnless));
 }
 // Note: actually mutates the given observable into an Atom!
 function mkAtom(observable, get, modify, set) {

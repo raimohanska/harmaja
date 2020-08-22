@@ -1,6 +1,6 @@
 import * as B from "baconjs"
-import { getCurrentValue } from "./harmaja";
 import * as L from "./lens"
+import { getCurrentValue } from "./utilities"
 
 export interface Atom<A> extends B.Property<A> {
     set(newValue: A): this;
