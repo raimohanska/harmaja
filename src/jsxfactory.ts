@@ -4,7 +4,7 @@ import * as CSS from 'csstype';
 import * as H from "./harmaja"
 
 type ChildrenType = H.VDOMChild
-type CreateElementOutput = H.FlattenedDOMElement
+type CreateElementOutput = H.VDOMElement
 
 export function h(type: H.VDOMType, props: H.VDOMProps, ...children: (H.VDOMChild | H.VDOMChild[])[]): CreateElementOutput {
     return H.createElement(type, props, ...children)

@@ -1,4 +1,4 @@
-import { attachUnsub, createCustomElement, flattenChild, getCurrentValue, removeElement, renderHTML, replaceElement } from "./harmaja";
+import { attachUnsub, createCustomElement, getCurrentValue, removeElement, renderHTML, replaceElement } from "./harmaja";
 export function ListView(props) {
     var observable = ("atom" in props) ? props.atom : props.observable;
     var equals = props.equals;
@@ -38,8 +38,7 @@ export function ListView(props) {
         return rootElement;
         function itemToNode(values, index) {
             var vDomElement = renderItem(values, index);
-            var flattened = flattenChild(vDomElement);
-            return renderHTML(flattened);
+            return renderHTML(vDomElement);
         }
         function renderItem(values, index) {
             if ("renderAtom" in props) {

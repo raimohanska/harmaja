@@ -2,7 +2,7 @@ import * as B from "baconjs";
 import * as CSS from 'csstype';
 import * as H from "./harmaja";
 declare type ChildrenType = H.VDOMChild;
-declare type CreateElementOutput = H.FlattenedDOMElement;
+declare type CreateElementOutput = H.VDOMElement;
 export declare function h(type: H.VDOMType, props: H.VDOMProps, ...children: (H.VDOMChild | H.VDOMChild[])[]): CreateElementOutput;
 declare type WithObservablesInFields<T> = {
     [K in keyof T]: T[K] | B.Property<T[K]>;

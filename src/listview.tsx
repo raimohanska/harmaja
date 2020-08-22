@@ -1,5 +1,5 @@
 import * as Bacon from "baconjs"
-import { attachUnsub, createCustomElement, flattenChild, getCurrentValue, removeElement, renderHTML, replaceElement } from "./harmaja"
+import { attachUnsub, createCustomElement, getCurrentValue, removeElement, renderHTML, replaceElement } from "./harmaja"
 import { Atom } from "./atom"
 
 // TODO: any type below. How to refer to the JSX.Element type?
@@ -58,8 +58,7 @@ export function ListView<A>(props: ListViewProps<A>) {
 
         function itemToNode(values: A[], index: number) {
             const vDomElement = renderItem(values, index)
-            const flattened = flattenChild(vDomElement)
-            return renderHTML(flattened)
+            return renderHTML(vDomElement)
         }
 
         function renderItem(values: A[], index: number) {

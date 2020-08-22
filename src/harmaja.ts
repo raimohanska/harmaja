@@ -1,25 +1,19 @@
 import * as Bacon from "baconjs"
 
-export type VDOMComponent = (props: VDOMProps) => FlattenedDOMElement
+export type VDOMComponent = (props: VDOMProps) => VDOMElement
 export type VDOMType = string | VDOMComponent
-export type VDOMChild = VDOMElement | string | number | VDOMObservableChild | null
 export type VDOMProps = Record<string, any>
-export type VDOMElement = VDOMComponentElement | VDOMPlainElement | VDOMCustomElement
-export type VDOMCustomElement = { type: "_custom_", renderHTML: () => any, key: "", props: {} } // the boilerplate is for JSX compatibility
-export type VDOMComponentElement = { type: VDOMComponent, props: VDOMProps, children: VDOMChild[] }
-export type VDOMPlainElement = { type: string, props: VDOMProps, children: VDOMChild[] }
+export type VDOMChild = VDOMElement | string | number | VDOMObservableChild | null
+export type VDOMStandardElement = { type: string, props: VDOMProps, children: VDOMChild[] }
+export type VDOMElement = VDOMStandardElement | VDOMCustomElement
 export type VDOMObservableChild = Bacon.Property<VDOMElement | string>
+export type VDOMCustomElement = { type: "_custom_", renderHTML: () => any, key: "", props: {} } // the boilerplate is for JSX compatibility
 
-// The flattened elements do not contain Components; the components are replaced with the output of their rendering function
-export type FlattenedDOMElement = FlattenedDOMStandardElement | VDOMCustomElement
-export type FlattenedDOMStandardElement = { type: string, props: VDOMProps, children: FlattenedDOMChild[] }
-export type FlattenedDOMChild = FlattenedDOMElement | string | number | null | VDOMObservableChild
-
-export function createElement(type: VDOMType, props: VDOMProps, ...children: (VDOMChild | VDOMChild[])[]): FlattenedDOMElement {
+export function createElement(type: VDOMType, props: VDOMProps, ...children: (VDOMChild | VDOMChild[])[]): VDOMElement {
+    const flattenedChildren = children.flatMap(flattenChildren)
     if (props && props.children) {
         delete props.children // TODO: ugly hack, occurred in todoapp example
     }
-    const flattenedChildren = children.flatMap(flattenChildren)    
     if (typeof type == "function") {        
         const constructor = type as VDOMComponent
         return constructor({...props, children: flattenedChildren})
@@ -31,37 +25,17 @@ export function createElement(type: VDOMType, props: VDOMProps, ...children: (VD
     }
 }
 
+function flattenChildren(child: VDOMChild | VDOMChild[]): VDOMChild[] {
+    if (child instanceof Array) return child.flatMap(flattenChildren)
+    return [child]
+}
 
 function isElement(x: any): x is VDOMElement {
     return typeof x === "object" && typeof x.type === "string"
 }
 
-// Flattening is traversing the DOM and calling all component elements to render them, 
-// while leaving all regular DOM elements (such as h1) as is.
-function flattenChildren(child: VDOMChild | VDOMChild[]): FlattenedDOMChild[] {
-    if (child instanceof Array) return child.flatMap(flattenChildren)
-    return [flattenChild(child)]
-}
-
-export function flattenChild(child: VDOMChild): FlattenedDOMChild {
-    if (typeof child === "string") return child
-    if (typeof child === "number") return child.toString()
-    if (child === null) return null
-    if (child instanceof Bacon.Property) return child
-    if (isElement(child)) return flattenElement(child)
-    console.error("Unknown child", child)
-    throw new Error("Unknown child type")
-}
-
 function isCustomElement(e: any): e is VDOMCustomElement {
     return e.type === "_custom_"
-}
-
-export function flattenElement(e: VDOMElement): FlattenedDOMElement {
-    if (isCustomElement(e)) {
-        return e as VDOMCustomElement
-    }
-    return createElement(e.type, e.props, ...(e.children || []))
 }
 
 // Our custom React interface for JSX
@@ -70,21 +44,21 @@ export const React = {
     createElement
 }
 
-export function mount(ve: FlattenedDOMElement | any, root: HTMLElement) {
+export function mount(ve: VDOMElement | any, root: HTMLElement) {
     root.parentElement!.replaceChild(renderHTML(ve), root)
 }
 
-export function renderHTML(ve: FlattenedDOMChild): HTMLElement | Text {
+export function renderHTML(ve: VDOMChild): HTMLElement | Text {
     if (typeof ve === "string" || typeof ve === "number") {
         return document.createTextNode(ve.toString())
     }
     if (ve instanceof Bacon.Property) {
         const observable = ve as Bacon.Property<VDOMElement | string>
         const currentValue: string | VDOMElement = getCurrentValue(observable)
-        let element: HTMLElement | Text = renderHTML(flattenChild(currentValue))
+        let element: HTMLElement | Text = renderHTML(currentValue as any)
         const unsub = observable.skipDuplicates().changes().forEach((currentValue: VDOMElement | string )=> {
             let oldElement = element
-            element = renderHTML(flattenChild(currentValue))
+            element = renderHTML(currentValue as any)
             // TODO: can we handle a case where the observable yields multiple elements? Currently not.
             //console.log("Replacing element", oldElement)
             replaceElement(oldElement, element)

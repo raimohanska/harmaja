@@ -9,6 +9,17 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
+var __values = (this && this.__values) || function(o) {
+    var s = typeof Symbol === "function" && Symbol.iterator, m = s && o[s], i = 0;
+    if (m) return m.call(o);
+    if (o && typeof o.length === "number") return {
+        next: function () {
+            if (o && i >= o.length) o = void 0;
+            return { value: o && o[i++], done: !o };
+        }
+    };
+    throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
+};
 var __read = (this && this.__read) || function (o, n) {
     var m = typeof Symbol === "function" && o[Symbol.iterator];
     if (!m) return o;
@@ -25,31 +36,16 @@ var __read = (this && this.__read) || function (o, n) {
     }
     return ar;
 };
-var __spread = (this && this.__spread) || function () {
-    for (var ar = [], i = 0; i < arguments.length; i++) ar = ar.concat(__read(arguments[i]));
-    return ar;
-};
-var __values = (this && this.__values) || function(o) {
-    var s = typeof Symbol === "function" && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) return m.call(o);
-    if (o && typeof o.length === "number") return {
-        next: function () {
-            if (o && i >= o.length) o = void 0;
-            return { value: o && o[i++], done: !o };
-        }
-    };
-    throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
-};
 import * as Bacon from "baconjs";
 export function createElement(type, props) {
     var children = [];
     for (var _i = 2; _i < arguments.length; _i++) {
         children[_i - 2] = arguments[_i];
     }
+    var flattenedChildren = children.flatMap(flattenChildren);
     if (props && props.children) {
         delete props.children; // TODO: ugly hack, occurred in todoapp example
     }
-    var flattenedChildren = children.flatMap(flattenChildren);
     if (typeof type == "function") {
         var constructor = type;
         return constructor(__assign(__assign({}, props), { children: flattenedChildren }));
@@ -62,38 +58,16 @@ export function createElement(type, props) {
         throw Error("Unknown type " + type);
     }
 }
-function isElement(x) {
-    return typeof x === "object" && typeof x.type === "string";
-}
-// Flattening is traversing the DOM and calling all component elements to render them, 
-// while leaving all regular DOM elements (such as h1) as is.
 function flattenChildren(child) {
     if (child instanceof Array)
         return child.flatMap(flattenChildren);
-    return [flattenChild(child)];
+    return [child];
 }
-export function flattenChild(child) {
-    if (typeof child === "string")
-        return child;
-    if (typeof child === "number")
-        return child.toString();
-    if (child === null)
-        return null;
-    if (child instanceof Bacon.Property)
-        return child;
-    if (isElement(child))
-        return flattenElement(child);
-    console.error("Unknown child", child);
-    throw new Error("Unknown child type");
+function isElement(x) {
+    return typeof x === "object" && typeof x.type === "string";
 }
 function isCustomElement(e) {
     return e.type === "_custom_";
-}
-export function flattenElement(e) {
-    if (isCustomElement(e)) {
-        return e;
-    }
-    return createElement.apply(void 0, __spread([e.type, e.props], (e.children || [])));
 }
 // Our custom React interface for JSX
 // TODO: typings for JSX
@@ -111,10 +85,10 @@ export function renderHTML(ve) {
     if (ve instanceof Bacon.Property) {
         var observable = ve;
         var currentValue = getCurrentValue(observable);
-        var element_1 = renderHTML(flattenChild(currentValue));
+        var element_1 = renderHTML(currentValue);
         var unsub_1 = observable.skipDuplicates().changes().forEach(function (currentValue) {
             var oldElement = element_1;
-            element_1 = renderHTML(flattenChild(currentValue));
+            element_1 = renderHTML(currentValue);
             // TODO: can we handle a case where the observable yields multiple elements? Currently not.
             //console.log("Replacing element", oldElement)
             replaceElement(oldElement, element_1);
