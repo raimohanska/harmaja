@@ -14,6 +14,7 @@ describe("Atom", () => {
             const view = a.view(1)
     
             expect(view.set(2)).toEqual(view)
+            expect(A.isAtom(view)).toEqual(true)
         })    
         it("Supports removal by setting to undefined", () => {
             const a = A.atom([1,2,3])
@@ -28,6 +29,7 @@ describe("Atom", () => {
             const a = A.atom({foo: "bar"})
             const view = a.view("foo")
             expect(view.set("qwer")).toEqual(view)
+            expect(A.isAtom(view)).toEqual(true)
         })    
         it("Manipulates object properties", () => {
             const a = A.atom({foo: "bar"})
@@ -71,6 +73,7 @@ describe("Dependent Atom", () => {
         expect(atom.get()).toEqual("1")
         atom.set("2")
         expect(atom.get()).toEqual("2")
+        expect(A.isAtom(atom)).toEqual(true)
     })
 
     describe("Freezing", () => {
@@ -97,5 +100,10 @@ describe("Dependent Atom", () => {
             atom.set(null)
             expect(atom.get()).toEqual("world")        
         })    
+    })
+
+    it("Recognizes non-atoms", () => {
+        expect(A.isAtom(new B.Bus())).toEqual(false)
+        expect(A.isAtom(B.constant(true))).toEqual(false)
     })
 })

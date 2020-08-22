@@ -83,6 +83,10 @@ export function atom<A>(x: any, y?: any): Atom<A> {
     }
 }
 
+export function isAtom<A>(x: any): x is Atom<A> {
+    return !!((x instanceof B.Property) && (x as any).get && ((x as any).freezeUnless))
+}
+
 // Note: actually mutates the given observable into an Atom!
 function mkAtom<A>(observable: B.Property<A>, get: () => A, modify: ( (fn: (a : A) => A) => Atom<A>), set: (a: A) => Atom<A>): Atom<A> {
     const theAtom = observable as Atom<A>

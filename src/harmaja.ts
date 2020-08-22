@@ -1,4 +1,5 @@
 import * as Bacon from "baconjs"
+import { isAtom } from "./atom"
 
 export type HarmajaComponent = (props: HarmajaProps) => DOMElement
 export type JSXElementType = string | HarmajaComponent
@@ -13,6 +14,10 @@ export function mount(ve: DOMElement, root: HTMLElement) {
     root.parentElement!.replaceChild(ve, root)
 }
 
+type UnmountCallback = () => void
+let unmountCallbacks: UnmountCallback[] = []
+let unmountE: Bacon.EventStream<void> | null = null
+
 export function createElement(type: JSXElementType, props: HarmajaProps, ...children: (HarmajaChild | HarmajaChild[])[]): DOMElement {
     const flattenedChildren = children.flatMap(flattenChildren)
     if (props && props.children) {
@@ -20,7 +25,15 @@ export function createElement(type: JSXElementType, props: HarmajaProps, ...chil
     }
     if (typeof type == "function") {        
         const constructor = type as HarmajaComponent
-        return constructor({...props, children: flattenedChildren})
+        unmountCallbacks = []
+        unmountE = null
+        // TODO: test unmount callbacks, observable scoping
+        const mappedProps = props && Object.fromEntries(Object.entries(props).map(([key, value]) => [key, applyComponentScopeToObservable(value)]))
+        const element = constructor({...mappedProps, children: flattenedChildren})
+        for (const callback of unmountCallbacks) {
+            attachUnsub(element, callback)
+        }
+        return element
     } else if (typeof type == "string") {
         return renderHTMLElement(type, props, flattenedChildren)
     } else {
@@ -29,10 +42,32 @@ export function createElement(type: JSXElementType, props: HarmajaProps, ...chil
     }
 }
 
+function applyComponentScopeToObservable(value: any) {
+    if (value instanceof Bacon.Observable && !(value instanceof Bacon.Bus) && !(isAtom(value))) {
+        return value.takeUntil(unmountEvent())
+    }
+    return value
+}
+
+export function onUnmount(callback: UnmountCallback) {
+    unmountCallbacks.push(callback)
+}
+
+export function unmountEvent(): Bacon.EventStream<void> {
+    if (!unmountE) {
+        const event = new Bacon.Bus<void>()
+        onUnmount(() => {
+            event.push()
+            event.end()
+        })    
+        unmountE = event
+    }
+    return unmountE
+}
+
 function flattenChildren(child: HarmajaChild | HarmajaChild[]): HarmajaChild[] {
     if (child instanceof Array) return child.flatMap(flattenChildren)
     return [child]
-    
 }
 
 function renderHTMLElement(type: string, props: HarmajaProps, children: HarmajaChild[]): HTMLElement {
