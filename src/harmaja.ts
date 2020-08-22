@@ -14,9 +14,10 @@ export function mount(ve: DOMElement, root: HTMLElement) {
     root.parentElement!.replaceChild(ve, root)
 }
 
-type UnmountCallback = () => void
-let unmountCallbacks: UnmountCallback[] = []
-let unmountE: Bacon.EventStream<void> | null = null
+type UnmountCallback = Bacon.Unsub
+
+let transientStateStack: TransientState[] = []
+type TransientState = { unmountCallbacks?: UnmountCallback[], unmountE?: Bacon.EventStream<void> }
 
 export function createElement(type: JSXElementType, props: HarmajaProps, ...children: (HarmajaChild | HarmajaChild[])[]): DOMElement {
     const flattenedChildren = children.flatMap(flattenChildren)
@@ -25,12 +26,12 @@ export function createElement(type: JSXElementType, props: HarmajaProps, ...chil
     }
     if (typeof type == "function") {        
         const constructor = type as HarmajaComponent
-        unmountCallbacks = []
-        unmountE = null
+        transientStateStack.push({})
         // TODO: test unmount callbacks, observable scoping
         const mappedProps = props && Object.fromEntries(Object.entries(props).map(([key, value]) => [key, applyComponentScopeToObservable(value)]))
         const element = constructor({...mappedProps, children: flattenedChildren})
-        for (const callback of unmountCallbacks) {
+        const transientState = transientStateStack.pop()!
+        for (const callback of transientState.unmountCallbacks || []) {
             attachUnsub(element, callback)
         }
         return element
@@ -49,20 +50,27 @@ function applyComponentScopeToObservable(value: any) {
     return value
 }
 
+function getTransientState() {
+    return transientStateStack[transientStateStack.length - 1]
+}
+
 export function onUnmount(callback: UnmountCallback) {
-    unmountCallbacks.push(callback)
+    const transientState = getTransientState()
+    if (!transientState.unmountCallbacks) transientState.unmountCallbacks = []
+    transientState.unmountCallbacks.push(callback)
 }
 
 export function unmountEvent(): Bacon.EventStream<void> {
-    if (!unmountE) {
+    const transientState = getTransientState()
+    if (!transientState.unmountE) {
         const event = new Bacon.Bus<void>()
         onUnmount(() => {
             event.push()
             event.end()
         })    
-        unmountE = event
+        transientState.unmountE = event
     }
-    return unmountE
+    return transientState.unmountE
 }
 
 function flattenChildren(child: HarmajaChild | HarmajaChild[]): HarmajaChild[] {
@@ -153,16 +161,18 @@ function toKebabCase(inputString: string) {
     .join('');
 }
 
-function unsubObservablesInChildElements(element: Element | Text | ChildNode) {
+function unsubObservables(element: Element | Text | ChildNode) {
     if (element instanceof Text) return
-    for (const child of element.childNodes) {
-        let elementAny = child as any
-        if (elementAny.unsubs) {
-            for (const unsub of elementAny.unsubs as Bacon.Unsub[]) {
-                unsub()
-            }
+
+    let elementAny = element as any
+    if (elementAny.unsubs) {
+        for (const unsub of elementAny.unsubs as Bacon.Unsub[]) {
+            unsub()
         }
-        unsubObservablesInChildElements(child)
+    }
+
+    for (const child of element.childNodes) {
+        unsubObservables(child)
     }
 }
 
@@ -177,7 +187,7 @@ export function attachUnsub(element: HTMLElement | Text, unsub: Bacon.Unsub) {
 }
 
 export function replaceElement(oldElement: ChildNode, newElement: HTMLElement | Text) {
-    unsubObservablesInChildElements(oldElement)
+    unsubObservables(oldElement)
     if (!oldElement.parentElement) {
         return
     }
@@ -186,6 +196,6 @@ export function replaceElement(oldElement: ChildNode, newElement: HTMLElement | 
 }
 
 export function removeElement(oldElement: ChildNode) {
-    unsubObservablesInChildElements(oldElement)
+    unsubObservables(oldElement)
     oldElement.remove()
 }  
