@@ -1,6 +1,5 @@
-import * as JSX from "../../src/jsxfactory"
 import * as Bacon from "baconjs"
-import { mount, ListView } from "../../src/index"
+import { h, mount, ListView } from "../../src/index"
 
 const numbers = new Bacon.Bus<number>()
 
@@ -42,9 +41,9 @@ const Root = () =>
         <br/> Naive array handling 
         { dots.map(dots => <span>{ dots.map(n => <span>{ticker.map(m => m * n)} </span>) } </span>) }
         <br/> Smart array handling 
-        <ListView {...{ 
+        <ListView<number> {...{ 
             observable: dots, 
-            renderItem: ((n: number) => <span>{ticker.map(m => m * n)} </span>),
+            renderItem: (n => <span>{ticker.map(m => m * n)} </span>),
             equals: (x, y) => x === y
         }}/>
         <br/>Handling nulls { null } { Bacon.constant(null) }

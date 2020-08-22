@@ -1,22 +1,13 @@
 import * as Bacon from "baconjs"
 import * as CSS from 'csstype';
 
-export type VDOMComponent = (props: VDOMProps) => FlattenedDOMElement
-export type VDOMType = string | VDOMComponent
-export type VDOMChild = VDOMElement | string | number | VDOMObservableChild | null
-export type VDOMProps = Record<string, any>
-export type VDOMElement = VDOMComponentElement | VDOMPlainElement | VDOMCustomElement
-export type VDOMCustomElement = { type: "_custom_", renderHTML: () => any, key: "", props: {} } // the boilerplate is for JSX compatibility
-export type VDOMComponentElement = { type: VDOMComponent, props: VDOMProps, children: VDOMChild[] }
-export type VDOMPlainElement = { type: string, props: VDOMProps, children: VDOMChild[] }
-export type VDOMObservableChild = Bacon.Property<VDOMElement | string>
+import * as H from "./harmaja"
 
-// The flattened elements do not contain Components; the components are replaced with the output of their rendering function
-export type FlattenedDOMElement = FlattenedDOMStandardElement | VDOMCustomElement
-export type FlattenedDOMStandardElement = { type: string, props: VDOMProps, children: FlattenedDOMChild[] }
-export type FlattenedDOMChild = FlattenedDOMElement | string | number | null | VDOMObservableChild
+export function h(type: H.VDOMType, props: H.VDOMProps, ...children: (H.VDOMChild | H.VDOMChild[])[]): H.FlattenedDOMElement {
+    return H.createElement(type, props, ...children)
+}
 
-type ReactNode = VDOMChild // TODO: remove the React name eventually
+type ReactNode = H.VDOMChild // TODO: remove the React name eventually
 
 // Notice the types below are copied from https://github.com/DefinitelyTyped/DefinitelyTyped/blob/master/types/react/index.d.ts
 
@@ -34,12 +25,10 @@ type NativeUIEvent = UIEvent;
 type NativeWheelEvent = WheelEvent;
 type Booleanish = boolean | 'true' | 'false';
 
-
 declare global {
     namespace JSX {
-        function createElement(type: VDOMType, props: VDOMProps, ...children: (VDOMChild | VDOMChild[])[]): FlattenedDOMElement 
-        
-
+        function h(type: H.VDOMType, props: H.VDOMProps, ...children: (H.VDOMChild | H.VDOMChild[])[]): H.FlattenedDOMElement;
+    
         export interface IntrinsicElements {
             // HTML
             a: DetailedHTMLProps<AnchorHTMLAttributes<HTMLAnchorElement>, HTMLAnchorElement>;

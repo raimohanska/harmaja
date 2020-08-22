@@ -1,5 +1,5 @@
 import * as B from "baconjs"
-import { React, mount, ListView, getCurrentValue } from "../.."
+import { h, mount, ListView, getCurrentValue } from "../.."
 import { Consultant } from "./domain";
 import { initialConsultants, randomConsultant, saveChangesToServer, ServerFeedEvent, listenToServerEvents } from "./server";
 import "./styles.css";

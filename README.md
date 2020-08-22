@@ -18,6 +18,23 @@ I present my views on these topics openly, with the goal to paint the whole pict
 API document, but more like a research project. I'm very open to discussion and criticism so correct me if I'm wrong. On the other hand, I hope you to understand
 that many topics here are subjective and I'm presenting my own views of the day.
 
+## Usage
+
+Install from NPM `npm install harmaja` or `yarn add harmaja`.
+
+Tweat your tsconfig.json for the custom JSX factory.
+
+```json
+{
+  "compilerOptions": {
+    // ...
+    "jsx": "react",
+    "jsxFactory": "h"
+  }
+  // ...
+}
+```
+
 ## Key concepts
 
 *Reactive Property* (also known as a signal or a behaviour) is an object that encapsulates a changing value. Please check out the [Bacon.js intro](https://baconjs.github.io/api3/index.html) if you're not familiar with the concept. In Harmaja, reactive properties are the main way of storing and passing application state.
