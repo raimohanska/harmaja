@@ -27,7 +27,6 @@ export function createElement(type: JSXElementType, props: HarmajaProps, ...chil
     if (typeof type == "function") {        
         const constructor = type as HarmajaComponent
         transientStateStack.push({})
-        // TODO: test unmount callbacks, observable scoping
         const mappedProps = props && Object.fromEntries(Object.entries(props).map(([key, value]) => [key, applyComponentScopeToObservable(value)]))
         const element = constructor({...mappedProps, children: flattenedChildren})
         const transientState = transientStateStack.pop()!
