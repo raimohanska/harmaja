@@ -113,7 +113,7 @@ interface TodoStore {
 ...so you have an encapsulation of this piece of application state, and you can pass this store to your UI components.
 
 A notable difference in this store setup to Redux is, that there are no action creators and reducers per se. 
-You define distinct events a derive state from them. 
+You define distinct events and derive state from them. 
 You can also define the buses and the derived state properties in your components if you want to have scoped state. 
 There is no such thing as *react context* in Harmaja, so everything has to be passed explicitly or defined in a global scope, at least for now. 
 
