@@ -1,6 +1,5 @@
 import * as Bacon from "baconjs"
 import { isAtom } from "./atom"
-import { reportValueMissing, valueMissing } from "./utilities"
 
 export type HarmajaComponent = (props: HarmajaProps) => DOMElement
 export type JSXElementType = string | HarmajaComponent
@@ -75,18 +74,10 @@ function renderHTMLElement(type: string, props: HarmajaProps, children: HarmajaC
     const el = document.createElement(type)
     for (let [key, value] of Object.entries(props || {})) {
         if (value instanceof Bacon.Property) {
-            const observable: Bacon.Property<string> = value
-            value = valueMissing
-            const unsub = observable.skipDuplicates().subscribeInternal(event => {
-                if (Bacon.hasValue(event)) {
-                    value = event.value
-                    setProp(el, key, event.value)        
-                }
+            const observable: Bacon.Property<string> = value            
+            const unsub = observable.skipDuplicates().forEach(nextValue => {
+                setProp(el, key, nextValue)        
             })
-            if (value === valueMissing) {
-                unsub()
-                reportValueMissing(observable)
-            }
             attachUnsub(el, unsub)
         } else {
             setProp(el, key, value as string)        
@@ -99,33 +90,34 @@ function renderHTMLElement(type: string, props: HarmajaProps, children: HarmajaC
     return el
 }
 
+function createPlaceholder() {
+    return document.createTextNode("")
+}
+
 function renderChild(ve: HarmajaChild): DOMElement {
     if (typeof ve === "string" || typeof ve === "number") {
         return document.createTextNode(ve.toString())
     }
     if (ve === null) {
-        return document.createTextNode("")
+        return createPlaceholder()
     }
     if (ve instanceof Bacon.Property) {
         const observable = ve as HarmajaObservableChild        
         let element: DOMElement | null = null
-        const unsub = observable.skipDuplicates().subscribeInternal(event => {
-            if (Bacon.hasValue(event)) {
-                if (!element) {
-                    element = renderChild(event.value)
-                } else {
-                    let oldElement = element
-                    element = renderChild(event.value)
-                    // TODO: can we handle a case where the observable yields multiple elements? Currently not.
-                    //console.log("Replacing element", oldElement)
-                    replaceElement(oldElement, element)
-                    attachUnsub(element, unsub)    
-                }    
-            }
+        const unsub = observable.skipDuplicates().forEach(nextValue => {
+            if (!element) {
+                element = renderChild(nextValue)
+            } else {
+                let oldElement = element
+                element = renderChild(nextValue)
+                // TODO: can we handle a case where the observable yields multiple elements? Currently not.
+                //console.log("Replacing element", oldElement)
+                replaceElement(oldElement, element)
+                attachUnsub(element, unsub)    
+            } 
         })
         if (!element) {
-            unsub()
-            reportValueMissing(observable)
+            element = createPlaceholder()
         }
         attachUnsub(element, unsub)
         return element
@@ -174,6 +166,8 @@ function unsubObservablesInChildElements(element: Element | Text | ChildNode) 
     }
 }
 
+// TODO: separate low-level API
+
 export function attachUnsub(element: HTMLElement | Text, unsub: Bacon.Unsub) {
     let elementAny = element as any
     if (!elementAny.unsubs) {
@@ -181,9 +175,6 @@ export function attachUnsub(element: HTMLElement | Text, unsub: Bacon.Unsub) {
     }
     elementAny.unsubs.push(unsub)
 }
-
-// TODO: separate low-level API
-
 
 export function replaceElement(oldElement: ChildNode, newElement: HTMLElement | Text) {
     unsubObservablesInChildElements(oldElement)

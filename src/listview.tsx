@@ -1,7 +1,6 @@
 import * as Bacon from "baconjs"
 import { attachUnsub, removeElement, replaceElement } from "./harmaja"
 import { Atom } from "./atom"
-import { reportValueMissing } from "./utilities"
 
 // TODO: any type below. How to refer to the JSX.Element type?
 export type ListViewProps<A> = {
@@ -24,10 +23,12 @@ export function ListView<A>(props: ListViewProps<A>) {
     const rootElement = document.createElement("span")
     let currentValues: A[] | null = null
     
-    const unsub = observable.subscribeInternal(event => {
-        if (!Bacon.hasValue(event)) return
-        const nextValues = event.value
-        if (currentValues) {
+    const unsub = observable.forEach(nextValues => {
+        if (!currentValues) {
+            for (let i = 0; i < nextValues.length; i++) { // <- weird that I need a cast. TS compiler bug?
+                rootElement.appendChild(itemToNode(nextValues, i))
+            }                
+        } else {
             // TODO: different strategy based on count change:
             // newCount==oldCount => replacement strategy (as implemented not)
             // newCount<oldCOunt => assume removal on non-equality (needs smarter item observable mapping that current index-based one though)
@@ -52,17 +53,6 @@ export function ListView<A>(props: ListViewProps<A>) {
         }
         currentValues = nextValues
     })
-
-    console.log(currentValues)
-
-    if (!currentValues) {
-        unsub()
-        reportValueMissing(observable)
-    }
-
-    for (let i = 0; i < (currentValues as any).length; i++) { // <- weird that I need a cast. TS compiler bug?
-        rootElement.appendChild(itemToNode(currentValues as any, i))
-    }
 
     attachUnsub(rootElement, unsub)
     
