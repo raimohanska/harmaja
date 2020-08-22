@@ -486,6 +486,28 @@ So if you provide `renderItem` instead of `renderObservable` or `renderAtom`, yo
 
 In fact, I should rename equals to make a clear distinction between "id equality" and "content equality". Suggestions?
 
+## Component lifecycle
+
+TLDR: subscriptions to observables are managed automatically based on component lifecycle.
+
+As told above, components in Harmaja are functions that are treated as constructors. The return value of a Harmaja component
+is by the way actually a native HTMLElement.
+
+When you embed observables into the DOM, Harmaja creates a placeholder node (empty text node) into the DOM tree and replaces it with
+the real content when the observable yields a value. If the value is yielded synchronously, the placeholder is unnecessary and is not created. Whenever it subscribes to an observable, it attachs the resultant *unsub* function to the created DOM node so that it can
+perform cleanup later. 
+
+When Harmaja replaces any DOM node, it recursively seeks all attached *unsubs* in the node and its children and calls them to free
+resources related to the removed nodes.
+
+In addition, all observables passed as props to Harmaja components are automatically scoped to component lifecycle. Practically
+Harmaja checks for props that are EventStreams or Properties (but not Buses or Atoms) and instead of passing the `observable` as-is,
+it passes `observable.takeUntil(unmountEvent())` to the component constructor.
+
+The only case where you need to be more careful is when your subscribing from a component directly to an external/global source,
+as this is not something that Harmaja can magically manage. When doing this you can use either the `unmountEvent()` eventstream
+or the `onUnmount` callback to make sure your subscriptions don't exceed component lifetime.
+
 ## Cool FRP things
 
 TODO where FRP really shines. It's not just a Redux replacement. 
