@@ -38,12 +38,10 @@ var __values = (this && this.__values) || function(o) {
 };
 import * as Bacon from "baconjs";
 import { isAtom } from "./atom";
-import { reportValueMissing, valueMissing } from "./utilities";
 export function mount(ve, root) {
     root.parentElement.replaceChild(ve, root);
 }
-var unmountCallbacks = [];
-var unmountE = null;
+var transientStateStack = [];
 export function createElement(type, props) {
     var e_1, _a;
     var children = [];
@@ -56,24 +54,23 @@ export function createElement(type, props) {
     }
     if (typeof type == "function") {
         var constructor = type;
-        unmountCallbacks = [];
-        unmountE = null;
-        // TODO: test unmount callbacks, observable scoping
+        transientStateStack.push({});
         var mappedProps = props && Object.fromEntries(Object.entries(props).map(function (_a) {
             var _b = __read(_a, 2), key = _b[0], value = _b[1];
             return [key, applyComponentScopeToObservable(value)];
         }));
         var element = constructor(__assign(__assign({}, mappedProps), { children: flattenedChildren }));
+        var transientState = transientStateStack.pop();
         try {
-            for (var unmountCallbacks_1 = __values(unmountCallbacks), unmountCallbacks_1_1 = unmountCallbacks_1.next(); !unmountCallbacks_1_1.done; unmountCallbacks_1_1 = unmountCallbacks_1.next()) {
-                var callback = unmountCallbacks_1_1.value;
+            for (var _b = __values(transientState.unmountCallbacks || []), _c = _b.next(); !_c.done; _c = _b.next()) {
+                var callback = _c.value;
                 attachUnsub(element, callback);
             }
         }
         catch (e_1_1) { e_1 = { error: e_1_1 }; }
         finally {
             try {
-                if (unmountCallbacks_1_1 && !unmountCallbacks_1_1.done && (_a = unmountCallbacks_1.return)) _a.call(unmountCallbacks_1);
+                if (_c && !_c.done && (_a = _b.return)) _a.call(_b);
             }
             finally { if (e_1) throw e_1.error; }
         }
@@ -93,19 +90,26 @@ function applyComponentScopeToObservable(value) {
     }
     return value;
 }
+function getTransientState() {
+    return transientStateStack[transientStateStack.length - 1];
+}
 export function onUnmount(callback) {
-    unmountCallbacks.push(callback);
+    var transientState = getTransientState();
+    if (!transientState.unmountCallbacks)
+        transientState.unmountCallbacks = [];
+    transientState.unmountCallbacks.push(callback);
 }
 export function unmountEvent() {
-    if (!unmountE) {
+    var transientState = getTransientState();
+    if (!transientState.unmountE) {
         var event_1 = new Bacon.Bus();
         onUnmount(function () {
             event_1.push();
             event_1.end();
         });
-        unmountE = event_1;
+        transientState.unmountE = event_1;
     }
-    return unmountE;
+    return transientState.unmountE;
 }
 function flattenChildren(child) {
     if (child instanceof Array)
@@ -118,17 +122,9 @@ function renderHTMLElement(type, props, children) {
     var _loop_1 = function (key, value) {
         if (value instanceof Bacon.Property) {
             var observable = value;
-            value = valueMissing;
-            var unsub = observable.skipDuplicates().subscribeInternal(function (event) {
-                if (Bacon.hasValue(event)) {
-                    value = event.value;
-                    setProp(el, key, event.value);
-                }
+            var unsub = observable.skipDuplicates().forEach(function (nextValue) {
+                setProp(el, key, nextValue);
             });
-            if (value === valueMissing) {
-                unsub();
-                reportValueMissing(observable);
-            }
             attachUnsub(el, unsub);
         }
         else {
@@ -163,34 +159,34 @@ function renderHTMLElement(type, props, children) {
     }
     return el;
 }
+function createPlaceholder() {
+    return document.createTextNode("");
+}
 function renderChild(ve) {
     if (typeof ve === "string" || typeof ve === "number") {
         return document.createTextNode(ve.toString());
     }
     if (ve === null) {
-        return document.createTextNode("");
+        return createPlaceholder();
     }
     if (ve instanceof Bacon.Property) {
         var observable = ve;
         var element_1 = null;
-        var unsub_1 = observable.skipDuplicates().subscribeInternal(function (event) {
-            if (Bacon.hasValue(event)) {
-                if (!element_1) {
-                    element_1 = renderChild(event.value);
-                }
-                else {
-                    var oldElement = element_1;
-                    element_1 = renderChild(event.value);
-                    // TODO: can we handle a case where the observable yields multiple elements? Currently not.
-                    //console.log("Replacing element", oldElement)
-                    replaceElement(oldElement, element_1);
-                    attachUnsub(element_1, unsub_1);
-                }
+        var unsub_1 = observable.skipDuplicates().forEach(function (nextValue) {
+            if (!element_1) {
+                element_1 = renderChild(nextValue);
+            }
+            else {
+                var oldElement = element_1;
+                element_1 = renderChild(nextValue);
+                // TODO: can we handle a case where the observable yields multiple elements? Currently not.
+                //console.log("Replacing element", oldElement)
+                replaceElement(oldElement, element_1);
+                attachUnsub(element_1, unsub_1);
             }
         });
         if (!element_1) {
-            unsub_1();
-            reportValueMissing(observable);
+            element_1 = createPlaceholder();
         }
         attachUnsub(element_1, unsub_1);
         return element_1;
@@ -232,40 +228,41 @@ function toKebabCase(inputString) {
     })
         .join('');
 }
-function unsubObservablesInChildElements(element) {
+function unsubObservables(element) {
     var e_4, _a, e_5, _b;
     if (element instanceof Text)
         return;
-    try {
-        for (var _c = __values(element.childNodes), _d = _c.next(); !_d.done; _d = _c.next()) {
-            var child = _d.value;
-            var elementAny = child;
-            if (elementAny.unsubs) {
-                try {
-                    for (var _e = (e_5 = void 0, __values(elementAny.unsubs)), _f = _e.next(); !_f.done; _f = _e.next()) {
-                        var unsub = _f.value;
-                        unsub();
-                    }
-                }
-                catch (e_5_1) { e_5 = { error: e_5_1 }; }
-                finally {
-                    try {
-                        if (_f && !_f.done && (_b = _e.return)) _b.call(_e);
-                    }
-                    finally { if (e_5) throw e_5.error; }
-                }
+    var elementAny = element;
+    if (elementAny.unsubs) {
+        try {
+            for (var _c = __values(elementAny.unsubs), _d = _c.next(); !_d.done; _d = _c.next()) {
+                var unsub = _d.value;
+                unsub();
             }
-            unsubObservablesInChildElements(child);
+        }
+        catch (e_4_1) { e_4 = { error: e_4_1 }; }
+        finally {
+            try {
+                if (_d && !_d.done && (_a = _c.return)) _a.call(_c);
+            }
+            finally { if (e_4) throw e_4.error; }
         }
     }
-    catch (e_4_1) { e_4 = { error: e_4_1 }; }
+    try {
+        for (var _e = __values(element.childNodes), _f = _e.next(); !_f.done; _f = _e.next()) {
+            var child = _f.value;
+            unsubObservables(child);
+        }
+    }
+    catch (e_5_1) { e_5 = { error: e_5_1 }; }
     finally {
         try {
-            if (_d && !_d.done && (_a = _c.return)) _a.call(_c);
+            if (_f && !_f.done && (_b = _e.return)) _b.call(_e);
         }
-        finally { if (e_4) throw e_4.error; }
+        finally { if (e_5) throw e_5.error; }
     }
 }
+// TODO: separate low-level API
 export function attachUnsub(element, unsub) {
     var elementAny = element;
     if (!elementAny.unsubs) {
@@ -273,15 +270,14 @@ export function attachUnsub(element, unsub) {
     }
     elementAny.unsubs.push(unsub);
 }
-// TODO: separate low-level API
 export function replaceElement(oldElement, newElement) {
-    unsubObservablesInChildElements(oldElement);
+    unsubObservables(oldElement);
     if (!oldElement.parentElement) {
         return;
     }
     oldElement.parentElement.replaceChild(newElement, oldElement);
 }
 export function removeElement(oldElement) {
-    unsubObservablesInChildElements(oldElement);
+    unsubObservables(oldElement);
     oldElement.remove();
 }

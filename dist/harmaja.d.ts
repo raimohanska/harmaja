@@ -6,7 +6,7 @@ export declare type HarmajaChild = HarmajaObservableChild | DOMElement | string 
 export declare type HarmajaObservableChild = Bacon.Property<HarmajaChild>;
 export declare type DOMElement = HTMLElement | Text;
 export declare function mount(ve: DOMElement, root: HTMLElement): void;
-declare type UnmountCallback = () => void;
+declare type UnmountCallback = Bacon.Unsub;
 export declare function createElement(type: JSXElementType, props: HarmajaProps, ...children: (HarmajaChild | HarmajaChild[])[]): DOMElement;
 export declare function onUnmount(callback: UnmountCallback): void;
 export declare function unmountEvent(): Bacon.EventStream<void>;
