@@ -53,6 +53,9 @@ describe("Harmaja", () => {
         expect((property as any).dispatcher.subscriptions.length).toEqual(0)
     })
 
+    // TODO: more unsub tests
+    // TODO: list view tests
+
     it("More child types", () => {
         expect(htmlOf(<h1>{"asdf"}</h1>)).toEqual(`<h1>asdf</h1>`)
         expect(htmlOf(<h1>{42}</h1>)).toEqual(`<h1>42</h1>`)
