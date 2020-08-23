@@ -143,10 +143,6 @@ function ConsultantCard({ consultant, editState }: { consultant: B.Property<Cons
   function cancelLocalChanges() {
     cancelRequest.push()
   }
-
-  function applyUpdate(updated: Consultant) {
-    editRequest.push(updated)
-  }
   
   return (
     <div
