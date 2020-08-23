@@ -6,16 +6,15 @@
   "license": "MIT",
   "devDependencies": {
     "@types/jest": "^26.0.10",
-    "csstype": "^3.0.2",
     "babel-jest": "^26.3.0",
+    "baconjs": "^3.0.15",
+    "csstype": "^3.0.2",
     "jest": "^26.4.0",
-    "ts-jest": "^26.2.0",
-    "typescript": "^3.9.7",
     "parcel-bundler": "^1.12.4",
-    "baconjs": "^3.0.15"
+    "ts-jest": "^26.2.0",
+    "typescript": "^3.9.7"
   },
-  "dependencies": {
-  },
+  "dependencies": {},
   "peerDependencies": {
     "baconjs": "^3.0.15"
   },
