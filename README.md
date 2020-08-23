@@ -685,6 +685,8 @@ More dealing with async request at [examples/consultants](examples/consultants/i
 
 TODO: study on buffering local changes until commit / cancel
 
+TODO: maybe best to bring the serverside/edit mechanisms to Todo app, to keep with same example.
+
 Covered in [examples/consultants](examples/consultants/index.jsx).
 
 ## Category theory view
