@@ -692,12 +692,6 @@ See the full search implementation at [examples/search](examples/search/index.ts
 
 More dealing with async request at [examples/consultants](examples/consultants/index.tsx).
 
-## Cool FRP things
-
-TODO where FRP really shines. It's not just a Redux replacement. 
-
-Dealing with asynchronicity. For example request/response. Debounce. Flatmaplatest.
-
 ## Category theory view
 
 TODO this is a nice opportunity to introduce some Category theoretic concepts as well
