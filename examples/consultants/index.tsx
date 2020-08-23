@@ -119,8 +119,11 @@ type CardState = "view" | "edit" | "disabled";
 
 function ConsultantCard({ consultant, editState }: { consultant: B.Property<Consultant>, editState: B.Property<EditState> }) {
   const cardState: B.Property<CardState> = B.combineWith(consultant, editState, (c, state) => {
-    if (state.state === "edit" && state.consultant.id === c.id) {
-      return "edit"
+    if (state.state === "edit") {
+      if (state.consultant.id === c.id) {
+        return "edit"
+      }
+      return "disabled"
     }
     if (state.state === "saving" || state.state === "adding") {
       return "disabled"
