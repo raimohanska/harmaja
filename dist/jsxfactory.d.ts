@@ -7,7 +7,18 @@ export declare function h(type: H.JSXElementType, props: H.HarmajaProps, ...chil
 declare type WithObservablesInFields<T> = {
     [K in keyof T]: T[K] | B.Property<T[K]>;
 };
-declare type NativeEvent = Event;
+declare type NativeAnimationEvent = AnimationEvent;
+declare type NativeClipboardEvent = ClipboardEvent;
+declare type NativeCompositionEvent = CompositionEvent;
+declare type NativeDragEvent = DragEvent;
+declare type NativeFocusEvent = FocusEvent;
+declare type NativeKeyboardEvent = KeyboardEvent;
+declare type NativeMouseEvent = MouseEvent;
+declare type NativeTouchEvent = TouchEvent;
+declare type NativePointerEvent = PointerEvent;
+declare type NativeTransitionEvent = TransitionEvent;
+declare type NativeUIEvent = UIEvent;
+declare type NativeWheelEvent = WheelEvent;
 declare type Booleanish = boolean | 'true' | 'false';
 declare global {
     namespace JSX {
@@ -188,7 +199,175 @@ declare global {
             use: SVGProps<SVGUseElement>;
             view: SVGProps<SVGViewElement>;
         }
-        type EventHandler<E extends NativeEvent> = {
+        /**
+         *
+         * Harmaja typing for native events. Point is that currentTarget has more specific type than EventTarget.
+         *
+         * @typeparam E = native event (this one has better types)
+         * @typeparam C = current target
+         * @typeparam T = target
+         */
+        interface HarmajaEvent<C = any, E = Event> {
+            /**
+             * Returns the object whose event listener's callback is currently being invoked.
+             */
+            currentTarget: C & EventTarget;
+            /**
+             * Returns the object to which event is dispatched (its target).
+             */
+            target: EventTarget;
+            bubbles: boolean;
+            /**
+             * Returns true or false depending on how event was initialized. Its return value does not always carry meaning, but true can indicate that part of the operation during which event was dispatched, can be canceled by invoking the preventDefault() method.
+             */
+            cancelable: boolean;
+            /**
+             * Returns true if preventDefault() was invoked successfully to indicate cancelation, and false otherwise.
+             */
+            defaultPrevented: boolean;
+            /**
+             * Returns the event's phase, which is one of NONE, CAPTURING_PHASE, AT_TARGET, and BUBBLING_PHASE.
+             */
+            eventPhase: number;
+            /**
+            * Returns true if event was dispatched by the user agent, and false otherwise.
+            */
+            isTrusted: boolean;
+            /**
+             * If invoked when the cancelable attribute value is true, and while executing a listener for the event with passive set to false, signals to the operation that caused event to be dispatched that it needs to be canceled.
+             */
+            preventDefault(): void;
+            /**
+             * Invoking this method prevents event from reaching any registered event listeners after the current one finishes running and, when dispatched in a tree, also prevents event from reaching any other objects.
+             */
+            stopImmediatePropagation(): void;
+            /**
+             * When dispatched in a tree, invoking this method prevents event from reaching any objects other than the current object.
+             */
+            stopPropagation(): void;
+            /**
+            * Returns the event's timestamp as the number of milliseconds measured relative to the time origin.
+            */
+            timeStamp: number;
+            /**
+            * Returns the type of event, e.g. "click", "hashchange", or "submit".
+            */
+            type: string;
+        }
+        interface ClipboardEvent<T = Element> extends HarmajaEvent<T, NativeClipboardEvent> {
+            clipboardData: DataTransfer;
+        }
+        interface CompositionEvent<T = Element> extends HarmajaEvent<T, NativeCompositionEvent> {
+            data: string;
+        }
+        interface DragEvent<T = Element> extends MouseEvent<T, NativeDragEvent> {
+            dataTransfer: DataTransfer;
+        }
+        interface PointerEvent<T = Element> extends MouseEvent<T, NativePointerEvent> {
+            pointerId: number;
+            pressure: number;
+            tangentialPressure: number;
+            tiltX: number;
+            tiltY: number;
+            twist: number;
+            width: number;
+            height: number;
+            pointerType: 'mouse' | 'pen' | 'touch';
+            isPrimary: boolean;
+        }
+        interface FocusEvent<T = Element> extends HarmajaEvent<T, NativeFocusEvent> {
+            relatedTarget: EventTarget | null;
+            target: EventTarget & T;
+        }
+        interface FormEvent<T = Element> extends HarmajaEvent<T> {
+        }
+        interface InvalidEvent<T = Element> extends HarmajaEvent<T> {
+            target: EventTarget & T;
+        }
+        interface ChangeEvent<T = Element> extends HarmajaEvent<T> {
+            target: EventTarget & T;
+        }
+        interface InputEvent<T = Element> extends HarmajaEvent<T> {
+            target: EventTarget & T;
+        }
+        interface KeyboardEvent<T = Element> extends HarmajaEvent<T, NativeKeyboardEvent> {
+            altKey: boolean;
+            /** @deprecated */
+            charCode: number;
+            ctrlKey: boolean;
+            /**
+             * See [DOM Level 3 Events spec](https://www.w3.org/TR/uievents-key/#keys-modifier). for a list of valid (case-sensitive) arguments to this method.
+             */
+            getModifierState(key: string): boolean;
+            /**
+             * See the [DOM Level 3 Events spec](https://www.w3.org/TR/uievents-key/#named-key-attribute-values). for possible values
+             */
+            key: string;
+            /** @deprecated */
+            keyCode: number;
+            locale: string;
+            location: number;
+            metaKey: boolean;
+            repeat: boolean;
+            shiftKey: boolean;
+            /** @deprecated */
+            which: number;
+        }
+        interface MouseEvent<T = Element, E = NativeMouseEvent> extends UIEvent<T, E> {
+            altKey: boolean;
+            button: number;
+            buttons: number;
+            clientX: number;
+            clientY: number;
+            ctrlKey: boolean;
+            /**
+             * See [DOM Level 3 Events spec](https://www.w3.org/TR/uievents-key/#keys-modifier). for a list of valid (case-sensitive) arguments to this method.
+             */
+            getModifierState(key: string): boolean;
+            metaKey: boolean;
+            movementX: number;
+            movementY: number;
+            pageX: number;
+            pageY: number;
+            relatedTarget: EventTarget | null;
+            screenX: number;
+            screenY: number;
+            shiftKey: boolean;
+        }
+        interface TouchEvent<T = Element> extends UIEvent<T, NativeTouchEvent> {
+            altKey: boolean;
+            changedTouches: TouchList;
+            ctrlKey: boolean;
+            /**
+             * See [DOM Level 3 Events spec](https://www.w3.org/TR/uievents-key/#keys-modifier). for a list of valid (case-sensitive) arguments to this method.
+             */
+            getModifierState(key: string): boolean;
+            metaKey: boolean;
+            shiftKey: boolean;
+            targetTouches: TouchList;
+            touches: TouchList;
+        }
+        interface UIEvent<T = Element, E = NativeUIEvent> extends HarmajaEvent<T, E> {
+            detail: number;
+            view: AbstractView;
+        }
+        interface WheelEvent<T = Element> extends MouseEvent<T, NativeWheelEvent> {
+            deltaMode: number;
+            deltaX: number;
+            deltaY: number;
+            deltaZ: number;
+        }
+        interface AnimationEvent<T = Element> extends HarmajaEvent<T, NativeAnimationEvent> {
+            animationName: string;
+            elapsedTime: number;
+            pseudoElement: string;
+        }
+        interface TransitionEvent<T = Element> extends HarmajaEvent<T, NativeTransitionEvent> {
+            elapsedTime: number;
+            propertyName: string;
+            pseudoElement: string;
+        }
+        type EventHandler<E extends HarmajaEvent<any>> = {
             bivarianceHack(event: E): void;
         }["bivarianceHack"];
         type ClipboardEventHandler<T = Element> = EventHandler<ClipboardEvent>;
@@ -247,65 +426,65 @@ declare global {
             onFocusCapture?: FocusEventHandler<T>;
             onBlur?: FocusEventHandler<T>;
             onBlurCapture?: FocusEventHandler<T>;
-            onChange?: EventHandler<NativeEvent>;
-            onInput?: EventHandler<InputEvent>;
-            onReset?: EventHandler<NativeEvent>;
-            onSubmit?: EventHandler<NativeEvent>;
-            onInvalid?: EventHandler<NativeEvent>;
-            onLoad?: EventHandler<NativeEvent>;
-            onLoadCapture?: EventHandler<NativeEvent>;
-            onError?: EventHandler<NativeEvent>;
-            onErrorCapture?: EventHandler<NativeEvent>;
+            onChange?: EventHandler<ChangeEvent<T>>;
+            onInput?: EventHandler<InputEvent<T>>;
+            onReset?: EventHandler<FormEvent<T>>;
+            onSubmit?: EventHandler<FormEvent<T>>;
+            onInvalid?: EventHandler<FormEvent<T>>;
+            onLoad?: EventHandler<HarmajaEvent<T>>;
+            onLoadCapture?: EventHandler<HarmajaEvent<T>>;
+            onError?: EventHandler<HarmajaEvent<T>>;
+            onErrorCapture?: EventHandler<HarmajaEvent<T>>;
             onKeyDown?: KeyboardEventHandler<T>;
             onKeyDownCapture?: KeyboardEventHandler<T>;
             onKeyPress?: KeyboardEventHandler<T>;
             onKeyPressCapture?: KeyboardEventHandler<T>;
             onKeyUp?: KeyboardEventHandler<T>;
             onKeyUpCapture?: KeyboardEventHandler<T>;
-            onAbort?: EventHandler<NativeEvent>;
-            onAbortCapture?: EventHandler<NativeEvent>;
-            onCanPlay?: EventHandler<NativeEvent>;
-            onCanPlayCapture?: EventHandler<NativeEvent>;
-            onCanPlayThrough?: EventHandler<NativeEvent>;
-            onCanPlayThroughCapture?: EventHandler<NativeEvent>;
-            onDurationChange?: EventHandler<NativeEvent>;
-            onDurationChangeCapture?: EventHandler<NativeEvent>;
-            onEmptied?: EventHandler<NativeEvent>;
-            onEmptiedCapture?: EventHandler<NativeEvent>;
-            onEncrypted?: EventHandler<NativeEvent>;
-            onEncryptedCapture?: EventHandler<NativeEvent>;
-            onEnded?: EventHandler<NativeEvent>;
-            onEndedCapture?: EventHandler<NativeEvent>;
-            onLoadedData?: EventHandler<NativeEvent>;
-            onLoadedDataCapture?: EventHandler<NativeEvent>;
-            onLoadedMetadata?: EventHandler<NativeEvent>;
-            onLoadedMetadataCapture?: EventHandler<NativeEvent>;
-            onLoadStart?: EventHandler<NativeEvent>;
-            onLoadStartCapture?: EventHandler<NativeEvent>;
-            onPause?: EventHandler<NativeEvent>;
-            onPauseCapture?: EventHandler<NativeEvent>;
-            onPlay?: EventHandler<NativeEvent>;
-            onPlayCapture?: EventHandler<NativeEvent>;
-            onPlaying?: EventHandler<NativeEvent>;
-            onPlayingCapture?: EventHandler<NativeEvent>;
-            onProgress?: EventHandler<NativeEvent>;
-            onProgressCapture?: EventHandler<NativeEvent>;
-            onRateChange?: EventHandler<NativeEvent>;
-            onRateChangeCapture?: EventHandler<NativeEvent>;
-            onSeeked?: EventHandler<NativeEvent>;
-            onSeekedCapture?: EventHandler<NativeEvent>;
-            onSeeking?: EventHandler<NativeEvent>;
-            onSeekingCapture?: EventHandler<NativeEvent>;
-            onStalled?: EventHandler<NativeEvent>;
-            onStalledCapture?: EventHandler<NativeEvent>;
-            onSuspend?: EventHandler<NativeEvent>;
-            onSuspendCapture?: EventHandler<NativeEvent>;
-            onTimeUpdate?: EventHandler<NativeEvent>;
-            onTimeUpdateCapture?: EventHandler<NativeEvent>;
-            onVolumeChange?: EventHandler<NativeEvent>;
-            onVolumeChangeCapture?: EventHandler<NativeEvent>;
-            onWaiting?: EventHandler<NativeEvent>;
-            onWaitingCapture?: EventHandler<NativeEvent>;
+            onAbort?: EventHandler<HarmajaEvent<T>>;
+            onAbortCapture?: EventHandler<HarmajaEvent<T>>;
+            onCanPlay?: EventHandler<HarmajaEvent<T>>;
+            onCanPlayCapture?: EventHandler<HarmajaEvent<T>>;
+            onCanPlayThrough?: EventHandler<HarmajaEvent<T>>;
+            onCanPlayThroughCapture?: EventHandler<HarmajaEvent<T>>;
+            onDurationChange?: EventHandler<HarmajaEvent<T>>;
+            onDurationChangeCapture?: EventHandler<HarmajaEvent<T>>;
+            onEmptied?: EventHandler<HarmajaEvent<T>>;
+            onEmptiedCapture?: EventHandler<HarmajaEvent<T>>;
+            onEncrypted?: EventHandler<HarmajaEvent<T>>;
+            onEncryptedCapture?: EventHandler<HarmajaEvent<T>>;
+            onEnded?: EventHandler<HarmajaEvent<T>>;
+            onEndedCapture?: EventHandler<HarmajaEvent<T>>;
+            onLoadedData?: EventHandler<HarmajaEvent<T>>;
+            onLoadedDataCapture?: EventHandler<HarmajaEvent<T>>;
+            onLoadedMetadata?: EventHandler<HarmajaEvent<T>>;
+            onLoadedMetadataCapture?: EventHandler<HarmajaEvent<T>>;
+            onLoadStart?: EventHandler<HarmajaEvent<T>>;
+            onLoadStartCapture?: EventHandler<HarmajaEvent<T>>;
+            onPause?: EventHandler<HarmajaEvent<T>>;
+            onPauseCapture?: EventHandler<HarmajaEvent<T>>;
+            onPlay?: EventHandler<HarmajaEvent<T>>;
+            onPlayCapture?: EventHandler<HarmajaEvent<T>>;
+            onPlaying?: EventHandler<HarmajaEvent<T>>;
+            onPlayingCapture?: EventHandler<HarmajaEvent<T>>;
+            onProgress?: EventHandler<HarmajaEvent<T>>;
+            onProgressCapture?: EventHandler<HarmajaEvent<T>>;
+            onRateChange?: EventHandler<HarmajaEvent<T>>;
+            onRateChangeCapture?: EventHandler<HarmajaEvent<T>>;
+            onSeeked?: EventHandler<HarmajaEvent<T>>;
+            onSeekedCapture?: EventHandler<HarmajaEvent<T>>;
+            onSeeking?: EventHandler<HarmajaEvent<T>>;
+            onSeekingCapture?: EventHandler<HarmajaEvent<T>>;
+            onStalled?: EventHandler<HarmajaEvent<T>>;
+            onStalledCapture?: EventHandler<HarmajaEvent<T>>;
+            onSuspend?: EventHandler<HarmajaEvent<T>>;
+            onSuspendCapture?: EventHandler<HarmajaEvent<T>>;
+            onTimeUpdate?: EventHandler<HarmajaEvent<T>>;
+            onTimeUpdateCapture?: EventHandler<HarmajaEvent<T>>;
+            onVolumeChange?: EventHandler<HarmajaEvent<T>>;
+            onVolumeChangeCapture?: EventHandler<HarmajaEvent<T>>;
+            onWaiting?: EventHandler<HarmajaEvent<T>>;
+            onWaitingCapture?: EventHandler<HarmajaEvent<T>>;
             onAuxClick?: MouseEventHandler<T>;
             onAuxClickCapture?: MouseEventHandler<T>;
             onClick?: MouseEventHandler<T>;
@@ -342,8 +521,8 @@ declare global {
             onMouseOverCapture?: MouseEventHandler<T>;
             onMouseUp?: MouseEventHandler<T>;
             onMouseUpCapture?: MouseEventHandler<T>;
-            onSelect?: EventHandler<NativeEvent>;
-            onSelectCapture?: EventHandler<NativeEvent>;
+            onSelect?: EventHandler<HarmajaEvent<T>>;
+            onSelectCapture?: EventHandler<HarmajaEvent<T>>;
             onTouchCancel?: TouchEventHandler<T>;
             onTouchCancelCapture?: TouchEventHandler<T>;
             onTouchEnd?: TouchEventHandler<T>;
@@ -791,7 +970,7 @@ declare global {
         }
         interface DetailsHTMLAttributes<T> extends HTMLAttributes<T> {
             open?: boolean;
-            onToggle?: EventHandler<NativeEvent>;
+            onToggle?: EventHandler<HarmajaEvent<T>>;
         }
         interface DelHTMLAttributes<T> extends HTMLAttributes<T> {
             cite?: string;

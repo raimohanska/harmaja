@@ -1,16 +1,16 @@
 import * as Bacon from "baconjs";
 import { Atom } from "./atom";
-export declare type ListViewProps<A> = {
+export declare type ListViewProps<A, K = A> = {
     observable: Bacon.Property<A[]>;
-    renderObservable: (x: Bacon.Property<A>) => any;
-    equals: (x: A, y: A) => boolean;
+    renderObservable: (key: K, x: Bacon.Property<A>) => any;
+    key: (x: A) => K;
 } | {
     observable: Bacon.Property<A[]>;
     renderItem: (x: A) => any;
-    equals?: (x: A, y: A) => boolean;
+    key?: (x: A) => K;
 } | {
     atom: Atom<A[]>;
-    renderAtom: (x: Atom<A>, remove: () => void) => any;
-    equals: (x: A, y: A) => boolean;
+    renderAtom: (key: K, x: Atom<A>, remove: () => void) => any;
+    key: (x: A) => K;
 };
-export declare function ListView<A>(props: ListViewProps<A>): HTMLSpanElement;
+export declare function ListView<A, K>(props: ListViewProps<A, K>): HTMLSpanElement;

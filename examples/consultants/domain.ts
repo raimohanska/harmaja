@@ -1,5 +1,6 @@
+export type Id = string
 export type Consultant = {
-    id: string;
+    id: Id;
     name: string;
     description: string;
   };

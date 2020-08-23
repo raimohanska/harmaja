@@ -1,6 +1,6 @@
 import * as B from "baconjs"
 import { h, mount, ListView, getCurrentValue } from "../../src/index"
-import { Consultant } from "./domain";
+import { Consultant, Id } from "./domain";
 import { initialConsultants, randomConsultant, saveChangesToServer, ServerFeedEvent, listenToServerEvents } from "./server";
 import "./styles.css";
 
@@ -79,8 +79,8 @@ export default function App() {
       <h1>Fancy consultant CRM</h1>
       <ListView {...{
         observable: consultants,
-        renderObservable: (consultant: B.Property<Consultant>) => <ConsultantCard consultant={consultant} editState={editState}/>,
-        equals: (c1: Consultant, c2: Consultant) => c1.id === c2.id
+        renderObservable: (id: Id, consultant: B.Property<Consultant>) => <ConsultantCard consultant={consultant} editState={editState}/>,
+        key: (c: Consultant) => c.id
       }}/>
       
       <div style={{ display: "flex" }}>

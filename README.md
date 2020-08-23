@@ -393,8 +393,7 @@ make sure that frequent operations (change to a single item, append new item, de
 the full array VDOM to be re-rendered. This is fully possible with, for instance, react-redux: just make sure the
 component that renders the array doesn't re-render unless array size changes.
 
-In Harmaja, there's no VDOM diffing so relying on that is not an option. Therefore, a perfomant and ergonomic array view is
-key. So, I've included a `ListView` component for just that. 
+In Harmaja, there's no VDOM diffing so relying on that is not an option. Therefore, a perfomant and ergonomic array view is key. So, I've included a `ListView` component for just that. 
 
 Imagine again you're building a Todo App again (who isnt'!) and you have the same data model that was introduced in the
 "Unidirectional data flow" chapter above. To recap, it's this.
@@ -421,7 +420,7 @@ To render the TodoItems represented by the `allItems` property you can use ListV
     renderObservable={ (item: B.Property<TodoItem>) => (
         <ItemView item={item}/>
     )}
-    equals={(a: TodoItem, b: TodoItem) => a.id === b.id}
+    key={(a: TodoItem) => a.id }
 />
 
 const ItemView = ({ item }: { item: B.Property<TodoItem> }) => {
@@ -430,8 +429,8 @@ const ItemView = ({ item }: { item: B.Property<TodoItem> }) => {
 ```
 
 What ListView does here is that it observes `allItems` for changes and renders each item using the ItemView component. 
-When the list of items changes (something is replaced, added or removed) it uses the given `equals` function to determine 
-whether to replace individual item views. With the given `equals` implementation it replaces views only when the `id` field doesn't match, 
+When the list of items changes (something is replaced, added or removed) it uses the given `key` function to determine 
+whether to replace individual item views. With the given `key` implementation it replaces views only when the `id` field doesn't match, 
 i.e. the view no longer represents the same item. Each item view gets a `Property<TodoItem>` so that they can update when the content 
 in that particular TodoItem is changed. See full implementation in [examples/todoapp](examples/todoapp/index.ts).
 
@@ -449,7 +448,7 @@ You can have read-write access to the items by using ListView thus:
     renderAtom={(item, removeItem) => {
         return <li><ItemView {...{item, removeItem}}/></li>          
     }}
-    equals={(a, b) => a.id === b.id}
+    key={ a => a.id }
 />
 ```
 
@@ -494,10 +493,6 @@ There's a third variation of TextView still, for read-only views:
 
 So if you provide `renderItem` instead of `renderObservable` or `renderAtom`, you can use a view that renders a plain TodoItem. 
 This means that the item view cannot react to changes in the item data and simply renders the static data it is given. 
-In this case, you'll need to supply a "content equality" kind of `equals` method so that the ListView knows to replace the ItemView when the data inside the item is changed. 
-As seen above, you can also omit the `equals` altogether to use the default `===` equality.
-
-In fact, I should rename equals to make a clear distinction between "id equality" and "content equality". Suggestions?
 
 ## Component lifecycle
 

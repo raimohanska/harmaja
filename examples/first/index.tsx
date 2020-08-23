@@ -44,10 +44,9 @@ const Root = () =>
         <br/> Naive array handling 
         { dots.map(dots => <span>{ dots.map(n => <span>{ticker.map(m => m * n)} </span>) } </span>) }
         <br/> Smart array handling 
-        <ListView<number> {...{ 
+        <ListView<number, number> {...{ 
             observable: dots, 
-            renderItem: (n => <span>{ticker.map(m => m * n)} </span>),
-            equals: (x, y) => x === y
+            renderItem: (n => <span>{ticker.map(m => m * n)} </span>)
         }}/>
         <br/>Handling nulls { null } { Bacon.constant(null) }
     </div>
