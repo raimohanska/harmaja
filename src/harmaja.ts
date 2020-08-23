@@ -120,7 +120,7 @@ function renderChild(ve: HarmajaChild): DOMElement {
             } else {
                 let oldElement = element
                 element = renderChild(nextValue)
-                console.log("Replacing", oldElement, "with", element)
+                //console.log("Replacing", oldElement, "with", element)
                 // TODO: can we handle a case where the observable yields multiple elements? Currently not.
                 //console.log("Replacing element", oldElement)
                 detachUnsub(oldElement, unsub) // <- attaching unsub to the replaced element instead
