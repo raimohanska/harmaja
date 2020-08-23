@@ -76,7 +76,6 @@ const App = () => {
       <h1>TODO App</h1>
       <ItemList items={allItems} />
       <NewItem />
-      <JsonView json={allItems} />
     </div>
   );
 };
