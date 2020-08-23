@@ -11,6 +11,7 @@ export declare function createElement(type: JSXElementType, props: HarmajaProps,
 export declare function onUnmount(callback: UnmountCallback): void;
 export declare function unmountEvent(): Bacon.EventStream<void>;
 export declare function attachUnsub(element: HTMLElement | Text, unsub: Bacon.Unsub): void;
+export declare function detachUnsub(element: HTMLElement | Text, unsub: Bacon.Unsub): void;
 export declare function replaceElement(oldElement: ChildNode, newElement: HTMLElement | Text): void;
 export declare function removeElement(oldElement: ChildNode): void;
 export {};

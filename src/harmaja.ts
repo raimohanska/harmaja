@@ -140,9 +140,7 @@ function renderChild(ve: HarmajaChild): DOMElement {
 function setProp(el: HTMLElement, key: string, value: string) {
     if (key.startsWith("on")) {
         key = key.toLowerCase()
-    } else if (key === "className") {
-        key = "class"
-    }            
+    }           
     if (key === "style") {
         const styles = Object.entries(value)
             .filter(([key, value]) => key !== "")

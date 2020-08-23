@@ -182,8 +182,10 @@ function renderChild(ve) {
             else {
                 var oldElement = element_1;
                 element_1 = renderChild(nextValue);
+                console.log("Replacing", oldElement, "with", element_1);
                 // TODO: can we handle a case where the observable yields multiple elements? Currently not.
                 //console.log("Replacing element", oldElement)
+                detachUnsub(oldElement, unsub_1); // <- attaching unsub to the replaced element instead
                 replaceElement(oldElement, element_1);
                 attachUnsub(element_1, unsub_1);
             }
@@ -199,9 +201,6 @@ function renderChild(ve) {
 function setProp(el, key, value) {
     if (key.startsWith("on")) {
         key = key.toLowerCase();
-    }
-    else if (key === "className") {
-        key = "class";
     }
     if (key === "style") {
         var styles = Object.entries(value)
@@ -273,9 +272,22 @@ export function attachUnsub(element, unsub) {
     }
     elementAny.unsubs.push(unsub);
 }
+export function detachUnsub(element, unsub) {
+    var elementAny = element;
+    if (!elementAny.unsubs) {
+        return;
+    }
+    for (var i = 0; i < elementAny.unsubs.length; i++) {
+        if (elementAny.unsubs[i] === unsub) {
+            elementAny.unsubs.splice(i, 1);
+            return;
+        }
+    }
+}
 export function replaceElement(oldElement, newElement) {
     unsubObservables(oldElement);
     if (!oldElement.parentElement) {
+        console.warn("Parent element not found for", oldElement, " => fail to replace");
         return;
     }
     oldElement.parentElement.replaceChild(newElement, oldElement);
