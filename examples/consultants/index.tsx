@@ -1,5 +1,5 @@
 import * as B from "baconjs"
-import { h, mount, ListView, getCurrentValue } from "../../src/index"
+import { h, mount, ListView, Atom, atom } from "../../src/index"
 import { Consultant, Id } from "./domain";
 import { initialConsultants, randomConsultant, saveChangesToServer, ServerFeedEvent, listenToServerEvents } from "./server";
 import "./styles.css";
@@ -133,9 +133,10 @@ function ConsultantCard({ consultant, editState }: { consultant: B.Property<Cons
     }
     return c
   })
+  const localConsultant: Atom<Consultant> = atom(consultantToShow, editRequest.push)
 
   async function saveLocalChanges() {
-    const currentConsultant = getCurrentValue(consultantToShow)
+    const currentConsultant = localConsultant.get()
     saveRequest.push(currentConsultant)
   }
 
@@ -163,7 +164,7 @@ function ConsultantCard({ consultant, editState }: { consultant: B.Property<Cons
         return style
     })}
     >
-      <img alt={consultantToShow.map(c => c.name)} src="profile-placeholder.png" style={{ maxWidth: "100px" }} />
+      <img alt={localConsultant.view("name")} src="profile-placeholder.png" style={{ maxWidth: "100px" }} />
       <div
         style={{
           display: "flex",
@@ -193,20 +194,10 @@ function ConsultantCard({ consultant, editState }: { consultant: B.Property<Cons
             null
           ))}
         </div>
-        <input
-          contentEditable="true"
-          onInput={e => {
-            applyUpdate({ ...getCurrentValue(consultantToShow), name: e.currentTarget.value })
-          }}
-          style={{ display: "inline-block", minWidth: "10em", border: "none" }}
-          value={consultantToShow.map(c => c.name)}
-        />
+        <TextInput value={localConsultant.view("name")} style={{ display: "inline-block", minWidth: "10em", border: "none" }} />
         <span style={{ marginLeft: "1em", textAlign: "left", width: "100%" }}>
-          <textarea
-            value={consultantToShow.map(c => c.description)}
-            onInput={e => {
-              applyUpdate({ ...getCurrentValue(consultantToShow), description: e.currentTarget.value })              
-            }}
+          <Textarea
+            value={localConsultant.view("description")}            
             style={{
               height: "100%",
               width: "100%",
@@ -219,6 +210,29 @@ function ConsultantCard({ consultant, editState }: { consultant: B.Property<Cons
     </div>
   );
 }
+
+
+const TextInput = (props: { value: Atom<string>, elementName: string } & any) => {
+  return <input {...{ 
+          type: "text", 
+          onInput: e => { 
+              props.value.set(e.currentTarget.value)
+          },
+          ...props, 
+          value: props.value 
+        }} />  
+};
+
+const Textarea = (props: { value: Atom<string>, elementName: string } & any) => {
+  return <textarea {...{ 
+          onInput: e => { 
+              props.value.set(e.currentTarget.value)
+          },
+          ...props, 
+          value: props.value 
+        }} />  
+};
+
 
 function SimpleButton({ text, onClick }: { text: string; onClick: () => any }) {
   return (

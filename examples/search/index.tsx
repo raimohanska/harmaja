@@ -87,7 +87,7 @@ const TextInput = (props: { value: Atom<string> } & any) => {
                 props.value.set(e.currentTarget.value)
             },
             ...props, 
-            checked: props.checked 
+            value: props.value 
           }} />  
   };
 

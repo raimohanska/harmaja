@@ -101,7 +101,7 @@ const TextInput = (props: { value: Atom<string> } & any) => {
               props.value.set(e.currentTarget.value)
           },
           ...props, 
-          checked: props.checked 
+          value: props.value 
         }} />  
 };
 
@@ -112,7 +112,7 @@ const Checkbox = (props: { checked: Atom<boolean> } & any) => {
                 props.checked.set(e.currentTarget.checked)
             },
             ...props, 
-            value: props.value 
+            checked: props.checked 
           }} />  
   };
 
