@@ -522,6 +522,8 @@ with Promises. Common scenarios include
 - Fetching data in response to a user action, i.e. the search scenario. This boils down the first scenario if you have a SearchResults component that fetches data in response to changed query string
 - Storing changed data to server. Complexity arises from the need to disable UI controls while saving, handling errors gracefully etc. Bonus points for considering whether this is a local or a global activity - and where should the transient state be stored.
 
+In Harmaja, reactive Properties and EventStreams are used for dealing with asynchrous requests. Promises can be conveniently wrapped in. Let's have a look at an example.
+
 ### The search example
 
 Let's consider the search example. Starting from SearchResults component, it might look like this:
