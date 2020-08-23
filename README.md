@@ -596,29 +596,29 @@ sets an initial value to be used before any (non-null) value passes the filter.
 Then we can determine the message string to show to the user, based on state and currently shown results:
 
 ```typescript
-const message = B.combine(state, latestResults, (s, r) => {
+const message = B.combineWith(state, latestResults, (s, r) => {
     if (s.state == "done" && r.length === 0) return "Nothing found"
     if (s.state === "searching" && r.length === 0) return "Searching..."
     return ""
 })
 ```
 
-Here the `B.combine` method creates a new Property that reflects the latest values from the given two properties (state, latestResults) and
+Here the [`B.combineWith`](https://baconjs.github.io/api3/globals.html#combinewith) method creates a new Property that reflects the latest values from the given two properties (state, latestResults) and
 applies the given mapping function to the values.
 
-The `opacity:0.5` style can be applied similarly using `B.combine` and the final SearchResults component looks like this:
+The `opacity:0.5` style can be applied similarly using [`B.combineWith`](https://baconjs.github.io/api3/globals.html#combinewith) and the final SearchResults component looks like this:
 
 ```typescript
 const SearchResults = ({ state } : { state: B.Property<SearchState> }) => {
     const currentResults: B.Property<string[] | null> = state.map(s => s.state === "done" ? s.results : null)
     const latestResults: B.Property<string[]> = currentResults.filter(results => results !== null).startWith([])
 
-    const message = B.combine(state, latestResults, (s, r) => {
+    const message = B.combineWith(state, latestResults, (s, r) => {
         if (s.state == "done" && r.length === 0) return "Nothing found"
         if (s.state === "searching" && r.length === 0) return "Searching..."
         return ""
     })
-    const style = B.combine(state, latestResults, (s, r) => {
+    const style = B.combineWith(state, latestResults, (s, r) => {
         if (s.state === "searching" && r.length > 0) return { opacity: 0.5 }
         return {}
     })

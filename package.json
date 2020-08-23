@@ -12,12 +12,12 @@
     "ts-jest": "^26.2.0",
     "typescript": "^3.9.7",
     "parcel-bundler": "^1.12.4",
-    "baconjs": "^3"
+    "baconjs": "^3.0.14"
   },
   "dependencies": {
   },
   "peerDependencies": {
-    "baconjs": "^3"
+    "baconjs": "^3.0.14"
   },
   "scripts": {
     "example-first": "yarn build && parcel --out-dir dist/examples examples/first/index.html",

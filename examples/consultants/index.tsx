@@ -118,7 +118,7 @@ function NotificationView({ notification }: { notification: B.Property<Notificat
 type CardState = "view" | "edit" | "disabled";
 
 function ConsultantCard({ consultant, editState }: { consultant: B.Property<Consultant>, editState: B.Property<EditState> }) {
-  const cardState: B.Property<CardState> = B.combine(consultant, editState, (c, state) => {
+  const cardState: B.Property<CardState> = B.combineWith(consultant, editState, (c, state) => {
     if (state.state === "edit" && state.consultant.id === c.id) {
       return "edit"
     }
@@ -127,7 +127,7 @@ function ConsultantCard({ consultant, editState }: { consultant: B.Property<Cons
     }
     return "view"
   })
-  const consultantToShow: B.Property<Consultant> = B.combine(consultant, editState, (c, state) => {
+  const consultantToShow: B.Property<Consultant> = B.combineWith(consultant, editState, (c, state) => {
     if (state.state !== "view" && state.consultant.id === c.id) {
       return state.consultant
     }

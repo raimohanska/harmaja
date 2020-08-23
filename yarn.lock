@@ -1605,10 +1605,10 @@ babylon-walk@^1.0.2:
     babel-types "^6.15.0"
     lodash.clone "^4.5.0"
 
-baconjs@^3:
-  version "3.0.13"
-  resolved "https://registry.yarnpkg.com/baconjs/-/baconjs-3.0.13.tgz#241ba3dab1d3ad5e798fb3e4ee2952a979511fcf"
-  integrity sha512-5rrJFq9O69UwSALfLumxdeHGeBoe8dT6bTu5SllcnB6N44/iCXntZKiDG6WdTwxcx4Im1B1pQ3K0tXKUWgy89Q==
+baconjs@^3.0.14:
+  version "3.0.14"
+  resolved "https://registry.yarnpkg.com/baconjs/-/baconjs-3.0.14.tgz#73110738ae59ecb98724c5496c50a652a78ce2e8"
+  integrity sha512-K+PySxbmRYcmdnEo384HaAvoHq/tRI0cLDY9BJ+27mrHY2jR8FS8WwP341cWfwlGM7sFJ56yUpTXz3SNzGL32A==
 
 balanced-match@^1.0.0:
   version "1.0.0"
