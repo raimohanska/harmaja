@@ -72,10 +72,8 @@ function reducer(consultants: Consultant[], event: ServerFeedEvent) {
 
 
 export default function App() {
-  // You'll probably want to call `listenToServerEvents` method to get the initial state and updates from the server
-  const disableNew = editState.map(state => state.state !== "view"); // Always allow adding a new consultant at this point
+  const disableNew = editState.map(state => state.state !== "view");
   
-  //console.log("Consultant count " + consultants.length);
   return (
     <div className="App">
       <NotificationView {...{ notification }} />
