@@ -120,10 +120,12 @@ function renderChild(ve: HarmajaChild): DOMElement {
             } else {
                 let oldElement = element
                 element = renderChild(nextValue)
+                console.log("Replacing", oldElement, "with", element)
                 // TODO: can we handle a case where the observable yields multiple elements? Currently not.
                 //console.log("Replacing element", oldElement)
+                detachUnsub(oldElement, unsub) // <- attaching unsub to the replaced element instead
                 replaceElement(oldElement, element)
-                attachUnsub(element, unsub)    
+                attachUnsub(element, unsub)
             } 
         })
         if (!element) {
@@ -188,9 +190,23 @@ export function attachUnsub(element: HTMLElement | Text, unsub: Bacon.Unsub) {
     elementAny.unsubs.push(unsub)
 }
 
+export function detachUnsub(element: HTMLElement | Text, unsub: Bacon.Unsub) {
+    let elementAny = element as any
+    if (!elementAny.unsubs) {
+        return
+    }
+    for (let i = 0; i < elementAny.unsubs.length; i++) {
+        if (elementAny.unsubs[i] === unsub) {
+            elementAny.unsubs.splice(i, 1)
+            return
+        }
+    }
+}
+
 export function replaceElement(oldElement: ChildNode, newElement: HTMLElement | Text) {
     unsubObservables(oldElement)
     if (!oldElement.parentElement) {
+        console.warn("Parent element not found for", oldElement, " => fail to replace")
         return
     }
 

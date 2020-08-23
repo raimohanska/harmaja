@@ -28,7 +28,10 @@ const editState = B.update<EditState>({ state: "view" },
   [cancelRequest, () => ( { state: "view" })]
 )
 const saveFailed = saveResult.filter(success => !success)
-const notificationE: B.EventStream<Notification> = saveFailed.map(() => ({ type: "error", text: "Failed to save"} as Notification))
+const saveSuccess = saveResult.filter(success => !!success)
+const notificationE: B.EventStream<Notification> = 
+  saveFailed.map(() => ({ type: "error", text: "Failed to save"} as Notification))
+  .merge(saveSuccess.map(() => ({ type: "info", text: "Saved"})))
 const notification: B.Property<Notification | null> = notificationE
   .flatMapLatest(notification => B.once(notification).concat(B.later(2000, null)))
   .toProperty(null)
@@ -79,7 +82,7 @@ export default function App() {
       <h1>Fancy consultant CRM</h1>
       <ListView {...{
         observable: consultants,
-        renderObservable: (id: Id, consultant: B.Property<Consultant>) => <ConsultantCard consultant={consultant} editState={editState}/>,
+        renderObservable: (id: Id, consultant: B.Property<Consultant>) => <ConsultantCard id={id} consultant={consultant} editState={editState}/>,
         key: (c: Consultant) => c.id
       }}/>
       
@@ -117,7 +120,7 @@ function NotificationView({ notification }: { notification: B.Property<Notificat
 
 type CardState = "view" | "edit" | "disabled";
 
-function ConsultantCard({ consultant, editState }: { consultant: B.Property<Consultant>, editState: B.Property<EditState> }) {
+function ConsultantCard({ id, consultant, editState }: { id: Id, consultant: B.Property<Consultant>, editState: B.Property<EditState> }) {
   const cardState: B.Property<CardState> = B.combineWith(consultant, editState, (c, state) => {
     if (state.state === "edit") {
       if (state.consultant.id === c.id) {
@@ -173,7 +176,7 @@ function ConsultantCard({ consultant, editState }: { consultant: B.Property<Cons
         }}
       >
         <div style={{ position: "absolute", top: 0, right: 0 }}>
-          {cardState.map(s => s === "edit" ? (
+          {cardState.map(s => s === "edit").map(editing => editing ? (
             <span>
               <SimpleButton
                 {...{
