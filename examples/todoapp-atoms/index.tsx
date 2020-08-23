@@ -79,8 +79,8 @@ const NewItem = () => {
 const TextInput = (props: { value: Atom<string> } & any) => {
   return <input {...{ 
           type: "text", 
-          onChange: e => { 
-              props.value.set(e.target.value)
+          onInput: e => { 
+              props.value.set(e.currentTarget.value)
           },
           ...props, 
           value: props.value 
@@ -91,7 +91,7 @@ const Checkbox = (props: { checked: Atom<boolean> } & any) => {
     return <input {...{ 
             type: "checkbox", 
             onInput: e => { 
-                props.checked.set(e.target.checked)
+                props.checked.set(e.currentTarget.checked)
             },
             ...props, 
             value: props.value,

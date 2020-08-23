@@ -84,7 +84,7 @@ const TextInput = (props: { value: Atom<string> } & any) => {
     return <input {...{ 
             type: "text", 
             onInput: e => { 
-                props.value.set(e.target.value)
+                props.value.set(e.currentTarget.value)
             },
             ...props, 
             checked: props.checked 

@@ -234,7 +234,7 @@ const ItemView = ({ item, onChange}: { item: B.Property<TodoItem>, onChange: (i
 };
 
 const TextInput = ({value, onChange}: {text: B.Property<string>, onChange: (s: string) => void}) => {
-    return <input value={text} onInput={ e => onChange(e.target.value) } />
+    return <input value={text} onInput={ e => onChange(e.currentTarget.value) } />
 }
 ```
 
@@ -272,7 +272,7 @@ a `set: (newValue: A)` method for changing the value. Let's try it by changing o
 ```typescript
 import { Atom, atom } from "harmaja"
 const TextInput = ({value}: {text: Atom<string>}) => {
-    return <input value={text} onInput={e => text.set(e.target.value)} />
+    return <input value={text} onInput={e => text.set(e.currentTarget.value)} />
 }
 ```
 
