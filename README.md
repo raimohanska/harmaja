@@ -488,7 +488,13 @@ In fact, I should rename equals to make a clear distinction between "id equality
 
 ## Component lifecycle
 
-TLDR: subscriptions to observables are managed automatically based on component lifecycle.
+When components subscribe to data sources, it's vital to unsubscribe on unmount to prevent resource leaks.
+
+In traditional React, you used the component lifecycle methods `componentDidMount` and `componentWillUnmount` to subscribe and unsubscribe. This kind of manual resource management is, based on my experience, very error-prone. The `useEffect` hook gives better tools for the job. Still, you have to *remember* to return a cleanup function (see [example](https://reactjs.org/docs/hooks-effect.html#example-using-hooks-1)). When dealing with data sources such as Observables, Promises or the Redux Store, it's better to use a higher level of abstract to avoid doing cleanup manually. And, because all of them are in fact generic abstractions, you can
+build/steal/borrow generic utilities for this. The `useSelector` hook in react-redux is a good example: it gives you the data you need
+without bothering you with cleanup. Similarly you can build hooks for dealing with Observables as I discovered in my [blog post](https://www.reaktor.com/blog/make-react-reactive-by-using-hooks/) in 2018.
+
+In Harmaja, there are no hooks. State management is built on Observables and subscriptions to observables are managed automatically based on component lifecycle. Details follow!
 
 As told above, components in Harmaja are functions that are treated as constructors. The return value of a Harmaja component
 is by the way actually a native HTMLElement.
@@ -507,6 +513,16 @@ it passes `observable.takeUntil(unmountEvent())` to the component constructor.
 The only case where you need to be more careful is when your subscribing from a component directly to an external/global source,
 as this is not something that Harmaja can magically manage. When doing this you can use either the `unmountEvent()` eventstream
 or the `onUnmount` callback to make sure your subscriptions don't exceed component lifetime.
+
+## Promises and async requests
+
+I don't think a state management solution is complete until it has a strategy for dealing with asynchronous requests, typically
+with Promises. Common scenarios include
+
+- Fetching extra data from server when mounting a component. Gets more complicated if you need to re-fetch in case some componnent prop changes
+- Storing changed data to server. Complexity arises from the need to disable UI controls while saving, handling errors gracefully etc. Bonus points for considering whether this is a local or a global activity - and where should the transient state be stored.
+
+TODO: example case
 
 ## Cool FRP things
 
