@@ -646,15 +646,27 @@ the earlierly defined `TextInput` in place.
 The actual `search` function is dedacted and could be easily implemented using Axios or fetch. I added a simple wrapper `searchAsEventStream`
 that returns search results a `EventStream` instead of a `Promise`. This is easy using `B.fromPromise`.
 
-The `searchResult` EventStream is created using `flatMapLatest` which spawns a new stream for each input event using the `searchAsEventStream`
+The `searchResult` EventStream is created using [`flatMapLatest`](https://baconjs.github.io/api3/classes/eventstream.html#flatmaplatest) 
+which spawns a new stream for each input event using the `searchAsEventStream`
 helper and keeps on listening for results from the latest created stream (that's where the "latest" part in the name comes from).
 
-Then I've introduced a reducer, once again using `B.update`, and come up with the state property. This setup is now local to the Search component,
+Then I've introduced a reducer, once again using [`B.update`](https://baconjs.github.io/api3/globals.html#update), and come up with the state property. 
+This setup is now local to the Search component,
 but could be moved into a separate store module if it turned out that it's needed in a larger scope.
 
 One more notice: on the last line of the reducer, I've included an extra parameter, i.e. the searchString property. This is a convenient way
 to plug the latest value of a Property into the equation in a reducer. In each of the patterns in `B.update` you should have one EventStream and
 zero or more Properties. Only the EventStream will trigger the update; Properties are there only so that you can use their latest value in the equation.
+
+One common pattern in searching is throttling (or debouncing). You don't want to send a potentionally expensive query to your server on each keystroke.
+When using Bacon.js, you can choose between [`debounce`](https://baconjs.github.io/api3/classes/eventstream.html#debounce), 
+[`debounceImmediate`](https://baconjs.github.io/api3/classes/eventstream.html#debounceimmediate) and [`throttle`](https://baconjs.github.io/api3/classes/eventstream.html#throttle).
+
+To use a 300 millisecond debounce, the change looks like this:
+
+```typescript
+    const searchStringChange: B.EventStream<string> = searchString.changes().debounce(500)
+```
 
 See the full search implementation at [examples/search](examples/search/index.tsx).
 

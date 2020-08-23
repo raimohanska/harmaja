@@ -9,14 +9,10 @@ const Root = () =>
 
 type SearchState = { state: "initial" } | { state: "searching", searchString: string } | { state: "done", searchString: string, results: string[] }
 
-function searchAsEventStream(searchString: string): B.EventStream<string[]> {
-    return B.fromPromise(search(searchString))
-}
-
 const Search = () => {
     const searchString = atom("")
-    const searchStringChange: B.EventStream<string> = searchString.changes()
-    const searchResult: B.EventStream<string[]> = searchStringChange.flatMapLatest(searchAsEventStream)
+    const searchStringChange: B.EventStream<string> = searchString.changes().debounce(500)
+    const searchResult: B.EventStream<string[]> = searchStringChange.flatMapLatest(s => B.fromPromise(search(s)))
     const state: B.Property<SearchState> = B.update(
         { state: "initial"} as SearchState,
         [searchStringChange, (state, searchString) => ({ state: "searching", searchString })],
