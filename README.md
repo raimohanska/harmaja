@@ -380,6 +380,8 @@ An example of fully Atom-based application state can be seen at [examples/todoap
 
 TODO: study on buffering local changes until commit / cancel
 
+Covered in [examples/consultants](examples/consultants/index.jsx).
+
 ## Arrays
 
 Efficient and convenient way of working with arrays of data is a necessary step to success. When 
@@ -687,6 +689,8 @@ To use a 300 millisecond debounce, the change looks like this:
 ```
 
 See the full search implementation at [examples/search](examples/search/index.tsx).
+
+More dealing with async request at [examples/consultants](examples/consultants/index.tsx).
 
 ## Cool FRP things
 
