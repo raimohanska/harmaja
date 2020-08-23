@@ -37,11 +37,11 @@ Tweat your tsconfig.json for the custom JSX factory.
 
 ## Key concepts
 
-*Reactive Property* (also known as a signal or a behaviour) is an object that encapsulates a changing value. Please check out the [Bacon.js intro](https://baconjs.github.io/api3/index.html) if you're not familiar with the concept. In Harmaja, reactive properties are the main way of storing and passing application state.
+[*Reactive Property*](https://baconjs.github.io/api3/classes/property.html) (also known as a signal or a behaviour) is an object that encapsulates a changing value. Please check out the [Bacon.js intro](https://baconjs.github.io/api3/index.html) if you're not familiar with the concept. In Harmaja, reactive properties are the main way of storing and passing application state.
 
-*EventStream* represents a stream of events that you can observe by calling its `forEach` method. In Bacon.js a *Bus* is an EventStream that allows you to `push` events to the stream as well as observe events. In Harmaja, buses are used for conveying distinct events from the UI to state reducers.
+[*EventStream*](https://baconjs.github.io/api3/classes/eventstream.html) represents a stream of events that you can observe by calling its `forEach` method. In Bacon.js a *Bus* is an EventStream that allows you to `push` events to the stream as well as observe events. In Harmaja, buses are used for conveying distinct events from the UI to state reducers.
 
-*Atom* is a Property that also allows mutation using the `set` methods. You can create an atom simply by `atom("hello")` and then use `atom.get` and `atom.set` for viewing and mutating its value. May sound underwhelming, but the Atom is also a reactive property, meaning that it's state can be observed and *reacted*. In Harmaja particularly, you can embed atoms into your VDOM so that your DOM will automatically reflect the changes in their value! Furthermore, you can use `atom.view("attributename")` to get a new Atom that represents the state of a given attribute within the data structure wrapped by the original Atom.
+*Atom* is a Property that also allows mutation using the `set` methods. You can create an atom simply by `atom("hello")` and then use `atom.get` and `atom.set` for viewing and mutating its value. May sound underwhelming, but the Atom is also a reactive property, meaning that it's state can be observed and *reacted*. In Harmaja particularly, you can embed atoms into your VDOM so that your DOM will automatically reflect the changes in their value! Furthermore, you can use `atom.view("attributename")` to get a new Atom that represents the state of a given attribute within the data structure wrapped by the original Atom. Currently Harmaja comes with its own Atom implementation.
 
 *State decomposition* means selecting a part or a slice of a bigger state object. This may be familiar to you from Redux, where you `mapStateToProps` or `useSelector` for making your component *react* to changes in some parts of the application state. In Harmaja, you use reactive properties or Atoms for representing state and then select parts of it for your component using `property.map` or `atom.view`, the latter providing a read-write interface.
 
@@ -99,7 +99,7 @@ Other interesting examples of Unidirectional data flow include [Elm](https://elm
 
 ## Unidirectional data flow with Harmaja
 
-In Harmaja, you can implement Unidirectional data flow too. Sticking with the Todo App example, you define your events as *buses*:
+In Harmaja, you can implement Unidirectional data flow too. Sticking with the Todo App example, you define your events as [*buses*](https://baconjs.github.io/api3/classes/bus.html):
 
 ```typescript
 import * as B from "baconjs"
@@ -108,7 +108,7 @@ const addItemBus = new B.Bus<TodoItem>();
 const removeItemBus = new B.Bus<TodoItem>();
 ```
 
-The bus objects allow you to dispatch an event by calling their `push` method. From the events, the application state can be reduced like thus:
+The bus objects allow you to dispatch an event by calling their `push` method. From the events, the application state can be reduced using [`B.update`](https://baconjs.github.io/api3/globals.html#update) like thus:
 
 ```typescript
 const allItems: B.Property<TodoItem[]> = B.update([], 
@@ -170,12 +170,13 @@ in the function signature (how revolutionary!). This rather obviously makes the 
 the function signature you can easily decuce that this component will render a TodoItem and reflect any changes that are effected to that particular TodoItem (because
 the input is a reactive property).
 
-In the implementation, the `map` method of the `Property<TodoItem>` is used to get a `Property<string>` which then can be directly embedded into the resulting DOM,
+In the implementation, the [`map`](https://baconjs.github.io/api3/classes/property.html#map) method of the `Property<TodoItem>` is used to get a `Property<string>` which 
+then can be directly embedded into the resulting DOM,
 because Harmaja natively renders Properties. When the value of `name` changes, the updated value will be applied to DOM.
 
 Think: *you can pick a part of your Store and use it as a Store*. This removes the need for the component to *know where the data is* in the global store. 
 In react-redux all components that actually *react* to store changes, need to know the "location" of their data in the store to be able to get it using `useSelector`.
-In contrast using the Property abstraction you can easily `map` out the data from the store and give a handle to your components.
+In contrast using the Property abstraction you can easily [`map`](https://baconjs.github.io/api3/classes/property.html#map) out the data from the store and give a handle to your components.
 
 Another big difference is that store data and local data are the same. No separate mechanism for dealing with local state. Instead, you can declare more Properties in
 your component constructors as you go, to flexibly define data stores at different application layers. Which arguably makes it easier to make changes too, as you don't
@@ -265,7 +266,7 @@ Yet, it's far from elegant especially if you've ever worked with Atoms and Lense
 ## Welcome to the Atom Age
 
 So you're into decomposing read-write access into data. This is where atoms come handy. 
-An `Atom<A>` simply represents a two-way interface to data by extending `Bacon.Property<A>` and adding 
+An `Atom<A>` simply represents a two-way interface to data by extending [`Bacon.Property<A>`](https://baconjs.github.io/api3/classes/property.html) and adding 
 a `set: (newValue: A)` method for changing the value. Let's try it by changing our TextInput to
 
 ```typescript
@@ -356,8 +357,9 @@ and use it in your App like this:
     }    
 ```
 
-See, I created an independent Atom in the App component. It's practically local state to App now. Remember that in Harmaja, just like with Calmm.js, component functions are to be treated like constructors. This means that the local variables created in the function
-will live as long as the component is mounted, and can thus be used for local state (unlike in ordinary react where they would be re-ininitialized on every VDOM render).
+See, I created an independent Atom in the App component. It's practically local state to App now. Remember that in Harmaja, just like with Calmm.js, 
+component functions are to be treated like constructors. This means that the local variables created in the function
+will live as long as the component is mounted, and can thus be used for local state (unlike in React where they would be re-ininitialized on every VDOM render).
 
 That's all there is to local state in Harmaja, really. State can be defined globally, or in any level of the component tree. When you
 use Atoms, you can define them locally or accept them as props. You can even add a fallback:
@@ -371,7 +373,8 @@ use Atoms, you can define them locally or accept them as props. You can even add
 This component could be used with an external atom (often a view into a larger chunk of app state) or without it, in which case
 it would have it's private state.
 
-And it's turtles all the way down by the way. You can define your full application state as an Atom and them `view` your way into details. An example of fully Atom-based application state can be seen at [examples/todoapp-atoms](examples/todoapp-atoms/index.tsx).
+And it's turtles all the way down by the way. You can define your full application state as an Atom and them `view` your way into details. 
+An example of fully Atom-based application state can be seen at [examples/todoapp-atoms](examples/todoapp-atoms/index.tsx).
 
 ## Detaching and syncing state
 
@@ -424,7 +427,11 @@ const ItemView = ({ item }: { item: B.Property<TodoItem> }) => {
 }
 ```
 
-What ListView does here is that it observes `allItems` for changes and renders each item using the ItemView component. When the list of items changes (something is replaced, added or removed) it uses the given `equals` function to determine whether to replace individual item views. With the given `equals` implementation it replaces views only when the `id` field doesn't match, i.e. the view no longer represents the same item. Each item view gets a `Property<TodoItem>` so that they can update when the content in that particular TodoItem is changed. See full implementation in [examples/todoapp](examples/todoapp/index.ts).
+What ListView does here is that it observes `allItems` for changes and renders each item using the ItemView component. 
+When the list of items changes (something is replaced, added or removed) it uses the given `equals` function to determine 
+whether to replace individual item views. With the given `equals` implementation it replaces views only when the `id` field doesn't match, 
+i.e. the view no longer represents the same item. Each item view gets a `Property<TodoItem>` so that they can update when the content 
+in that particular TodoItem is changed. See full implementation in [examples/todoapp](examples/todoapp/index.ts).
 
 ListView also supports read-write access using `Atom`. So if you have
 
@@ -444,7 +451,8 @@ You can have read-write access to the items by using ListView thus:
 />
 ```
 
-As you can see ListView provides a `removeItem` callback for Atom based views, so that in your ItemView you can implement removal simply thus:
+As you can see ListView provides a `removeItem` callback for Atom based views, 
+so that in your ItemView you can implement removal simply thus:
 
 ```typescript
 const Item = ({ item, removeItem }: { item: Atom<TodoItem>, removeItem: () => void }) => (
@@ -457,7 +465,8 @@ const Item = ({ item, removeItem }: { item: Atom<TodoItem>, removeItem: () => v
   )
 ```
 
-This item view implementation only gives a readonly view with a remove link. To make the name editable, you could now easily use the TextInput component we created earlierly:
+This item view implementation only gives a readonly view with a remove link. 
+To make the name editable, you could now easily use the TextInput component we created earlierly:
 
 ```typescript
 const Item = ({ item, removeItem }: { item: Atom<TodoItem>, removeItem: () => void }) => (
@@ -481,7 +490,10 @@ There's a third variation of TextView still, for read-only views:
 />
 ```
 
-So if you provide `renderItem` instead of `renderObservable` or `renderAtom`, you can use a view that renders a plain TodoItem. This means that the item view cannot react to changes in the item data and simply renders the static data it is given. In this case, you'll need to supply a "content equality" kind of `equals` method so that the ListView knows to replace the ItemView when the data inside the item is changed. As seen above, you can also omit the `equals` altogether to use the default `===` equality.
+So if you provide `renderItem` instead of `renderObservable` or `renderAtom`, you can use a view that renders a plain TodoItem. 
+This means that the item view cannot react to changes in the item data and simply renders the static data it is given. 
+In this case, you'll need to supply a "content equality" kind of `equals` method so that the ListView knows to replace the ItemView when the data inside the item is changed. 
+As seen above, you can also omit the `equals` altogether to use the default `===` equality.
 
 In fact, I should rename equals to make a clear distinction between "id equality" and "content equality". Suggestions?
 
@@ -489,17 +501,23 @@ In fact, I should rename equals to make a clear distinction between "id equality
 
 When components subscribe to data sources, it's vital to unsubscribe on unmount to prevent resource leaks.
 
-In traditional React, you used the component lifecycle methods `componentDidMount` and `componentWillUnmount` to subscribe and unsubscribe. This kind of manual resource management is, based on my experience, very error-prone. The `useEffect` hook gives better tools for the job. Still, you have to *remember* to return a cleanup function (see [example](https://reactjs.org/docs/hooks-effect.html#example-using-hooks-1)). When dealing with data sources such as Observables, Promises or the Redux Store, it's better to use a higher level of abstract to avoid doing cleanup manually. And, because all of them are in fact generic abstractions, you can
-build/steal/borrow generic utilities for this. The `useSelector` hook in react-redux is a good example: it gives you the data you need
+In traditional React, you used the component lifecycle methods [`componentDidMount`](https://reactjs.org/docs/react-component.html#componentdidmount) and `componentWillUnmount` to subscribe and unsubscribe. 
+This kind of manual resource management is, based on my experience, very error-prone. 
+The [`useEffect`](https://reactjs.org/docs/hooks-effect.html) hook gives better tools for the job. 
+Still, you have to *remember* to return a cleanup function (see [example](https://reactjs.org/docs/hooks-effect.html#example-using-hooks-1)). 
+When dealing with data sources such as Observables, Promises or the Redux Store, it's better to use a higher level of abstract to avoid doing cleanup manually. 
+And, because all of them are in fact generic abstractions, you can
+build/steal/borrow generic utilities for this. The [`useSelector`](https://react-redux.js.org/api/hooks#useselector) hook in react-redux is a good example: it gives you the data you need
 without bothering you with cleanup. Similarly you can build hooks for dealing with Observables as I discovered in my [blog post](https://www.reaktor.com/blog/make-react-reactive-by-using-hooks/) in 2018.
 
 In Harmaja, there are no hooks. State management is built on Observables and subscriptions to observables are managed automatically based on component lifecycle. Details follow!
 
 As told above, components in Harmaja are functions that are treated as constructors. The return value of a Harmaja component
-is by the way actually a native HTMLElement.
+is actually a native [HTMLElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement).
 
 When you embed observables into the DOM, Harmaja creates a placeholder node (empty text node) into the DOM tree and replaces it with
-the real content when the observable yields a value. If the value is yielded synchronously, the placeholder is unnecessary and is not created. Whenever it subscribes to an observable, it attachs the resultant *unsub* function to the created DOM node so that it can
+the real content when the observable yields a value. If the value is yielded synchronously, the placeholder is unnecessary and is not created. 
+Whenever it subscribes to an observable, it attachs the resultant *unsub* function to the created DOM node so that it can
 perform cleanup later. 
 
 When Harmaja replaces any DOM node, it recursively seeks all attached *unsubs* in the node and its children and calls them to free
@@ -507,7 +525,7 @@ resources related to the removed nodes.
 
 In addition, all observables passed as props to Harmaja components are automatically scoped to component lifecycle. Practically
 Harmaja checks for props that are EventStreams or Properties (but not Buses or Atoms) and instead of passing the `observable` as-is,
-it passes `observable.takeUntil(unmountEvent())` to the component constructor.
+it passes [`observable.takeUntil(unmountEvent())`](https://baconjs.github.io/api3/classes/property.html#takeuntil) to the component constructor.
 
 The only case where you need to be more careful is when your subscribing from a component directly to an external/global source,
 as this is not something that Harmaja can magically manage. When doing this you can use either the `unmountEvent()` eventstream
@@ -561,7 +579,7 @@ const SearchResultsSimplest = ({ state } : { state: B.Property<SearchState> }) =
 }
 ```
 
-The list of result and a message string are derived from the state using `.map` (state decomposition in action).
+The list of result and a message string are derived from the state using [`.map`](https://baconjs.github.io/api3/classes/property.html#map) (state decomposition in action).
 Then we can easily include the "Searching" indicator using the same technique. But showing previous results while 
 searching requires some local state, because that's not incluced in `state`. Fortunately, reactive properties provide
 good tools for this. For instance,
@@ -569,11 +587,11 @@ good tools for this. For instance,
 ```typescript
 const currentResults: B.Property<string[] | null = state.map(s => s.state === "done" ? s.results : null)
 const latestResults: B.Property<string[]> = currentResults.filter(results => results !== null).startWith([])
-````
+```
 
-Here `latestResults` will reflect `currentResults` except that it skips states where there are no results, sticking
-with the previous results in those situations. The `startWith([])` sets an initial value to be used before any
-(non-null) value passes the filter.
+Here `latestResults` will reflect `currentResults` except that, using [`filter`](https://baconjs.github.io/api3/classes/property.html#filter), 
+it skips states where there are no results, sticking with the previous results in those situations. The [`startWith([])`](https://baconjs.github.io/api3/classes/property.html#startwith) 
+sets an initial value to be used before any (non-null) value passes the filter.
 
 Then we can determine the message string to show to the user, based on state and currently shown results:
 
@@ -644,7 +662,7 @@ Lots of interesting details above! First of all, I started with an Atom to store
 the earlierly defined `TextInput` in place.
 
 The actual `search` function is dedacted and could be easily implemented using Axios or fetch. I added a simple wrapper `searchAsEventStream`
-that returns search results a `EventStream` instead of a `Promise`. This is easy using `B.fromPromise`.
+that returns search results a `EventStream` instead of a `Promise`. This is easy using [`B.fromPromise`](https://baconjs.github.io/api3/globals.html#frompromise).
 
 The `searchResult` EventStream is created using [`flatMapLatest`](https://baconjs.github.io/api3/classes/eventstream.html#flatmaplatest) 
 which spawns a new stream for each input event using the `searchAsEventStream`
