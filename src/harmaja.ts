@@ -101,18 +101,15 @@ function createPlaceholder() {
     return document.createTextNode("")
 }
 
-function renderChild(ve: HarmajaChild): DOMElement {
-    if (typeof ve === "string" || typeof ve === "number") {
-        return document.createTextNode(ve.toString())
+function renderChild(child: HarmajaChild): DOMElement {
+    if (typeof child === "string" || typeof child === "number") {
+        return document.createTextNode(child.toString())
     }
-    if (ve === null) {
+    if (child === null) {
         return createPlaceholder()
     }
-    if (ve === undefined) {
-        throw Error("undefined is not a valid element")
-    }
-    if (ve instanceof Bacon.Property) {
-        const observable = ve as HarmajaObservableChild        
+    if (child instanceof Bacon.Property) {
+        const observable = child as HarmajaObservableChild        
         let element: DOMElement | null = null
         const unsub = observable.skipDuplicates().forEach(nextValue => {
             if (!element) {
@@ -134,7 +131,10 @@ function renderChild(ve: HarmajaChild): DOMElement {
         attachUnsub(element, unsub)
         return element
     }
-    return ve
+    if (child instanceof HTMLElement || child instanceof Text) {
+        return child
+    }
+    throw Error(child + " is not a valid element")
 }
 
 function setProp(el: HTMLElement, key: string, value: string) {
