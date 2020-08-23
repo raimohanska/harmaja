@@ -164,8 +164,6 @@ function toKebabCase(inputString: string) {
 }
 
 function unsubObservables(element: Element | Text | ChildNode) {
-    if (element instanceof Text) return
-
     let elementAny = element as any
     if (elementAny.unsubs) {
         for (const unsub of elementAny.unsubs as Bacon.Unsub[]) {

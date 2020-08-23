@@ -40,6 +40,19 @@ describe("Harmaja", () => {
         expect(htmlOf(el)).toEqual(`<h1 class="yuuuge"></h1>`)
     })
 
+    it("unsubscribes on unmount", () => {
+        const bus = new B.Bus()
+        const property = bus.toProperty("hello")
+        const child = <h1>{property}</h1>
+        const childAtom = H.atom(child)
+        const root = <div>{childAtom}</div>
+        expect(htmlOf(root)).toEqual(`<div><h1>hello</h1></div>`)
+        expect((property as any).dispatcher.subscriptions.length).toEqual(1)
+        childAtom.set(null)
+        expect(htmlOf(root)).toEqual(`<div></div>`)
+        expect((property as any).dispatcher.subscriptions.length).toEqual(0)
+    })
+
     it("More child types", () => {
         expect(htmlOf(<h1>{"asdf"}</h1>)).toEqual(`<h1>asdf</h1>`)
         expect(htmlOf(<h1>{42}</h1>)).toEqual(`<h1>42</h1>`)
