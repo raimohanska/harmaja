@@ -247,6 +247,11 @@ declare global {
             onFocusCapture?: FocusEventHandler<T>;
             onBlur?: FocusEventHandler<T>;
             onBlurCapture?: FocusEventHandler<T>;
+            onChange?: EventHandler<NativeEvent>;
+            onInput?: EventHandler<InputEvent>;
+            onReset?: EventHandler<NativeEvent>;
+            onSubmit?: EventHandler<NativeEvent>;
+            onInvalid?: EventHandler<NativeEvent>;
             onLoad?: EventHandler<NativeEvent>;
             onLoadCapture?: EventHandler<NativeEvent>;
             onError?: EventHandler<NativeEvent>;

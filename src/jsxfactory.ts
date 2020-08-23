@@ -234,7 +234,6 @@ declare global {
     type DragEventHandler<T = Element> = EventHandler<DragEvent>;
     type FocusEventHandler<T = Element> = EventHandler<FocusEvent>;
     
-    
     type KeyboardEventHandler<T = Element> = EventHandler<KeyboardEvent>;
     type MouseEventHandler<T = Element> = EventHandler<MouseEvent>;
     type TouchEventHandler<T = Element> = EventHandler<TouchEvent>;
@@ -302,6 +301,13 @@ declare global {
         onFocusCapture?: FocusEventHandler<T>;
         onBlur?: FocusEventHandler<T>;
         onBlurCapture?: FocusEventHandler<T>;
+
+        // Form Events
+        onChange?: EventHandler<NativeEvent>;
+        onInput?: EventHandler<InputEvent>;
+        onReset?: EventHandler<NativeEvent>;
+        onSubmit?: EventHandler<NativeEvent>;
+        onInvalid?: EventHandler<NativeEvent>;
 
         // Image Events
         onLoad?: EventHandler<NativeEvent>;
