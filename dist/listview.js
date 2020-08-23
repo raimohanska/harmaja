@@ -1,7 +1,7 @@
 import { attachUnsub, removeElement, replaceElement } from "./harmaja";
 export function ListView(props) {
     var observable = ("atom" in props) ? props.atom : props.observable;
-    var equals = props.equals;
+    var _a = props.equals, equals = _a === void 0 ? function (a, b) { return a === b; } : _a;
     // TODO: would work better if could return multiple elements!
     var rootElement = document.createElement("span");
     var currentValues = null;
@@ -31,7 +31,7 @@ export function ListView(props) {
                 }
             }
             for (var i = currentValues.length - 1; i >= nextValues.length; i--) {
-                console.log("Remove element for", currentValues[i]);
+                //console.log("Remove element for", currentValues[i])
                 removeElement(rootElement.childNodes[i]);
             }
         }

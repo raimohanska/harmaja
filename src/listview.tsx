@@ -2,7 +2,7 @@ import * as Bacon from "baconjs"
 import { attachUnsub, removeElement, replaceElement } from "./harmaja"
 import { Atom } from "./atom"
 
-// TODO: any type below. How to refer to the JSX.Element type?
+// TODO: any type below. Figure out! Probably some validation for the renderer results is in order too
 export type ListViewProps<A> = {
     observable: Bacon.Property<A[]>, 
     renderObservable: (x: Bacon.Property<A>) => any, 
@@ -10,7 +10,7 @@ export type ListViewProps<A> = {
 } | {
     observable: Bacon.Property<A[]>, 
     renderItem: (x: A) => any, 
-    equals: (x: A, y: A) => boolean
+    equals?: (x: A, y: A) => boolean
 } | {
     atom: Atom<A[]>, 
     renderAtom: (x: Atom<A>, remove: () => void) => any, 
@@ -18,7 +18,7 @@ export type ListViewProps<A> = {
 }
 export function ListView<A>(props: ListViewProps<A>) {
     const observable = ("atom" in props) ? props.atom : props.observable
-    const { equals } = props    
+    const { equals = (a, b) => a === b } = props    
     // TODO: would work better if could return multiple elements!
     const rootElement = document.createElement("span")
     let currentValues: A[] | null = null
@@ -47,7 +47,7 @@ export function ListView<A>(props: ListViewProps<A>) {
             }
 
             for (let i = currentValues.length - 1; i >= nextValues.length; i--) {
-                console.log("Remove element for", currentValues[i])
+                //console.log("Remove element for", currentValues[i])
                 removeElement(rootElement.childNodes[i])
             }
         }

@@ -53,11 +53,11 @@ You can very well combine the above concepts so that you start with several stat
 
 Part of my process has been validating my work with some examples I've previously used for the comparison of different React state management solutions. 
 
-First, let's consider a TODO app. See the [examples/todoapp/index.tsx](examples/todoapp/index.tsx). I've added some annotations. In this example, application state is reduced from different events (add/remove/complete todo item).
+First, let's consider a TODO app. See the [examples/todoapp](examples/todoapp/index.tsx). I've added some annotations. In this example, application state is reduced from different events (add/remove/complete todo item).
 
-Then there's the same application using Atoms [examples/todoapp-atoms/index.tsx](examples/todoapp-atoms/index.tsx). It's rather less verbose, because with Atoms, you can decompose and manipulate substate directly using `atom.set` instead using events and reducers.
+Then there's the same application using Atoms [examples/todoapp-atoms](examples/todoapp-atoms/index.tsx). It's rather less verbose, because with Atoms, you can decompose and manipulate substate directly using `atom.set` instead using events and reducers.
 
-Finally a bit more involved example featuring a "CRM": [examples/consultants/index.tsx](examples/consultants/index.tsx). It features some harder problems like dealing with asynchronous (and randomly failing!) server calls as well as edit/save/cancel.
+Finally a bit more involved example featuring a "CRM": [examples/consultants](examples/consultants/index.tsx). It features some harder problems like dealing with asynchronous (and randomly failing!) server calls as well as edit/save/cancel.
 
 Examples covered also in the chapters below, with some context.
 
@@ -371,7 +371,7 @@ use Atoms, you can define them locally or accept them as props. You can even add
 This component could be used with an external atom (often a view into a larger chunk of app state) or without it, in which case
 it would have it's private state.
 
-And it's turtles all the way down by the way. You can define your full application state as an Atom and them `view` your way into details. An example of fully Atom-based application state can be seen at [examples/todoapp-atoms](examples/todoapp-atoms).
+And it's turtles all the way down by the way. You can define your full application state as an Atom and them `view` your way into details. An example of fully Atom-based application state can be seen at [examples/todoapp-atoms](examples/todoapp-atoms/index.tsx).
 
 ## Detaching and syncing state
 
@@ -424,7 +424,7 @@ const ItemView = ({ item }: { item: B.Property<TodoItem> }) => {
 }
 ```
 
-What ListView does here is that it observes `allItems` for changes and renders each item using the ItemView component. When the list of items changes (something is replaced, added or removed) it uses the given `equals` function to determine whether to replace individual item views. With the given `equals` implementation it replaces views only when the `id` field doesn't match, i.e. the view no longer represents the same item. Each item view gets a `Property<TodoItem>` so that they can update when the content in that particular TodoItem is changed. See full implementation in [examples/todoapp/index.ts](examples/todoapp/index.ts).
+What ListView does here is that it observes `allItems` for changes and renders each item using the ItemView component. When the list of items changes (something is replaced, added or removed) it uses the given `equals` function to determine whether to replace individual item views. With the given `equals` implementation it replaces views only when the `id` field doesn't match, i.e. the view no longer represents the same item. Each item view gets a `Property<TodoItem>` so that they can update when the content in that particular TodoItem is changed. See full implementation in [examples/todoapp](examples/todoapp/index.ts).
 
 ListView also supports read-write access using `Atom`. So if you have
 
@@ -470,7 +470,7 @@ const Item = ({ item, removeItem }: { item: Atom<TodoItem>, removeItem: () => v
   )
 ```
 
-See the full atomic implementation of TodoApp in [examples/todoapp-atoms/index.ts](examples/todoapp-atoms/index.ts).
+See the full atomic implementation of TodoApp in [examples/todoapp-atom](examples/todoapp-atoms/index.ts).
 
 There's a third variation of TextView still, for read-only views:
 
@@ -478,11 +478,10 @@ There's a third variation of TextView still, for read-only views:
 <ListView 
     observable={items} 
     renderItem={(item: TodoItem) => <li><Item item={item}/></li>}
-    equals={(a, b) => a === b}
 />
 ```
 
-So if you provide `renderItem` instead of `renderObservable` or `renderAtom`, you can use a view that renders a plain TodoItem. This means that the item view cannot react to changes in the item data and simply renders the static data it is given. In this case, you'll need to supply a "content equality" kind of `equals` method so that the ListView knows to replace the ItemView when the data inside the item is changed.
+So if you provide `renderItem` instead of `renderObservable` or `renderAtom`, you can use a view that renders a plain TodoItem. This means that the item view cannot react to changes in the item data and simply renders the static data it is given. In this case, you'll need to supply a "content equality" kind of `equals` method so that the ListView knows to replace the ItemView when the data inside the item is changed. As seen above, you can also omit the `equals` altogether to use the default `===` equality.
 
 In fact, I should rename equals to make a clear distinction between "id equality" and "content equality". Suggestions?
 
@@ -520,9 +519,142 @@ I don't think a state management solution is complete until it has a strategy fo
 with Promises. Common scenarios include
 
 - Fetching extra data from server when mounting a component. Gets more complicated if you need to re-fetch in case some componnent prop changes
+- Fetching data in response to a user action, i.e. the search scenario. This boils down the first scenario if you have a SearchResults component that fetches data in response to changed query string
 - Storing changed data to server. Complexity arises from the need to disable UI controls while saving, handling errors gracefully etc. Bonus points for considering whether this is a local or a global activity - and where should the transient state be stored.
 
-TODO: example case
+### The search example
+
+Let's consider the search example. Starting from SearchResults component, it might look like this:
+
+```typescript
+type SearchState = { state: "initial" } | { state: "searching", searchString: string } | { state: "done", results: string[], searchString: string }
+
+const SearchResults = ({ state } : { state: B.Property<SearchState> }) => {
+    // ?
+}
+
+```
+
+I didn't want to make this too simple, because simple things are always easy to do. In this case, we want to
+
+- Show the results if any
+- Show "nothing found" in case the result is an empty array
+- Show an empty component in case there's nothing to show (state=initial)
+- Show "Searching..." when search is in progress, or show previous search results with `opacity:0.5` in case there are any
+
+For starters we might try a simplistic approach:
+
+```typescript
+const SearchResultsSimplest = ({ state } : { state: B.Property<SearchState> }) => {
+    const currentResults: B.Property<string[] | null = state.map(s => s.state === "done" ? s.results : null)
+    const message: B.Property<string> = currentResults.map(r => r.length === 0 ? "Nothing found" : null)
+    
+    return <div>
+        { message }
+        <ul><ListView
+            observable={currentResults}
+            renderItem={ result => <li>{result}</li>}
+        /></ul>
+    </div>
+}
+```
+
+The list of result and a message string are derived from the state using `.map` (state decomposition in action).
+Then we can easily include the "Searching" indicator using the same technique. But showing previous results while 
+searching requires some local state, because that's not incluced in `state`. Fortunately, reactive properties provide
+good tools for this. For instance,
+
+```typescript
+const currentResults: B.Property<string[] | null = state.map(s => s.state === "done" ? s.results : null)
+const latestResults: B.Property<string[]> = currentResults.filter(results => results !== null).startWith([])
+````
+
+Here `latestResults` will reflect `currentResults` except that it skips states where there are no results, sticking
+with the previous results in those situations. The `startWith([])` sets an initial value to be used before any
+(non-null) value passes the filter.
+
+Then we can determine the message string to show to the user, based on state and currently shown results:
+
+```typescript
+const message = B.combine(state, latestResults, (s, r) => {
+    if (s.state == "done" && r.length === 0) return "Nothing found"
+    if (s.state === "searching" && r.length === 0) return "Searching..."
+    return ""
+})
+```
+
+Here the `B.combine` method creates a new Property that reflects the latest values from the given two properties (state, latestResults) and
+applies the given mapping function to the values.
+
+The `opacity:0.5` style can be applied similarly using `B.combine` and the final SearchResults component looks like this:
+
+```typescript
+const SearchResults = ({ state } : { state: B.Property<SearchState> }) => {
+    const currentResults: B.Property<string[] | null> = state.map(s => s.state === "done" ? s.results : null)
+    const latestResults: B.Property<string[]> = currentResults.filter(results => results !== null).startWith([])
+
+    const message = B.combine(state, latestResults, (s, r) => {
+        if (s.state == "done" && r.length === 0) return "Nothing found"
+        if (s.state === "searching" && r.length === 0) return "Searching..."
+        return ""
+    })
+    const style = B.combine(state, latestResults, (s, r) => {
+        if (s.state === "searching" && r.length > 0) return { opacity: 0.5 }
+        return {}
+    })
+    
+    return <div>
+        { message }
+        <ul style={ style }><ListView
+            observable={ latestResults }
+            renderItem={ result => <li>{result}</li>}
+        /></ul>
+
+    </div>
+}
+```
+
+But this was supposed to be about dealing with asynchronous requests! Let's get to the main Search component now.
+
+```typescript
+declare function search(searchString: string): Promise<string[]> // implement using fetch()
+function searchAsEventStream(searchString: string): B.EventStream<string[]> {
+    return B.fromPromise(search(searchString))
+}
+const Search = () => {
+    const searchString = atom("")
+    const searchStringChange: B.EventStream<string> = searchString.changes()
+    const searchResult: B.EventStream<string[]> = searchStringChange.flatMapLatest(searchAsEventStream)
+    const state: B.Property<SearchState> = B.update(
+        { state: "initial"} as SearchState,
+        [searchStringChange, (state, searchString) => ({ state: "searching", searchString })],
+        [searchResult, searchString, (state, results, searchString) => ({ state: "done", results, searchString})]
+    )
+    return <div>
+        <h1>Cobol search</h1>
+        <TextInput value={searchString} placeholder="Enter text to start searching"/>
+        <SearchResults state={state} />
+    </div>
+}
+```
+
+Lots of interesting details above! First of all, I started with an Atom to store the current `searchString`. Then I plugged
+the earlierly defined `TextInput` in place.
+
+The actual `search` function is dedacted and could be easily implemented using Axios or fetch. I added a simple wrapper `searchAsEventStream`
+that returns search results a `EventStream` instead of a `Promise`. This is easy using `B.fromPromise`.
+
+The `searchResult` EventStream is created using `flatMapLatest` which spawns a new stream for each input event using the `searchAsEventStream`
+helper and keeps on listening for results from the latest created stream (that's where the "latest" part in the name comes from).
+
+Then I've introduced a reducer, once again using `B.update`, and come up with the state property. This setup is now local to the Search component,
+but could be moved into a separate store module if it turned out that it's needed in a larger scope.
+
+One more notice: on the last line of the reducer, I've included an extra parameter, i.e. the searchString property. This is a convenient way
+to plug the latest value of a Property into the equation in a reducer. In each of the patterns in `B.update` you should have one EventStream and
+zero or more Properties. Only the EventStream will trigger the update; Properties are there only so that you can use their latest value in the equation.
+
+See the full search implementation at [examples/search](examples/search/index.tsx).
 
 ## Cool FRP things
 

@@ -108,6 +108,9 @@ function renderChild(ve: HarmajaChild): DOMElement {
     if (ve === null) {
         return createPlaceholder()
     }
+    if (ve === undefined) {
+        throw Error("undefined is not a valid element")
+    }
     if (ve instanceof Bacon.Property) {
         const observable = ve as HarmajaObservableChild        
         let element: DOMElement | null = null

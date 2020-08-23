@@ -169,6 +169,9 @@ function renderChild(ve) {
     if (ve === null) {
         return createPlaceholder();
     }
+    if (ve === undefined) {
+        throw Error("undefined is not a valid element");
+    }
     if (ve instanceof Bacon.Property) {
         var observable = ve;
         var element_1 = null;

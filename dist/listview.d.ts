@@ -7,7 +7,7 @@ export declare type ListViewProps<A> = {
 } | {
     observable: Bacon.Property<A[]>;
     renderItem: (x: A) => any;
-    equals: (x: A, y: A) => boolean;
+    equals?: (x: A, y: A) => boolean;
 } | {
     atom: Atom<A[]>;
     renderAtom: (x: Atom<A>, remove: () => void) => any;
