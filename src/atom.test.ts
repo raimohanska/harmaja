@@ -46,8 +46,7 @@ describe("Atom", () => {
             expect(a.get()).toEqual("world")
             a.set(null)
             expect(a.get()).toEqual("world")
-            console.log(a.toString())
-            console.log(a.set("hello").toString())
+            
             expect(a.set("hello")).toEqual(a)
         })
     
