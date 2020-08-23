@@ -162,18 +162,15 @@ function renderHTMLElement(type, props, children) {
 function createPlaceholder() {
     return document.createTextNode("");
 }
-function renderChild(ve) {
-    if (typeof ve === "string" || typeof ve === "number") {
-        return document.createTextNode(ve.toString());
+function renderChild(child) {
+    if (typeof child === "string" || typeof child === "number") {
+        return document.createTextNode(child.toString());
     }
-    if (ve === null) {
+    if (child === null) {
         return createPlaceholder();
     }
-    if (ve === undefined) {
-        throw Error("undefined is not a valid element");
-    }
-    if (ve instanceof Bacon.Property) {
-        var observable = ve;
+    if (child instanceof Bacon.Property) {
+        var observable = child;
         var element_1 = null;
         var unsub_1 = observable.skipDuplicates().forEach(function (nextValue) {
             if (!element_1) {
@@ -182,7 +179,7 @@ function renderChild(ve) {
             else {
                 var oldElement = element_1;
                 element_1 = renderChild(nextValue);
-                console.log("Replacing", oldElement, "with", element_1);
+                //console.log("Replacing", oldElement, "with", element)
                 // TODO: can we handle a case where the observable yields multiple elements? Currently not.
                 //console.log("Replacing element", oldElement)
                 detachUnsub(oldElement, unsub_1); // <- attaching unsub to the replaced element instead
@@ -196,7 +193,10 @@ function renderChild(ve) {
         attachUnsub(element_1, unsub_1);
         return element_1;
     }
-    return ve;
+    if (child instanceof HTMLElement || child instanceof Text) {
+        return child;
+    }
+    throw Error(child + " is not a valid element");
 }
 function setProp(el, key, value) {
     if (key.startsWith("on")) {
@@ -232,8 +232,6 @@ function toKebabCase(inputString) {
 }
 function unsubObservables(element) {
     var e_4, _a, e_5, _b;
-    if (element instanceof Text)
-        return;
     var elementAny = element;
     if (elementAny.unsubs) {
         try {
