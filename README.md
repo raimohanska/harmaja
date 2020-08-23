@@ -376,12 +376,6 @@ it would have it's private state.
 And it's turtles all the way down by the way. You can define your full application state as an Atom and them `view` your way into details. 
 An example of fully Atom-based application state can be seen at [examples/todoapp-atoms](examples/todoapp-atoms/index.tsx).
 
-## Detaching and syncing state
-
-TODO: study on buffering local changes until commit / cancel
-
-Covered in [examples/consultants](examples/consultants/index.jsx).
-
 ## Arrays
 
 Efficient and convenient way of working with arrays of data is a necessary step to success. When 
@@ -686,6 +680,12 @@ To use a 300 millisecond debounce, the change looks like this:
 See the full search implementation at [examples/search](examples/search/index.tsx).
 
 More dealing with async request at [examples/consultants](examples/consultants/index.tsx).
+
+## Detaching and syncing state
+
+TODO: study on buffering local changes until commit / cancel
+
+Covered in [examples/consultants](examples/consultants/index.jsx).
 
 ## Category theory view
 
