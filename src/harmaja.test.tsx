@@ -1,6 +1,7 @@
+import { h } from "./index"
 import * as H from "./index"
 import * as B from "baconjs"
-import '@testing-library/jest-dom'
+import { DOMElement } from "./harmaja"
 
 describe("Harmaja", () => {
     it("works", () => {
@@ -10,15 +11,15 @@ describe("Harmaja", () => {
 
     it("renders observable string as child", () => {
         const atom = H.atom("yes")
-        const el = H.createElement("h1", {}, atom)
+        const el = <h1>{atom}</h1>
         expect(htmlOf(el)).toEqual("<h1>yes</h1>")
         atom.set("no")
         expect(htmlOf(el)).toEqual("<h1>no</h1>")
     })
 
     it("renders observable HTMLElement as child", () => {
-        const atom = H.atom(H.createElement("input", { type: "text" }) as HTMLElement | null )
-        const el = H.createElement("h1", {}, atom)
+        const atom = H.atom(<input type="text"/> as HTMLElement | null )
+        const el = <h1>{atom}</h1>
         //console.log((el as any).outerHTML)
         expect(htmlOf(el)).toEqual(`<h1><input type="text"></h1>`)
         atom.set(null)
@@ -27,7 +28,7 @@ describe("Harmaja", () => {
 
     it("renders observable as prop", () => {
         const atom = H.atom("big")
-        const el = H.createElement("h1", { className: atom })
+        const el = <h1 className={atom}></h1>
         expect(htmlOf(el)).toEqual(`<h1 class="big"></h1>`)
         atom.set("small")
         expect(htmlOf(el)).toEqual(`<h1 class="small"></h1>`)
