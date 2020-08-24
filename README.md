@@ -6,7 +6,9 @@ An experimental web frontend framework named after a lighthouse. It maybe easies
 - Function components only
 - Component function is treated like a *constructor*, i.e. called just once per component lifecycle
 - Dynamic content passed to components as observable properties
-- Uses Bacon.js for observables at the moment
+- Directly embed Observables in JSX, resulting to "surgical" DOM updates
+- Written in Typescript. Type-safety considered a high priority.
+- Uses Bacon.js for observables at the moment (includes its own Atom implementation)
 - Strongly inspired by [Calmm.js](https://github.com/calmm-js/documentation/blob/master/introduction-to-calmm.md). If you're familiar with Calmm, you can think of Harmaja as "Calmm, but with types and no React dependency
 
 Published on NPM: https://www.npmjs.com/package/harmaja
