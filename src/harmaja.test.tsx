@@ -1,62 +1,51 @@
 import { h } from "./index"
 import * as H from "./index"
 import * as B from "baconjs"
-import { DOMElement } from "./harmaja"
+import { DOMElement, removeElement } from "./harmaja"
 
 describe("Harmaja", () => {
-    it("works", () => {
-        const el = H.createElement("h1", {})
-        expect(el.nodeName).toEqual("H1")
-    })
-
-    it("renders observable string as child", () => {
-        const atom = H.atom("yes")
-        const el = <h1>{atom}</h1>
+    it("Creating elements without JSX", () => {
+        const el = H.createElement("h1", {}, "yes")
         expect(htmlOf(el)).toEqual("<h1>yes</h1>")
-        atom.set("no")
-        expect(htmlOf(el)).toEqual("<h1>no</h1>")
-        atom.set("definitely")
-        expect(htmlOf(el)).toEqual("<h1>definitely</h1>")
     })
 
-    it("renders observable HTMLElement as child", () => {
-        const atom = H.atom(<input type="text"/> as HTMLElement | null )
-        const el = <h1>{atom}</h1>
+    it("Creating elements with JSX", () => {
+        const el = <h1>yes</h1>
+        expect(htmlOf(el)).toEqual("<h1>yes</h1>")
+    })
+
+    it("Rendering observable string as child", () => testRender("yes", (value, set) => {
+        const el = <h1>{value}</h1>
+        expect(htmlOf(el)).toEqual("<h1>yes</h1>")
+        set("no")
+        expect(htmlOf(el)).toEqual("<h1>no</h1>")
+        set("definitely")
+        expect(htmlOf(el)).toEqual("<h1>definitely</h1>")
+        return el
+    }))
+
+    it("renders observable HTMLElement as child", () => testRender(<input type="text"/> as HTMLElement | null, (value, set) => {
+        const el = <h1>{value}</h1>
         //console.log((el as any).outerHTML)
         expect(htmlOf(el)).toEqual(`<h1><input type="text"></h1>`)
-        atom.set(null)
+        set(null)
         expect(htmlOf(el)).toEqual(`<h1></h1>`)
-        atom.set(<input type="checkbox"/>)
+        set(<input type="checkbox"/>)
         expect(htmlOf(el)).toEqual(`<h1><input type="checkbox"></h1>`)
-    })
+        return el
+    }))
 
-    it("renders observable as prop", () => {
-        const atom = H.atom("big")
-        const el = <h1 className={atom}></h1>
+    it("renders observable as prop", () => testRender("big", (value, set) => {
+        const el = <h1 className={value}></h1>
         expect(htmlOf(el)).toEqual(`<h1 class="big"></h1>`)
-        atom.set("small")
+        set("small")
         expect(htmlOf(el)).toEqual(`<h1 class="small"></h1>`)
-        atom.set("yuuuge")
+        set("yuuuge")
         expect(htmlOf(el)).toEqual(`<h1 class="yuuuge"></h1>`)
-    })
+        return el
+    }))
 
-    it("unsubscribes on unmount", () => {
-        const bus = new B.Bus()
-        const property = bus.toProperty("hello")
-        const child = <h1>{property}</h1>
-        const childAtom = H.atom(child)
-        const root = <div>{childAtom}</div>
-        expect(htmlOf(root)).toEqual(`<div><h1>hello</h1></div>`)
-        expect((property as any).dispatcher.subscriptions.length).toEqual(1)
-        childAtom.set(null)
-        expect(htmlOf(root)).toEqual(`<div></div>`)
-        expect((property as any).dispatcher.subscriptions.length).toEqual(0)
-    })
-
-    // TODO: more unsub tests
-    // TODO: list view tests
-
-    it("More child types", () => {
+    it("Accepted and rejected child types", () => {
         expect(htmlOf(<h1>{"asdf"}</h1>)).toEqual(`<h1>asdf</h1>`)
         expect(htmlOf(<h1>{42}</h1>)).toEqual(`<h1>42</h1>`)
         expect(htmlOf(<h1>{null}</h1>)).toEqual(`<h1></h1>`)
@@ -76,3 +65,12 @@ describe("Harmaja", () => {
         }
     }
 })
+
+function testRender<T>(init: T, test: (property: B.Property<T>, set: (v: T) => any) => DOMElement) {
+    const bus = new B.Bus<T>()
+    const property = bus.toProperty(init)
+    const element = test(property, bus.push)
+    removeElement(element)
+    // Verify that all subscribers are removed on unmount
+    expect((property as any).dispatcher.subscriptions.length).toEqual(0)
+}
