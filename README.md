@@ -43,23 +43,25 @@ Tweat your tsconfig.json for the custom JSX factory.
 
 [*EventStream*](https://baconjs.github.io/api3/classes/eventstream.html) represents a stream of events that you can observe by calling its `forEach` method. In Bacon.js a *Bus* is an EventStream that allows you to `push` events to the stream as well as observe events. In Harmaja, buses are used for conveying distinct events from the UI to state reducers.
 
-*Atom* is a Property that also allows mutation using the `set` methods. You can create an atom simply by `atom("hello")` and then use `atom.get` and `atom.set` for viewing and mutating its value. May sound underwhelming, but the Atom is also a reactive property, meaning that it's state can be observed and *reacted*. In Harmaja particularly, you can embed atoms into your VDOM so that your DOM will automatically reflect the changes in their value! Furthermore, you can use `atom.view("attributename")` to get a new Atom that represents the state of a given attribute within the data structure wrapped by the original Atom. Currently Harmaja comes with its own Atom implementation.
+[*Bus*](https://baconjs.github.io/api3/classes/bus.html) is an EventStream that allows you to [push](https://baconjs.github.io/api3/classes/bus.html#push) new events into it. It is used in Harmaja for defining events that originate from the UI. Typically, an `onClick` or similar handler function pushes a new value into a Bus.
 
-*State decomposition* means selecting a part or a slice of a bigger state object. This may be familiar to you from Redux, where you `mapStateToProps` or `useSelector` for making your component *react* to changes in some parts of the application state. In Harmaja, you use reactive properties or Atoms for representing state and then select parts of it for your component using `property.map` or `atom.view`, the latter providing a read-write interface.
+[*Atom*](https://github.com/raimohanska/harmaja/blob/master/src/atom.ts) is a Property that also allows mutation using the `set` methods. You can create an atom simply by `atom("hello")` and then use `atom.get` and `atom.set` for viewing and mutating its value. May sound underwhelming, but the Atom is also a reactive property, meaning that it's state can be observed and *reacted*. In Harmaja particularly, you can embed atoms into your VDOM so that your DOM will automatically reflect the changes in their value! Furthermore, you can use `atom.view("attributename")` to get a new Atom that represents the state of a given attribute within the data structure wrapped by the original Atom. Currently Harmaja comes with its own Atom implementation.
 
-*State composition* is the opposite of the above (but will co-operate nicely) and means that you can compose state from different sources. This is also a familiar concept from Redux, if you have ever composed reducers. 
+*State decomposition* means selecting a part or a slice of a bigger state object. This may be familiar to you from Redux, where you `mapStateToProps` or `useSelector` for making your component *react* to changes in some parts of the application state. In Harmaja, you use reactive properties or Atoms for representing state and then select parts of it for your component using [`property.map`](https://baconjs.github.io/api3/classes/property.html#map) or [`atom.view`](https://github.com/raimohanska/harmaja/blob/master/src/atom.ts#L9), the latter providing a read-write interface.
 
-You can very well combine the above concepts so that you start with several state atoms and event streams, then compose them all into a single "megablob" and finally decompose from there to deliver the essential parts of each of your components.
+*State composition* is the opposite of the above (but will co-operate nicely) and means that you can compose state from different sources. This is also a familiar concept from Redux, if you have ever composed reducers. For example, you can use [`Bacon.combineWith`](https://baconjs.github.io/api3/globals.html#combinewith) to compose two state atoms into a composite state Property.
+
+You can very well combine the above concepts so that you start with several state Atoms and EventStreams, then compose them all into a single "megablob" Property and finally decompose from there to deliver the essential parts of each of your components.
 
 ## Examples
 
-Part of my process has been validating my work with some examples I've previously used for the comparison of different React state management solutions. 
+Part of my process has been validating my work with some examples I've previously used for the comparison of different React state management solutions. Here I quickly list some examples, but I beg you to read the full story below, which will visit each of these examples in a problem context instead of just throwing a bucket of code in your face.
 
-First, let's consider a TODO app. See the [examples/todoapp](examples/todoapp/index.tsx). I've added some annotations. In this example, application state is reduced from different events (add/remove/complete todo item).
+- Todo App with Unidirectional data flow: [examples/todoapp](examples/todoapp/index.tsx). I've added some annotations. In this example, application state is reduced from different events (add/remove/complete todo item).
 
-Then there's the same application using Atoms [examples/todoapp-atoms](examples/todoapp-atoms/index.tsx). It's rather less verbose, because with Atoms, you can decompose and manipulate substate directly using `atom.set` instead using events and reducers.
+- Todo App with Atoms: [examples/todoapp-atoms](examples/todoapp-atoms/index.tsx). It's rather less verbose, because with Atoms, you can decompose and manipulate substate directly using `atom.set` instead using events and reducers.
 
-Finally a bit more involved example featuring a "CRM": [examples/consultants](examples/consultants/index.tsx). It features some harder problems like dealing with asynchronous (and randomly failing!) server calls as well as edit/save/cancel.
+- Finally a bit more involved example featuring a "CRM": [examples/consultants](examples/consultants/index.tsx). It features some harder problems like dealing with asynchronous (and randomly failing!) server calls as well as edit/save/cancel.
 
 Examples covered also in the chapters below, with some context.
 
