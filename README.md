@@ -287,7 +287,7 @@ like so:
 
 ```typescript
 const ItemView = ({ item, onChange}: { item: B.Property<TodoItem>, onChange: (i: TodoItem) => void }) => {  
-  const itemAtom: Atom<TodoItem> = atom(item, updated => updateItemBus.push(updated))
+  const itemAtom: Atom<TodoItem> = atom(item, onChange)
   return (
     <span>
       <TextInput value={itemAtom.view("name")} />
