@@ -57,4 +57,11 @@ describe("Harmaja", () => {
         expect(() => (<h1>{new Date()}</h1>)).toThrow()
         expect(() => (<h1>{({})}</h1>)).toThrow()
     })
+
+    it("Supports refs", () => {
+        let reffed: HTMLSpanElement | null = null;
+        <div><span id="x" ref={input => { reffed = input }}>Hello</span></div>
+        expect((reffed as any)?.id).toEqual("x")
+        expect(() => <span id="x" ref="not-a-function"/>).toThrow("Expecting ref prop to be a function, got not-a-function")
+    })
 })

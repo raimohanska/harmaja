@@ -87,7 +87,7 @@ function renderHTMLElement(type: string, props: HarmajaProps, children: HarmajaC
             })
             attachUnsub(el, unsub)
         } else {
-            setProp(el, key, value as string)        
+            setProp(el, key, value)        
         }
     }
     
@@ -137,7 +137,14 @@ function renderChild(child: HarmajaChild): DOMElement {
     throw Error(child + " is not a valid element")
 }
 
-function setProp(el: HTMLElement, key: string, value: string) {
+function setProp(el: HTMLElement, key: string, value: any) {
+    if (key === "ref") {
+        if (typeof value !== "function") {
+            throw Error("Expecting ref prop to be a function, got " + value)
+        }
+        value(el)
+        return
+    }
     if (key.startsWith("on")) {
         key = key.toLowerCase()
     }           
