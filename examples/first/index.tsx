@@ -11,11 +11,13 @@ element.onclick = (e: MouseEvent) => alert("HELLO")
 // Setting style as string
 element.setAttribute("style", "text-decoration: underline;");
 
-document.getElementById("root")!.appendChild(<div>
+const ListComponent = ({ stuff } : { stuff : string[] }) => {
+    return <ul>
+        { stuff.map(str => <li>{str}</li>) }
+    </ul>
+}
+
+document.getElementById("root").appendChild(<div>
         <h1>Hello world</h1>
-        <ul>
-            <li>Reaktor</li>
-            <li>Is</li>
-            <li>Best</li>
-        </ul>
+        <ListComponent stuff={["Reaktor", "iz", "teh", "bestest"]}/>
     </div>)
