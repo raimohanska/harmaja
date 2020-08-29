@@ -66,6 +66,20 @@ import { mount, mountEvent, onMount, onUnmount, unmount, unmountEvent } from "ha
 
 Methods documented [here](dist/harmaja.d.ts).
 
+### Refs
+
+Harmaja supports *refs* similarly to React. If you supply a prop names `ref` to an element,
+it will be expected to be a function and will be called when the particular element has been
+mounted on the DOM. As a parameter, your function will receive the actual HTMLElement that was
+mounted on the DOM.
+
+For instance:
+
+```typescript
+
+<span id="x" ref={(el: HTMLSpanElement) => alert("Mounted " + el)}>Hello</span>
+```
+
 ### ListView
 
 ```typescript
