@@ -100,7 +100,7 @@ export default function App() {
 }
 
 function NotificationView({ notification }: { notification: B.Property<Notification | null> }) {
-  return notification.map(notification => {
+  return <span>{notification.map(notification => {
     if (!notification) return null;
     return (
       <div
@@ -113,7 +113,7 @@ function NotificationView({ notification }: { notification: B.Property<Notificat
         {notification.text}
       </div>
     );  
-  })
+  })}</span>
 }
 
 type CardState = "view" | "edit" | "disabled";

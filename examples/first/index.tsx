@@ -20,11 +20,6 @@ const Plus = ({bus} : {bus: Bacon.Bus<number>}) => {
 const Minus = ({bus} : {bus: Bacon.Bus<number>}) => {
     return <button onClick={() => bus.push(-1)}>-</button>
 }
-
-const Reactive = () => {
-    return Bacon.constant(<span>reactive</span>)
-}
-
 const ReactiveProps = () => {
     return <input value={ticker} style={Bacon.constant({"background": "black"})}/>
 }
@@ -36,7 +31,6 @@ const TickerWithMultiplier = ({ multiplier, ticker } : { multiplier: number, tic
 
 const Root = () =>
     <div id="root">
-        <Reactive/>
         <ReactiveProps/>
         <Plus bus={numbers}/>   
         <H1>Hello <b>World { multiplier.map(multiplier => <TickerWithMultiplier {...{multiplier, ticker}}/>) }</b>!</H1>
