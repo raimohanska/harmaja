@@ -22,7 +22,12 @@ export function unmount(harmajaElement: DOMElement) {
 type Callback = () => void
 
 let transientStateStack: TransientState[] = []
-type TransientState = { unmountCallbacks?: Callback[], unmountE?: Bacon.EventStream<void> }
+type TransientState = { 
+    mountCallbacks?: Callback[], 
+    mountE?: Bacon.EventStream<void>,
+    unmountCallbacks?: Callback[], 
+    unmountE?: Bacon.EventStream<void>,
+}
 
 export function createElement(type: JSXElementType, props: HarmajaProps, ...children: (HarmajaChild | HarmajaChild[])[]): DOMElement {
     const flattenedChildren = children.flatMap(flattenChildren)
@@ -40,6 +45,9 @@ export function createElement(type: JSXElementType, props: HarmajaProps, ...chil
         const transientState = transientStateStack.pop()!
         for (const callback of transientState.unmountCallbacks || []) {
             attachOnUnmount(element, callback)
+        }
+        for (const callback of transientState.mountCallbacks || []) {
+            attachOnMount(element, callback)
         }
         return element
     } else if (typeof type == "string") {
@@ -61,6 +69,12 @@ function getTransientState() {
     return transientStateStack[transientStateStack.length - 1]
 }
 
+export function onMount(callback: Callback) {
+    const transientState = getTransientState()
+    if (!transientState.mountCallbacks) transientState.mountCallbacks = []
+    transientState.mountCallbacks.push(callback)
+}
+
 export function onUnmount(callback: Callback) {
     const transientState = getTransientState()
     if (!transientState.unmountCallbacks) transientState.unmountCallbacks = []
@@ -78,6 +92,19 @@ export function unmountEvent(): Bacon.EventStream<void> {
         transientState.unmountE = event
     }
     return transientState.unmountE
+}
+
+export function mountEvent(): Bacon.EventStream<void> {
+    const transientState = getTransientState()
+    if (!transientState.mountE) {
+        const event = new Bacon.Bus<void>()
+        onMount(() => {
+            event.push()
+            event.end()
+        })    
+        transientState.mountE = event
+    }
+    return transientState.mountE
 }
 
 function flattenChildren(child: HarmajaChild | HarmajaChild[]): HarmajaChild[] {

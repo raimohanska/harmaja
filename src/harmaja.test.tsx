@@ -2,7 +2,7 @@ import { h } from "./index"
 import * as H from "./index"
 import * as B from "baconjs"
 import { testRender, htmlOf } from "./test-utils"
-import { onUnmount, mount , unmount } from "./harmaja"
+import { onUnmount, onMount, mount , unmount, unmountEvent, mountEvent } from "./harmaja"
 
 function body() {
     let body = <body/>
@@ -18,16 +18,23 @@ describe("Harmaja", () => {
 
     it("Lifecycle hooks", () => {
         let unmountCalled = 0    
+        let mountCalled = 0
         const Component = () => {
             onUnmount(() => unmountCalled++)
+            onMount(() => mountCalled++)
+            unmountEvent().forEach(() => unmountCalled++)
+            mountEvent().forEach(() => mountCalled++)
             return <div>Teh component</div>
         }
         const el = <Component/>
         expect(unmountCalled).toEqual(0)
+        expect(mountCalled).toEqual(0)
         mount(el, body())
         expect(unmountCalled).toEqual(0)
+        expect(mountCalled).toEqual(2) // 2 because both callback and eventstream
         unmount(el)
-        expect(unmountCalled).toEqual(1)
+        expect(unmountCalled).toEqual(2)
+        expect(mountCalled).toEqual(2)
     })
 
     it("Supports refs", () => {
