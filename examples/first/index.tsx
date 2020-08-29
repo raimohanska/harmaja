@@ -1,4 +1,4 @@
-import { h } from "../../src/index"
+import { h } from "../../src/jsxfactory"
 import * as B from "baconjs"
 
 const ones = B.interval(1000, 1) // EventStream
@@ -9,7 +9,7 @@ const state = B.combineTemplate({ counter, latestClick })
 
 const ListComponent = ({ stuff } : { stuff : string[] }) => {
     return <ul>
-        { stuff.map(str => <li onClick={(e: MouseEvent) => { alert(str) }}>{str}</li>) }
+        { stuff.map(str => <li onClick={e => { alert(str) }}>{str}</li>) }
     </ul>
 }
 

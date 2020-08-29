@@ -1,22 +1,14 @@
 import * as B from "baconjs"
 
-type Child = string | HTMLElement | B.Observable<Child>
-type Props = Record<string, any>
-type DOMElement = HTMLElement | Text
-type ComponentFn = (props: Props) => DOMElement
-type Children = (Child | Child[])[]
 
-declare global {
-    namespace JSX {
-        export function h(type: string | Function, props: Props, ...children: Children): DOMElement
-        export interface IntrinsicElements {
-            ul: { }
-            li: { }
-        }
-    }
-}
+export type JSXElementType = string | Function
+export type Child = string | HTMLElement | B.Observable<Child>
+export type Props = Record<string, any>
+export type DOMElement = HTMLElement | Text
+export type ComponentFn = (props: Props) => DOMElement
+export type Children = (Child | Child[])[]
 
-export function h(type: string | Function, props: Props, ...children: Children): DOMElement {
+export function createElement(type: JSXElementType, props: Props, ...children: Children): DOMElement {
     if (typeof type === "function") {
         const ctr = type as ComponentFn
         return ctr(props)
