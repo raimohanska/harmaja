@@ -1,15 +1,11 @@
 import * as React from "../../src/index"
-// All the DOM API you're gonna need!
+import * as B from "baconjs"
 
-// Creating elements and text nodes
-const element = document.createElement("h1")
-element.appendChild(document.createTextNode("HELLO WORLD"))
-
-// Event handlers
-element.onclick = (e: MouseEvent) => alert("HELLO")
-
-// Setting style as string
-element.setAttribute("style", "text-decoration: underline;");
+const ones = B.interval(1000, 1) // EventStream
+const counter = ones.scan(0, (state, next) => state + next)
+const click = new B.Bus<string>()
+const latestClick = click.toProperty("")
+const state = B.combineTemplate({ counter, latestClick })
 
 const ListComponent = ({ stuff } : { stuff : string[] }) => {
     return <ul>
@@ -18,6 +14,6 @@ const ListComponent = ({ stuff } : { stuff : string[] }) => {
 }
 
 document.getElementById("root").appendChild(<div>
-        <h1>Hello world</h1>
+        <h1>Hello world {state.map(s => s.counter.toString())} </h1>
         <ListComponent stuff={["Reaktor", "iz", "teh", "bestest"]}/>
     </div>)

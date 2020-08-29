@@ -1,8 +1,14 @@
-import B from "baconjs"
+import * as B from "baconjs"
 
-export function createElement(type: string, props: Record<string, any>, ...children: any[]) {
+type Child = string | HTMLElement | B.Observable<Child>
+type Props = Record<string, any>
+type DOMElement = HTMLElement | Text
+type ComponentFn = (props: Props) => DOMElement
+type Children = (Child | Child[])[]
+
+export function createElement(type: string | Function, props: Props, ...children: Children): DOMElement {
     if (typeof type === "function") {
-        const ctr = type as Function
+        const ctr = type as ComponentFn
         return ctr(props)
 
     }
@@ -19,16 +25,30 @@ export function createElement(type: string, props: Record<string, any>, ...child
     return element
 }
 
-function addChild(child: any, element: HTMLElement) {
-    if (typeof child === "string") {
-        element.appendChild(document.createTextNode(child))
-    } else if (child instanceof HTMLElement) {            
-        element.appendChild(child)
-    } else if (child instanceof Array) {
+function addChild(child: Child | Child[], element: HTMLElement) {
+    if (child instanceof Array) {
         for (let c of child) {
             addChild(c, element)
         }
     } else {
-        throw Error("Unknown child: " +child)
+        element.appendChild(createChildElement(child))   
     }
+}
+
+function createChildElement(child: Child): DOMElement {
+    if (typeof child === "string") {
+        return document.createTextNode(child)
+    } else if (child instanceof HTMLElement) {            
+        return child
+    } else if (child instanceof B.Observable) {
+        let childElement: HTMLElement | Text = document.createTextNode("")
+        child.forEach(value => {
+            let newChildElement = createChildElement(value)
+            childElement.parentNode?.replaceChild(newChildElement, childElement)
+            childElement = newChildElement
+        })
+        return childElement
+    } else {
+        throw Error("Unknown child: " +child)
+    }    
 }
