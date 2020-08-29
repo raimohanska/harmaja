@@ -6,7 +6,17 @@ type DOMElement = HTMLElement | Text
 type ComponentFn = (props: Props) => DOMElement
 type Children = (Child | Child[])[]
 
-export function createElement(type: string | Function, props: Props, ...children: Children): DOMElement {
+declare global {
+    namespace JSX {
+        export function h(type: string | Function, props: Props, ...children: Children): DOMElement
+        export interface IntrinsicElements {
+            ul: { }
+            li: { }
+        }
+    }
+}
+
+export function h(type: string | Function, props: Props, ...children: Children): DOMElement {
     if (typeof type === "function") {
         const ctr = type as ComponentFn
         return ctr(props)

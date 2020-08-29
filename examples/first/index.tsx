@@ -1,4 +1,4 @@
-import * as React from "../../src/index"
+import { h } from "../../src/index"
 import * as B from "baconjs"
 
 const ones = B.interval(1000, 1) // EventStream
@@ -13,7 +13,7 @@ const ListComponent = ({ stuff } : { stuff : string[] }) => {
     </ul>
 }
 
-document.getElementById("root").appendChild(<div>
+document.getElementById("root")!.appendChild(<div>
         <h1>Hello world {state.map(s => s.counter.toString())} </h1>
         <ListComponent stuff={["Reaktor", "iz", "teh", "bestest"]}/>
     </div>)
