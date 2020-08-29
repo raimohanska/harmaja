@@ -4,6 +4,12 @@ import * as B from "baconjs"
 import { testRender, htmlOf } from "./test-utils"
 import { onUnmount, mount , unmount } from "./harmaja"
 
+function body() {
+    let body = <body/>
+    let document = <html>{body}</html>
+    return body
+}
+
 describe("Harmaja", () => {
     it("Creating elements without JSX", () => {
         const el = H.createElement("h1", {}, "yes")
@@ -11,8 +17,6 @@ describe("Harmaja", () => {
     })
 
     it("Lifecycle hooks", () => {
-        let body = <body/>
-        let document = <html>{body}</html>
         let unmountCalled = 0    
         const Component = () => {
             onUnmount(() => unmountCalled++)
@@ -20,10 +24,20 @@ describe("Harmaja", () => {
         }
         const el = <Component/>
         expect(unmountCalled).toEqual(0)
-        mount(el, body)
+        mount(el, body())
         expect(unmountCalled).toEqual(0)
         unmount(el)
         expect(unmountCalled).toEqual(1)
+    })
+
+    it("Supports refs", () => {
+        let reffed: HTMLSpanElement | null = null;
+        let span = <span id="x" ref={input => { reffed = input }}>Hello</span>
+        let el = <div>{span}</div>
+        expect(reffed).toEqual(null)
+        mount(el, body())
+        expect(reffed).toEqual(span)
+        expect(() => <span id="x" ref="not-a-function"/>).toThrow("Expecting ref prop to be a function, got not-a-function")
     })
 
     it("Creating elements with JSX", () => {
@@ -72,12 +86,5 @@ describe("Harmaja", () => {
         expect(() => (<h1>{true}</h1>)).toThrow("true is not a valid element")
         expect(() => (<h1>{new Date()}</h1>)).toThrow()
         expect(() => (<h1>{({})}</h1>)).toThrow()
-    })
-
-    it("Supports refs", () => {
-        let reffed: HTMLSpanElement | null = null;
-        <div><span id="x" ref={input => { reffed = input }}>Hello</span></div>
-        expect((reffed as any)?.id).toEqual("x")
-        expect(() => <span id="x" ref="not-a-function"/>).toThrow("Expecting ref prop to be a function, got not-a-function")
     })
 })

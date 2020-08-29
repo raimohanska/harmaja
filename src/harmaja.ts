@@ -155,7 +155,8 @@ function setProp(el: HTMLElement, key: string, value: any) {
         if (typeof value !== "function") {
             throw Error("Expecting ref prop to be a function, got " + value)
         }
-        value(el)
+        const refFn = value as Function
+        attachOnMount(el, () => refFn(el))
         return
     }
     if (key.startsWith("on")) {
