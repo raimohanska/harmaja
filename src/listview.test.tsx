@@ -1,7 +1,6 @@
 import { h } from "./index"
 import * as H from "./index"
 import * as B from "baconjs"
-import { DOMElement, removeElement } from "./harmaja"
 import { testRender, htmlOf } from "./test-utils"
 import { ListView } from "./listview"
 

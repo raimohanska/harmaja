@@ -1,13 +1,29 @@
 import { h } from "./index"
 import * as H from "./index"
 import * as B from "baconjs"
-import { DOMElement, removeElement } from "./harmaja"
 import { testRender, htmlOf } from "./test-utils"
+import { onUnmount, mount , unmount } from "./harmaja"
 
 describe("Harmaja", () => {
     it("Creating elements without JSX", () => {
         const el = H.createElement("h1", {}, "yes")
         expect(htmlOf(el)).toEqual("<h1>yes</h1>")
+    })
+
+    it("Lifecycle hooks", () => {
+        let body = <body/>
+        let document = <html>{body}</html>
+        let unmountCalled = 0    
+        const Component = () => {
+            onUnmount(() => unmountCalled++)
+            return <div>Teh component</div>
+        }
+        const el = <Component/>
+        expect(unmountCalled).toEqual(0)
+        mount(el, body)
+        expect(unmountCalled).toEqual(0)
+        unmount(el)
+        expect(unmountCalled).toEqual(1)
     })
 
     it("Creating elements with JSX", () => {

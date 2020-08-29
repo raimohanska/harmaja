@@ -10,14 +10,19 @@ export type HarmajaObservableChild = Bacon.Property<HarmajaChild>
 
 export type DOMElement = HTMLElement | Text
 
-export function mount(ve: DOMElement, root: HTMLElement) {
-    root.parentElement!.replaceChild(ve, root)
+export function mount(harmajaElement: DOMElement, root: HTMLElement) {
+    root.parentElement!.replaceChild(harmajaElement, root)
+    callOnMounts(harmajaElement)
 }
 
-type UnmountCallback = Bacon.Unsub
+export function unmount(harmajaElement: DOMElement) {
+    removeElement(harmajaElement)
+}
+
+type Callback = () => void
 
 let transientStateStack: TransientState[] = []
-type TransientState = { unmountCallbacks?: UnmountCallback[], unmountE?: Bacon.EventStream<void> }
+type TransientState = { unmountCallbacks?: Callback[], unmountE?: Bacon.EventStream<void> }
 
 export function createElement(type: JSXElementType, props: HarmajaProps, ...children: (HarmajaChild | HarmajaChild[])[]): DOMElement {
     const flattenedChildren = children.flatMap(flattenChildren)
@@ -29,9 +34,12 @@ export function createElement(type: JSXElementType, props: HarmajaProps, ...chil
         transientStateStack.push({})
         const mappedProps = props && Object.fromEntries(Object.entries(props).map(([key, value]) => [key, applyComponentScopeToObservable(value)]))
         const element = constructor({...mappedProps, children: flattenedChildren})
+        if (!isDOMElement(element)) {
+            throw new Error("Expecting an HTMLElement or Text node, got " + element)
+        }
         const transientState = transientStateStack.pop()!
         for (const callback of transientState.unmountCallbacks || []) {
-            attachUnsub(element, callback)
+            attachOnUnmount(element, callback)
         }
         return element
     } else if (typeof type == "string") {
@@ -53,7 +61,7 @@ function getTransientState() {
     return transientStateStack[transientStateStack.length - 1]
 }
 
-export function onUnmount(callback: UnmountCallback) {
+export function onUnmount(callback: Callback) {
     const transientState = getTransientState()
     if (!transientState.unmountCallbacks) transientState.unmountCallbacks = []
     transientState.unmountCallbacks.push(callback)
@@ -82,10 +90,12 @@ function renderHTMLElement(type: string, props: HarmajaProps, children: HarmajaC
     for (let [key, value] of Object.entries(props || {})) {
         if (value instanceof Bacon.Property) {
             const observable: Bacon.Property<string> = value            
-            const unsub = observable.skipDuplicates().forEach(nextValue => {
-                setProp(el, key, nextValue)        
+            attachOnMount(el, () => {
+                const unsub = observable.skipDuplicates().forEach(nextValue => {
+                    setProp(el, key, nextValue)        
+                })
+                attachOnUnmount(el, unsub)    
             })
-            attachUnsub(el, unsub)
         } else {
             setProp(el, key, value)        
         }
@@ -110,31 +120,34 @@ function renderChild(child: HarmajaChild): DOMElement {
     }
     if (child instanceof Bacon.Property) {
         const observable = child as HarmajaObservableChild        
-        let element: DOMElement | null = null
-        const unsub = observable.skipDuplicates().forEach(nextValue => {
-            if (!element) {
-                element = renderChild(nextValue)
-            } else {
-                let oldElement = element
-                element = renderChild(nextValue)
-                //console.log("Replacing", oldElement, "with", element)
-                // TODO: can we handle a case where the observable yields multiple elements? Currently not.
-                //console.log("Replacing element", oldElement)
-                detachUnsub(oldElement, unsub) // <- attaching unsub to the replaced element instead
-                replaceElement(oldElement, element)
-                attachUnsub(element, unsub)
-            } 
-        })
-        if (!element) {
-            element = createPlaceholder()
-        }
-        attachUnsub(element, unsub)
+        let element: DOMElement = createPlaceholder()
+        attachOnMount(element, () => {
+            //console.log("Subscribing in " + debug(element))
+            const unsub: any = observable.skipDuplicates().forEach(nextValue => {
+                if (!element) {
+                    element = renderChild(nextValue)
+                } else {
+                    let oldElement = element
+                    element = renderChild(nextValue)
+                    // TODO: can we handle a case where the observable yields multiple elements? Currently not.
+                    //console.log("Replacing (" + (unsub ? "after sub" : "before sub") + ") " + debug(oldElement) + " with " + debug(element) + " mounted=" + (oldElement as any).mounted)                 
+                    if (unsub) detachOnUnmount(oldElement, unsub) // <- attaching unsub to the replaced element instead
+                    replaceElement(oldElement, element)
+                    if (unsub) attachOnUnmount(element, unsub)
+                } 
+            })
+            attachOnUnmount(element, unsub)
+        })        
         return element
     }
-    if (child instanceof HTMLElement || child instanceof Text) {
+    if (isDOMElement(child)) {
         return child
     }
     throw Error(child + " is not a valid element")
+}
+
+function isDOMElement(child: any): child is DOMElement {
+    return child instanceof HTMLElement || child instanceof Text
 }
 
 function setProp(el: HTMLElement, key: string, value: any) {
@@ -170,53 +183,120 @@ function toKebabCase(inputString: string) {
     .join('');
 }
 
-function unsubObservables(element: Element | Text | ChildNode) {
+export function callOnMounts(element: Element | Text | ChildNode) {    
+    //console.log("onMounts in " + debug(element) + " mounted=" + (element as any).mounted)
+    if ((element as any).mounted) {
+        return
+    }
+    (element as any).mounted = true
     let elementAny = element as any
-    if (elementAny.unsubs) {
-        for (const unsub of elementAny.unsubs as Bacon.Unsub[]) {
+    if (elementAny.onMounts) {
+        for (const sub of elementAny.onMounts as Callback[]) {
+            sub()
+        }
+    }
+
+    for (const child of element.childNodes) {
+        callOnMounts(child)
+    }
+}
+
+
+function callOnUnmounts(element: Element | Text | ChildNode) {
+    let elementAny = element as any
+    if (!elementAny.mounted) {        
+        return
+    }
+
+    if (elementAny.onUnmounts) {
+        for (const unsub of elementAny.onUnmounts as Callback[]) {
+            //console.log("Calling unsub in " + debug(element))
             unsub()
         }
     }
 
     for (const child of element.childNodes) {
-        unsubObservables(child)
+        //console.log("Going to child " + debug(child) + " mounted=" + (child as any).mounted)
+        callOnUnmounts(child)
     }
+    (element as any).mounted = false
 }
 
 // TODO: separate low-level API
 
-export function attachUnsub(element: HTMLElement | Text, unsub: Bacon.Unsub) {
-    let elementAny = element as any
-    if (!elementAny.unsubs) {
-        elementAny.unsubs = []
+export function attachOnMount(element: HTMLElement | Text, onMount: Callback) {
+    if (typeof onMount !== "function") {
+        throw Error("not a function: " + onMount);
     }
-    elementAny.unsubs.push(unsub)
+    let elementAny = element as any
+    if (!elementAny.onMounts) {
+        elementAny.onMounts = []
+    }
+    elementAny.onMounts.push(onMount)
+}
+export function attachOnUnmount(element: HTMLElement | Text, onUnmount: Callback) {
+    if (typeof onUnmount !== "function") {
+        throw Error("not a function: " + onUnmount);
+    }
+    //console.log("attachOnUnmount " + (typeof onUnmount) + " to " + debug(element))
+    let elementAny = element as any
+    if (!elementAny.onUnmounts) {
+        elementAny.onUnmounts = []
+    }
+    elementAny.onUnmounts.push(onUnmount)
 }
 
-export function detachUnsub(element: HTMLElement | Text, unsub: Bacon.Unsub) {
+export function detachOnUnmount(element: HTMLElement | Text, onUnmount: Callback) {
     let elementAny = element as any
-    if (!elementAny.unsubs) {
+    if (!elementAny.onUnmounts) {
         return
     }
-    for (let i = 0; i < elementAny.unsubs.length; i++) {
-        if (elementAny.unsubs[i] === unsub) {
-            elementAny.unsubs.splice(i, 1)
+    //console.log("detachOnUnmount " + (typeof onUnmount) + " from " + debug(element) + " having " + elementAny.onUnmounts.length + " onUmounts")
+    
+    for (let i = 0; i < elementAny.onUnmounts.length; i++) {
+        if (elementAny.onUnmounts[i] === onUnmount) {
+            //console.log("Actually detaching unmount")
+            elementAny.onUnmounts.splice(i, 1)
             return
+        } else {
+            //console.log("Fn unequal " + elementAny.onUnmounts[i] + "  vs  " + onUnmount)
         }
     }
 }
 
 export function replaceElement(oldElement: ChildNode, newElement: HTMLElement | Text) {
-    unsubObservables(oldElement)
+    let wasMounted = (oldElement as any).mounted
+    
+    if (wasMounted) {
+        callOnUnmounts(oldElement)
+    }
     if (!oldElement.parentElement) {
-        console.warn("Parent element not found for", oldElement, " => fail to replace")
+        //console.warn("Parent element not found for", oldElement, " => fail to replace")
         return
     }
-
     oldElement.parentElement.replaceChild(newElement, oldElement)
+    if (wasMounted) {
+        callOnMounts(newElement)
+    }
 }
 
 export function removeElement(oldElement: ChildNode) {
-    unsubObservables(oldElement)
+    //console.log("removeElement " + debug(oldElement) + ", mounted = " + (oldElement as any).mounted);
+    callOnUnmounts(oldElement)
     oldElement.remove()
 }  
+
+export function appendElement(rootElement: HTMLElement, child: DOMElement) {
+    rootElement.appendChild(child)
+    if ((rootElement as any).mounted) {
+        callOnMounts(child)
+    }
+}
+
+export function debug(element: DOMElement | ChildNode) {
+    if (element instanceof HTMLElement) {
+        return element.outerHTML;
+    } else {
+        return element.textContent
+    }
+}

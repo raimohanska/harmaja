@@ -38,8 +38,9 @@ var __values = (this && this.__values) || function(o) {
 };
 import * as Bacon from "baconjs";
 import { isAtom } from "./atom";
-export function mount(ve, root) {
-    root.parentElement.replaceChild(ve, root);
+export function mount(harmajaElement, root) {
+    root.parentElement.replaceChild(harmajaElement, root);
+    callOnMounts(harmajaElement);
 }
 var transientStateStack = [];
 export function createElement(type, props) {
@@ -64,7 +65,7 @@ export function createElement(type, props) {
         try {
             for (var _b = __values(transientState.unmountCallbacks || []), _c = _b.next(); !_c.done; _c = _b.next()) {
                 var callback = _c.value;
-                attachUnsub(element, callback);
+                attachOnUnmount(element, callback);
             }
         }
         catch (e_1_1) { e_1 = { error: e_1_1 }; }
@@ -121,11 +122,13 @@ function renderHTMLElement(type, props, children) {
     var el = document.createElement(type);
     var _loop_1 = function (key, value) {
         if (value instanceof Bacon.Property) {
-            var observable = value;
-            var unsub = observable.skipDuplicates().forEach(function (nextValue) {
-                setProp(el, key, nextValue);
+            var observable_1 = value;
+            attachOnMount(el, function () {
+                var unsub = observable_1.skipDuplicates().forEach(function (nextValue) {
+                    setProp(el, key, nextValue);
+                });
+                attachOnUnmount(el, unsub);
             });
-            attachUnsub(el, unsub);
         }
         else {
             setProp(el, key, value);
@@ -170,27 +173,26 @@ function renderChild(child) {
         return createPlaceholder();
     }
     if (child instanceof Bacon.Property) {
-        var observable = child;
-        var element_1 = null;
-        var unsub_1 = observable.skipDuplicates().forEach(function (nextValue) {
-            if (!element_1) {
-                element_1 = renderChild(nextValue);
-            }
-            else {
-                var oldElement = element_1;
-                element_1 = renderChild(nextValue);
-                //console.log("Replacing", oldElement, "with", element)
-                // TODO: can we handle a case where the observable yields multiple elements? Currently not.
-                //console.log("Replacing element", oldElement)
-                detachUnsub(oldElement, unsub_1); // <- attaching unsub to the replaced element instead
-                replaceElement(oldElement, element_1);
-                attachUnsub(element_1, unsub_1);
-            }
+        var observable_2 = child;
+        var element_1 = createPlaceholder();
+        attachOnMount(element_1, function () {
+            var unsub = observable_2.skipDuplicates().forEach(function (nextValue) {
+                if (!element_1) {
+                    element_1 = renderChild(nextValue);
+                }
+                else {
+                    var oldElement = element_1;
+                    element_1 = renderChild(nextValue);
+                    //console.log("Replacing", oldElement, "with", element)
+                    // TODO: can we handle a case where the observable yields multiple elements? Currently not.
+                    //console.log("Replacing element", oldElement)                    
+                    detachOnUnmount(oldElement, unsub); // <- attaching unsub to the replaced element instead
+                    replaceElement(oldElement, element_1);
+                    attachOnUnmount(element_1, unsub);
+                }
+            });
+            attachOnUnmount(element_1, unsub);
         });
-        if (!element_1) {
-            element_1 = createPlaceholder();
-        }
-        attachUnsub(element_1, unsub_1);
         return element_1;
     }
     if (child instanceof HTMLElement || child instanceof Text) {
@@ -199,6 +201,13 @@ function renderChild(child) {
     throw Error(child + " is not a valid element");
 }
 function setProp(el, key, value) {
+    if (key === "ref") {
+        if (typeof value !== "function") {
+            throw Error("Expecting ref prop to be a function, got " + value);
+        }
+        value(el);
+        return;
+    }
     if (key.startsWith("on")) {
         key = key.toLowerCase();
     }
@@ -230,14 +239,17 @@ function toKebabCase(inputString) {
     })
         .join('');
 }
-function unsubObservables(element) {
+function callOnMounts(element) {
     var e_4, _a, e_5, _b;
+    if (element.mounted) {
+        return;
+    }
     var elementAny = element;
-    if (elementAny.unsubs) {
+    if (elementAny.onMounts) {
         try {
-            for (var _c = __values(elementAny.unsubs), _d = _c.next(); !_d.done; _d = _c.next()) {
-                var unsub = _d.value;
-                unsub();
+            for (var _c = __values(elementAny.onMounts), _d = _c.next(); !_d.done; _d = _c.next()) {
+                var sub = _d.value;
+                sub();
             }
         }
         catch (e_4_1) { e_4 = { error: e_4_1 }; }
@@ -251,7 +263,7 @@ function unsubObservables(element) {
     try {
         for (var _e = __values(element.childNodes), _f = _e.next(); !_f.done; _f = _e.next()) {
             var child = _f.value;
-            unsubObservables(child);
+            callOnMounts(child);
         }
     }
     catch (e_5_1) { e_5 = { error: e_5_1 }; }
@@ -261,36 +273,91 @@ function unsubObservables(element) {
         }
         finally { if (e_5) throw e_5.error; }
     }
+    element.mounted = true;
+}
+function callOnUnmounts(element) {
+    var e_6, _a, e_7, _b;
+    var elementAny = element;
+    if (elementAny.onUnmounts) {
+        try {
+            for (var _c = __values(elementAny.onUnmounts), _d = _c.next(); !_d.done; _d = _c.next()) {
+                var unsub = _d.value;
+                unsub();
+            }
+        }
+        catch (e_6_1) { e_6 = { error: e_6_1 }; }
+        finally {
+            try {
+                if (_d && !_d.done && (_a = _c.return)) _a.call(_c);
+            }
+            finally { if (e_6) throw e_6.error; }
+        }
+    }
+    try {
+        for (var _e = __values(element.childNodes), _f = _e.next(); !_f.done; _f = _e.next()) {
+            var child = _f.value;
+            callOnUnmounts(child);
+        }
+    }
+    catch (e_7_1) { e_7 = { error: e_7_1 }; }
+    finally {
+        try {
+            if (_f && !_f.done && (_b = _e.return)) _b.call(_e);
+        }
+        finally { if (e_7) throw e_7.error; }
+    }
+    element.mounted = false;
 }
 // TODO: separate low-level API
-export function attachUnsub(element, unsub) {
+export function attachOnMount(element, onMount) {
     var elementAny = element;
-    if (!elementAny.unsubs) {
-        elementAny.unsubs = [];
+    if (!elementAny.onMounts) {
+        elementAny.onMounts = [];
     }
-    elementAny.unsubs.push(unsub);
+    elementAny.onMounts.push(onMount);
 }
-export function detachUnsub(element, unsub) {
+export function attachOnUnmount(element, onUnmount) {
     var elementAny = element;
-    if (!elementAny.unsubs) {
+    if (!elementAny.onUnmounts) {
+        elementAny.onUnmounts = [];
+    }
+    elementAny.onUnmounts.push(onUnmount);
+}
+export function detachOnUnmount(element, onUnmount) {
+    var elementAny = element;
+    if (!elementAny.onUnmounts) {
         return;
     }
-    for (var i = 0; i < elementAny.unsubs.length; i++) {
-        if (elementAny.unsubs[i] === unsub) {
-            elementAny.unsubs.splice(i, 1);
+    for (var i = 0; i < elementAny.onUnmounts.length; i++) {
+        if (elementAny.onUnmounts[i] === onUnmount) {
+            elementAny.onUnmounts.splice(i, 1);
             return;
         }
     }
 }
 export function replaceElement(oldElement, newElement) {
-    unsubObservables(oldElement);
+    var wasMounted = oldElement.mounted;
+    if (wasMounted) {
+        callOnUnmounts(oldElement);
+    }
     if (!oldElement.parentElement) {
         console.warn("Parent element not found for", oldElement, " => fail to replace");
         return;
     }
     oldElement.parentElement.replaceChild(newElement, oldElement);
+    if (wasMounted) {
+        callOnMounts(newElement);
+    }
 }
 export function removeElement(oldElement) {
-    unsubObservables(oldElement);
+    if (oldElement.mounted) {
+        callOnUnmounts(oldElement);
+    }
     oldElement.remove();
+}
+export function appendElement(rootElement, child) {
+    rootElement.appendChild(child);
+    if (rootElement.mounted) {
+        callOnMounts(child);
+    }
 }
