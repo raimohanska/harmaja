@@ -40,6 +40,7 @@ export function createElement(type: JSXElementType, props: HarmajaProps, ...chil
         const mappedProps = props && Object.fromEntries(Object.entries(props).map(([key, value]) => [key, applyComponentScopeToObservable(value)]))
         const element = constructor({...mappedProps, children: flattenedChildren})
         if (!isDOMElement(element)) {
+            // Components must return a DOM element. Otherwise we cannot attach mount/unmounts callbacks.
             throw new Error("Expecting an HTMLElement or Text node, got " + element)
         }
         const transientState = transientStateStack.pop()!
