@@ -1,5 +1,5 @@
 import * as Bacon from "baconjs"
-import { attachOnUnmount, removeElement, replaceElement, appendElement, attachOnMount } from "./harmaja"
+import { LowLevelApi as H } from "./harmaja"
 import { Atom } from "./atom"
 
 // TODO: any type below. Figure out! Probably some validation for the renderer results is in order too
@@ -23,11 +23,11 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
     const rootElement = document.createElement("span")
     let currentValues: A[] | null = null
     
-    attachOnMount(rootElement, () => {
+    H.attachOnMount(rootElement, () => {
         const unsub = observable.forEach(nextValues => {
             if (!currentValues) {
                 for (let i = 0; i < nextValues.length; i++) { // <- weird that I need a cast. TS compiler bug?
-                    appendElement(rootElement, renderItem(key(nextValues[i]), nextValues, i)) 
+                    H.appendElement(rootElement, renderItem(key(nextValues[i]), nextValues, i)) 
                 }                
             } else {
                 // TODO: different strategy based on count change:
@@ -38,10 +38,10 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
                     const nextItemKey = key(nextValues[i])
                     if (i >= rootElement.childNodes.length) {
                         //console.log("Append new element for", nextValues[i])
-                        appendElement(rootElement, renderItem(nextItemKey, nextValues, i))
+                        H.appendElement(rootElement, renderItem(nextItemKey, nextValues, i))
                     } else if (nextItemKey !== key(currentValues[i])) {
                         //console.log("Replace element for", nextValues[i])
-                        replaceElement(rootElement.childNodes[i], renderItem(nextItemKey, nextValues, i))                    
+                        H.replaceElement(rootElement.childNodes[i], renderItem(nextItemKey, nextValues, i))                    
                     } else {
                         //console.log("Keep element for", nextValues[i])
                         // Same item, keep existing element
@@ -50,13 +50,13 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
     
                 for (let i = currentValues.length - 1; i >= nextValues.length; i--) {
                     //console.log("Remove element for", currentValues[i])
-                    removeElement(rootElement.childNodes[i])
+                    H.removeElement(rootElement.childNodes[i])
                 }
             }
             currentValues = nextValues
         })
     
-        attachOnUnmount(rootElement, unsub)    
+        H.attachOnUnmount(rootElement, unsub)    
     })
     
     return rootElement

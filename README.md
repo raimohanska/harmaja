@@ -24,7 +24,7 @@ that many topics here are subjective and I'm presenting my own views of the day.
 
 Install from NPM `npm install harmaja` or `yarn add harmaja`.
 
-Tweat your tsconfig.json for the custom JSX factory.
+Tweak your tsconfig.json for the custom JSX factory.
 
 ```json
 {
@@ -52,6 +52,88 @@ Tweat your tsconfig.json for the custom JSX factory.
 *State composition* is the opposite of the above (but will co-operate nicely) and means that you can compose state from different sources. This is also a familiar concept from Redux, if you have ever composed reducers. For example, you can use [`Bacon.combineWith`](https://baconjs.github.io/api3/globals.html#combinewith) to compose two state atoms into a composite state Property.
 
 You can very well combine the above concepts so that you start with several state Atoms and EventStreams, then compose them all into a single "megablob" Property and finally decompose from there to deliver the essential parts of each of your components.
+
+
+## API
+
+Here's a brief API description. Read the chapters below for examples and "philosophy".
+
+### Mounting, unmounting and lifecycle events
+
+```typescript
+import { mount, mountEvent, onMount, onUnmount, unmount, unmountEvent } from "harmaja"
+```
+
+Methods documented [here](dist/harmaja.d.ts).
+
+### ListView
+
+```typescript
+import { ListView } from "harmaja"
+```
+
+ListView implements an efficient view into read-only and read-write list data. It supports three different variants. If you have
+
+#### Read-only view to a Property
+
+```typescript
+const items: Bacon.Property<A[]>;
+const renderObservable: (item: Bacon.Property<A>) => DOMElement;
+const keyFunction: (item: A) => string;
+```
+
+Then you can render the items using ListView thus:
+
+```typescript
+<ListView 
+    observable={items} 
+    renderObservable={renderObservable}
+    key={keyFunction}
+/>
+```
+
+What ListView does here is that it observes `items` for changes and renders each item using the `renderer` function.
+When the list of items changes (something is replaced, added or removed) it uses the given `key` function to determine 
+whether to replace individual item views. Each item view gets a `Bacon.Property<A>` so that they can update when the content 
+in that particular item is changed. See an example at [examples/todoapp](examples/todoapp/index.ts).
+
+#### Read-write view to an Atom
+
+ListView also supports read-write access using `Atom`. So if you have
+
+```typescript
+const items: Atom<A[]>;
+const renderAtom: (item: Atom<A>, remove: () => void) => DOMElement;
+const keyFunction: (item: A) => string;
+
+```
+
+You can have read-write access to the items by using ListView thus:
+
+```typescript
+<ListView 
+    atom={items} 
+    renderAtom={renderAtom}
+    key={ keyFunction }
+/>
+```
+
+As you can see ListView provides a `removeItem` callback for Atom based views, 
+so that in your ItemView you can implement item removal by calling this function.
+
+#### Static view
+
+There's a third variation of TextView still, for read-only views:
+
+```typescript
+<ListView 
+    observable={items} 
+    renderItem={(item: TodoItem) => <li><Item item={item}/></li>}
+/>
+```
+
+In this variant, everything is replaced on any change to the list. Use only for read-only
+views into small views of data.
 
 ## Examples
 

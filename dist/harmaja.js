@@ -38,14 +38,31 @@ var __values = (this && this.__values) || function(o) {
 };
 import * as Bacon from "baconjs";
 import { isAtom } from "./atom";
+/**
+ *  Mounts the given element to the document, replacing the given root element.
+ *
+ *  - Causes the component to be activated, i.e. to start listening to observables
+ *  - `onMount` callbacks will be called
+ *  - `onMountEvent` will be triggered
+ */
 export function mount(harmajaElement, root) {
     root.parentElement.replaceChild(harmajaElement, root);
     callOnMounts(harmajaElement);
 }
+/**
+ *  Unmounts the given element, removing it from the DOM.
+ *
+ *  - Causes the component to be deactivated, i.e. to stop listening to observables
+ *  - `onUnmount` callbacks will be called
+ *  - `onUnmountEvent` will be triggered
+ */
 export function unmount(harmajaElement) {
     removeElement(harmajaElement);
 }
 var transientStateStack = [];
+/**
+ *  Element constructor used by JSX.
+ */
 export function createElement(type, props) {
     var e_1, _a, e_2, _b;
     var children = [];
@@ -65,6 +82,7 @@ export function createElement(type, props) {
         }));
         var element = constructor(__assign(__assign({}, mappedProps), { children: flattenedChildren }));
         if (!isDOMElement(element)) {
+            // Components must return a DOM element. Otherwise we cannot attach mount/unmounts callbacks.
             throw new Error("Expecting an HTMLElement or Text node, got " + element);
         }
         var transientState = transientStateStack.pop();
@@ -113,41 +131,57 @@ function applyComponentScopeToObservable(value) {
 function getTransientState() {
     return transientStateStack[transientStateStack.length - 1];
 }
+/**
+ *  Add onMount callback. Called once after the component has been mounted on the document.
+ *  NOTE: Call only in component constructors. Otherwise will not do anything useful.
+ */
 export function onMount(callback) {
     var transientState = getTransientState();
     if (!transientState.mountCallbacks)
         transientState.mountCallbacks = [];
     transientState.mountCallbacks.push(callback);
 }
+/**
+ *  Add onUnmount callback. Called once after the component has been unmounted from the document.
+ *  NOTE: Call only in component constructors. Otherwise will not do anything useful.
+ */
 export function onUnmount(callback) {
     var transientState = getTransientState();
     if (!transientState.unmountCallbacks)
         transientState.unmountCallbacks = [];
     transientState.unmountCallbacks.push(callback);
 }
-export function unmountEvent() {
-    var transientState = getTransientState();
-    if (!transientState.unmountE) {
-        var event_1 = new Bacon.Bus();
-        onUnmount(function () {
-            event_1.push();
-            event_1.end();
-        });
-        transientState.unmountE = event_1;
-    }
-    return transientState.unmountE;
-}
+/**
+ *  The onMount event as EventStream, emitting a value after the component has been mounted to the document.
+ *  NOTE: Call only in component constructors. Otherwise will not do anything useful.
+ */
 export function mountEvent() {
     var transientState = getTransientState();
     if (!transientState.mountE) {
-        var event_2 = new Bacon.Bus();
+        var event_1 = new Bacon.Bus();
         onMount(function () {
+            event_1.push();
+            event_1.end();
+        });
+        transientState.mountE = event_1;
+    }
+    return transientState.mountE;
+}
+/**
+ *  The onUnmount event as EventStream, emitting a value after the component has been unmounted from the document.
+ *  NOTE: Call only in component constructors. Otherwise will not do anything useful.
+ */
+export function unmountEvent() {
+    var transientState = getTransientState();
+    if (!transientState.unmountE) {
+        var event_2 = new Bacon.Bus();
+        onUnmount(function () {
             event_2.push();
             event_2.end();
         });
-        transientState.mountE = event_2;
+        transientState.unmountE = event_2;
     }
-    return transientState.mountE;
+    return transientState.unmountE;
 }
 function flattenChildren(child) {
     if (child instanceof Array)
@@ -361,8 +395,7 @@ function callOnUnmounts(element) {
     elementAny.mounted = false;
     elementAny.unmounted = true;
 }
-// TODO: separate low-level API
-export function attachOnMount(element, onMount) {
+function attachOnMount(element, onMount) {
     if (typeof onMount !== "function") {
         throw Error("not a function: " + onMount);
     }
@@ -372,7 +405,7 @@ export function attachOnMount(element, onMount) {
     }
     elementAny.onMounts.push(onMount);
 }
-export function attachOnUnmount(element, onUnmount) {
+function attachOnUnmount(element, onUnmount) {
     if (typeof onUnmount !== "function") {
         throw Error("not a function: " + onUnmount);
     }
@@ -383,7 +416,7 @@ export function attachOnUnmount(element, onUnmount) {
     }
     elementAny.onUnmounts.push(onUnmount);
 }
-export function detachOnUnmount(element, onUnmount) {
+function detachOnUnmount(element, onUnmount) {
     var elementAny = element;
     if (!elementAny.onUnmounts) {
         return;
@@ -400,7 +433,7 @@ export function detachOnUnmount(element, onUnmount) {
         }
     }
 }
-export function replaceElement(oldElement, newElement) {
+function replaceElement(oldElement, newElement) {
     var wasMounted = oldElement.mounted;
     if (wasMounted) {
         callOnUnmounts(oldElement);
@@ -414,12 +447,12 @@ export function replaceElement(oldElement, newElement) {
         callOnMounts(newElement);
     }
 }
-export function removeElement(oldElement) {
+function removeElement(oldElement) {
     //console.log("removeElement " + debug(oldElement) + ", mounted = " + (oldElement as any).mounted);
     callOnUnmounts(oldElement);
     oldElement.remove();
 }
-export function appendElement(rootElement, child) {
+function appendElement(rootElement, child) {
     rootElement.appendChild(child);
     if (rootElement.mounted) {
         callOnMounts(child);
@@ -433,3 +466,10 @@ export function debug(element) {
         return element.textContent;
     }
 }
+export var LowLevelApi = {
+    attachOnMount: attachOnMount,
+    attachOnUnmount: attachOnUnmount,
+    appendElement: appendElement,
+    removeElement: removeElement,
+    replaceElement: replaceElement
+};

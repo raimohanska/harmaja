@@ -1,15 +1,15 @@
-import { attachOnUnmount, removeElement, replaceElement, appendElement, attachOnMount } from "./harmaja";
+import { LowLevelApi as H } from "./harmaja";
 export function ListView(props) {
     var observable = ("atom" in props) ? props.atom : props.observable;
     var _a = props.key, key = _a === void 0 ? (function (x) { return x; }) : _a;
     // TODO: would work better if could return multiple elements!
     var rootElement = document.createElement("span");
     var currentValues = null;
-    attachOnMount(rootElement, function () {
+    H.attachOnMount(rootElement, function () {
         var unsub = observable.forEach(function (nextValues) {
             if (!currentValues) {
                 for (var i = 0; i < nextValues.length; i++) { // <- weird that I need a cast. TS compiler bug?
-                    appendElement(rootElement, renderItem(key(nextValues[i]), nextValues, i));
+                    H.appendElement(rootElement, renderItem(key(nextValues[i]), nextValues, i));
                 }
             }
             else {
@@ -21,11 +21,11 @@ export function ListView(props) {
                     var nextItemKey = key(nextValues[i]);
                     if (i >= rootElement.childNodes.length) {
                         //console.log("Append new element for", nextValues[i])
-                        appendElement(rootElement, renderItem(nextItemKey, nextValues, i));
+                        H.appendElement(rootElement, renderItem(nextItemKey, nextValues, i));
                     }
                     else if (nextItemKey !== key(currentValues[i])) {
                         //console.log("Replace element for", nextValues[i])
-                        replaceElement(rootElement.childNodes[i], renderItem(nextItemKey, nextValues, i));
+                        H.replaceElement(rootElement.childNodes[i], renderItem(nextItemKey, nextValues, i));
                     }
                     else {
                         //console.log("Keep element for", nextValues[i])
@@ -34,12 +34,12 @@ export function ListView(props) {
                 }
                 for (var i = currentValues.length - 1; i >= nextValues.length; i--) {
                     //console.log("Remove element for", currentValues[i])
-                    removeElement(rootElement.childNodes[i]);
+                    H.removeElement(rootElement.childNodes[i]);
                 }
             }
             currentValues = nextValues;
         });
-        attachOnUnmount(rootElement, unsub);
+        H.attachOnUnmount(rootElement, unsub);
     });
     return rootElement;
     function renderItem(key, values, index) {

@@ -1,8 +1,6 @@
-import { h } from "./index"
+import { mount, mountEvent, onMount, onUnmount, unmount, unmountEvent } from "./harmaja"
 import * as H from "./index"
-import * as B from "baconjs"
-import { testRender, htmlOf } from "./test-utils"
-import { onUnmount, onMount, mount , unmount, unmountEvent, mountEvent } from "./harmaja"
+import { htmlOf, testRender } from "./test-utils"
 
 function body() {
     let body = <body/>
