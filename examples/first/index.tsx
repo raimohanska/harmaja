@@ -13,7 +13,7 @@ element.setAttribute("style", "text-decoration: underline;");
 
 const ListComponent = ({ stuff } : { stuff : string[] }) => {
     return <ul>
-        { stuff.map(str => <li>{str}</li>) }
+        { stuff.map(str => <li onClick={(e: MouseEvent) => { alert(str) }}>{str}</li>) }
     </ul>
 }
 

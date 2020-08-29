@@ -7,7 +7,10 @@ export function createElement(type: string, props: Record<string, any>, ...child
 
     }
     const element = document.createElement(type)
-    for (const [key, value] of Object.entries(props || {})) {
+    for (let [key, value] of Object.entries(props || {})) {
+        if (key.startsWith("on")) {
+            key = key.toLowerCase()
+        }
         (element as any)[key] = value
     }
     for (const child of children) {
