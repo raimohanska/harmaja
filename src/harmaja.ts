@@ -213,11 +213,15 @@ function toKebabCase(inputString: string) {
 
 export function callOnMounts(element: Element | Text | ChildNode) {    
     //console.log("onMounts in " + debug(element) + " mounted=" + (element as any).mounted)
-    if ((element as any).mounted) {
+    let elementAny = element as any
+    if (elementAny.mounted) {
         return
     }
-    (element as any).mounted = true
-    let elementAny = element as any
+    if (elementAny.unmounted) {
+        throw new Error("Component re-mount not supported")
+    }
+    
+    elementAny.mounted = true
     if (elementAny.onMounts) {
         for (const sub of elementAny.onMounts as Callback[]) {
             sub()
@@ -247,7 +251,8 @@ function callOnUnmounts(element: Element | Text | ChildNode) {
         //console.log("Going to child " + debug(child) + " mounted=" + (child as any).mounted)
         callOnUnmounts(child)
     }
-    (element as any).mounted = false
+    elementAny.mounted = false
+    elementAny.unmounted = true
 }
 
 // TODO: separate low-level API

@@ -94,4 +94,11 @@ describe("Harmaja", () => {
         expect(() => (<h1>{new Date()}</h1>)).toThrow()
         expect(() => (<h1>{({})}</h1>)).toThrow()
     })
+
+    it("Doesn't allow re-mounting an unmounted component (this might work but would require more testing)", () => {
+        let el = <h1/>
+        mount(el, body())
+        unmount(el)
+        expect(() => mount(el, body())).toThrow("Component re-mount not supported")
+    })
 })
