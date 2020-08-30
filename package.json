@@ -26,8 +26,8 @@
     "example-todoapp-backend": "yarn build && parcel --out-dir dist/examples examples/todoapp-backend/index.html",
     "example-consultants": "yarn build && mkdir -p dist/examples && cp -R examples/consultants/public/* dist/examples && parcel --out-dir dist/examples examples/consultants/index.html",
     "build": "tsc",
+    "build:watch": "tsc --watch",
     "test": "jest",
-    "test:watch": "jest --watchAll",
-    "tsc:watch": "tsc --watch"
+    "test:watch": "jest --watchAll"
   }
 }
