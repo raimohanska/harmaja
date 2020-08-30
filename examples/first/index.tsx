@@ -13,7 +13,9 @@ const ListComponent = ({ stuff } : { stuff : string[] }) => {
     </ul>
 }
 
-document.getElementById("root")!.appendChild(<div>
-        <h1>Hello world {state.map(s => s.counter.toString())} </h1>
-        <ListComponent stuff={["Reaktor", "iz", "teh", "bestest"]}/>
-    </div>)
+const el = <div>
+<h1>Hello world {state.map(s => s.counter.toString())} </h1>
+<ListComponent stuff={["Reaktor", "iz", "teh", "bestest"]}/>
+</div>
+
+document.getElementById("root")!.appendChild(el)

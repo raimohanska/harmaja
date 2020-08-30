@@ -32,7 +32,7 @@ type Booleanish = boolean | 'true' | 'false';
 declare global {
     namespace JSX {
         function h(type: H.JSXElementType, props: H.Props, ...children: H.Children): CreateElementOutput;
-    
+        export type Element = H.DOMElement
         export interface IntrinsicElements {
             // HTML
             a: DetailedHTMLProps<AnchorHTMLAttributes<HTMLAnchorElement>, HTMLAnchorElement>;
