@@ -1,12 +1,12 @@
 import * as B from "baconjs";
 import * as CSS from 'csstype';
 import * as H from "./harmaja";
-declare type ChildrenType = H.HarmajaChild;
-declare type CreateElementOutput = H.DOMElement;
-export declare function h(type: H.JSXElementType, props: H.HarmajaProps, ...children: (H.HarmajaChild | H.HarmajaChild[])[]): CreateElementOutput;
+declare type ChildrenType = H.HarmajaChildren | H.HarmajaChild;
+export declare const h: typeof H.createElement;
 declare type WithObservablesInFields<T> = {
     [K in keyof T]: T[K] | B.Property<T[K]>;
 };
+declare type NativeElement = Element;
 declare type NativeAnimationEvent = AnimationEvent;
 declare type NativeClipboardEvent = ClipboardEvent;
 declare type NativeCompositionEvent = CompositionEvent;
@@ -22,7 +22,7 @@ declare type NativeWheelEvent = WheelEvent;
 declare type Booleanish = boolean | 'true' | 'false';
 declare global {
     namespace JSX {
-        function h(type: H.JSXElementType, props: H.HarmajaProps, ...children: (H.HarmajaChild | H.HarmajaChild[])[]): CreateElementOutput;
+        function h(type: H.JSXElementType, props: H.HarmajaProps, ...children: H.HarmajaChildren): Element;
         interface IntrinsicElements {
             a: DetailedHTMLProps<AnchorHTMLAttributes<HTMLAnchorElement>, HTMLAnchorElement>;
             abbr: DetailedHTMLProps<HTMLAttributes<HTMLElement>, HTMLElement>;
@@ -199,6 +199,7 @@ declare global {
             use: SVGProps<SVGUseElement>;
             view: SVGProps<SVGViewElement>;
         }
+        type Element = NativeElement;
         /**
          *
          * Harmaja typing for native events. Point is that currentTarget has more specific type than EventTarget.

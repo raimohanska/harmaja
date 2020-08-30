@@ -83,7 +83,7 @@ export function createElement(type, props) {
         var element = constructor(__assign(__assign({}, mappedProps), { children: flattenedChildren }));
         if (!isDOMElement(element)) {
             // Components must return a DOM element. Otherwise we cannot attach mount/unmounts callbacks.
-            throw new Error("Expecting an HTMLElement or Text node, got " + element);
+            throw new Error("Expecting an HTML Element or Text node, got " + element);
         }
         var transientState = transientStateStack.pop();
         try {
@@ -115,7 +115,7 @@ export function createElement(type, props) {
         return element;
     }
     else if (typeof type == "string") {
-        return renderHTMLElement(type, props, flattenedChildren);
+        return renderElement(type, props, flattenedChildren);
     }
     else {
         console.error("Unexpected createElement call with arguments", arguments);
@@ -188,7 +188,7 @@ function flattenChildren(child) {
         return child.flatMap(flattenChildren);
     return [child];
 }
-function renderHTMLElement(type, props, children) {
+function renderElement(type, props, children) {
     var e_3, _a, e_4, _b;
     var el = document.createElement(type);
     var _loop_1 = function (key, value) {
@@ -274,7 +274,7 @@ function renderChild(child) {
     throw Error(child + " is not a valid element");
 }
 function isDOMElement(child) {
-    return child instanceof HTMLElement || child instanceof Text;
+    return child instanceof Element || child instanceof Text;
 }
 function setProp(el, key, value) {
     if (key === "ref") {
@@ -459,7 +459,7 @@ function appendElement(rootElement, child) {
     }
 }
 export function debug(element) {
-    if (element instanceof HTMLElement) {
+    if (element instanceof Element) {
         return element.outerHTML;
     }
     else {

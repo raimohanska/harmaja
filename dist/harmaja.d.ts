@@ -3,8 +3,9 @@ export declare type HarmajaComponent = (props: HarmajaProps) => DOMElement;
 export declare type JSXElementType = string | HarmajaComponent;
 export declare type HarmajaProps = Record<string, any>;
 export declare type HarmajaChild = HarmajaObservableChild | DOMElement | string | number | null;
+export declare type HarmajaChildren = (HarmajaChild | HarmajaChild[])[];
 export declare type HarmajaObservableChild = Bacon.Property<HarmajaChild>;
-export declare type DOMElement = HTMLElement | Text;
+export declare type DOMElement = Element | Text;
 /**
  *  Mounts the given element to the document, replacing the given root element.
  *
@@ -12,7 +13,7 @@ export declare type DOMElement = HTMLElement | Text;
  *  - `onMount` callbacks will be called
  *  - `onMountEvent` will be triggered
  */
-export declare function mount(harmajaElement: DOMElement, root: HTMLElement): void;
+export declare function mount(harmajaElement: Element, root: Element): void;
 /**
  *  Unmounts the given element, removing it from the DOM.
  *
@@ -25,7 +26,7 @@ declare type Callback = () => void;
 /**
  *  Element constructor used by JSX.
  */
-export declare function createElement(type: JSXElementType, props: HarmajaProps, ...children: (HarmajaChild | HarmajaChild[])[]): DOMElement;
+export declare function createElement(type: JSXElementType, props: HarmajaProps, ...children: HarmajaChildren): DOMElement;
 /**
  *  Add onMount callback. Called once after the component has been mounted on the document.
  *  NOTE: Call only in component constructors. Otherwise will not do anything useful.
@@ -47,11 +48,11 @@ export declare function mountEvent(): Bacon.EventStream<void>;
  */
 export declare function unmountEvent(): Bacon.EventStream<void>;
 export declare function callOnMounts(element: Element | Text | ChildNode): void;
-declare function attachOnMount(element: HTMLElement | Text, onMount: Callback): void;
-declare function attachOnUnmount(element: HTMLElement | Text, onUnmount: Callback): void;
-declare function replaceElement(oldElement: ChildNode, newElement: HTMLElement | Text): void;
+declare function attachOnMount(element: DOMElement, onMount: Callback): void;
+declare function attachOnUnmount(element: DOMElement, onUnmount: Callback): void;
+declare function replaceElement(oldElement: ChildNode, newElement: DOMElement): void;
 declare function removeElement(oldElement: ChildNode): void;
-declare function appendElement(rootElement: HTMLElement, child: DOMElement): void;
+declare function appendElement(rootElement: DOMElement, child: DOMElement): void;
 export declare function debug(element: DOMElement | ChildNode): string | null;
 export declare const LowLevelApi: {
     attachOnMount: typeof attachOnMount;
