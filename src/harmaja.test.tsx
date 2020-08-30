@@ -1,4 +1,4 @@
-import { mount, mountEvent, onMount, onUnmount, unmount, unmountEvent } from "./harmaja"
+import { h, mount, mountEvent, onMount, onUnmount, unmount, unmountEvent } from "./index"
 import * as H from "./index"
 import { htmlOf, testRender } from "./test-utils"
 
