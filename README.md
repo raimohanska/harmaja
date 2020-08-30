@@ -149,6 +149,26 @@ There's a third variation of TextView still, for read-only views:
 In this variant, everything is replaced on any change to the list. Use only for read-only
 views into small views of data.
 
+## Pitfalls
+
+My component reloads all the time => make sure you've eliminated duplicates in the Bacon Property that you use for swithing components.
+
+```typescript
+<div>
+    { someProperty.map(thing => thing.state === "success" ? <HugeComponent/> : <ErrorComponent/> }
+</div>
+```
+
+In the above, the nested components will be re-constructed each time `someProperty` gets a value. To eliminate duplicate values:
+
+```typescript
+<div>
+    { someProperty.map(thing => thing.state === "success").skipDuplicates().map(success => success ? <HugeComponent/> : <ErrorComponent/> }
+</div>
+```
+
+This is actually something that should be fixed in Bacon.js: automatically skipping duplicates in Properties would be great.
+
 ## Examples
 
 Part of my process has been validating my work with some examples I've previously used for the comparison of different React state management solutions. Here I quickly list some examples, but I beg you to read the full story below, which will visit each of these examples in a problem context instead of just throwing a bucket of code in your face.
