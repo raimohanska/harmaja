@@ -460,7 +460,6 @@ declare global {
      */
     interface Props<T> {
         children?: ChildrenType;
-        key?: Key;
         ref?: LegacyRef<T>;
     }
 
@@ -1728,7 +1727,6 @@ declare global {
 
     type RefCallback<T> = { bivarianceHack(instance: T | null): void }["bivarianceHack"];
 
-    type Key = string | number;    
     type Ref<T> = RefCallback<T> | null;
     type LegacyRef<T> = string | Ref<T>;        
     interface Attributes {
