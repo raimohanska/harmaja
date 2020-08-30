@@ -3,17 +3,14 @@ import * as CSS from 'csstype';
 
 import * as H from "./harmaja"
 
-type ChildrenType = H.HarmajaChild
-type CreateElementOutput = H.DOMElement
+type ChildrenType = H.HarmajaChildren | H.HarmajaChild
 
-export function h(type: H.JSXElementType, props: H.HarmajaProps, ...children: (H.HarmajaChild | H.HarmajaChild[])[]): CreateElementOutput {
-    return H.createElement(type, props, ...children)
-}
+export const h = H.createElement
 
 type WithObservablesInFields<T> = {
     [K in keyof T]: T[K] | B.Property<T[K]>
 }
-
+type NativeElement = Element
 // Notice the types below are copied from https://github.com/DefinitelyTyped/DefinitelyTyped/blob/master/types/react/index.d.ts
 // TODO: bivarianceHack!?
 type NativeEvent = Event
@@ -33,7 +30,7 @@ type Booleanish = boolean | 'true' | 'false';
 
 declare global {
     namespace JSX {
-        function h(type: H.JSXElementType, props: H.HarmajaProps, ...children: (H.HarmajaChild | H.HarmajaChild[])[]): CreateElementOutput;
+        function h(type: H.JSXElementType, props: H.HarmajaProps, ...children: H.HarmajaChildren): Element;
     
         export interface IntrinsicElements {
             // HTML
@@ -215,6 +212,8 @@ declare global {
             use: SVGProps<SVGUseElement>;
             view: SVGProps<SVGViewElement>;
         } 
+
+        export type Element = NativeElement
         
    //
     // Event System

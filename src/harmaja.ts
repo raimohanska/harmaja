@@ -6,9 +6,10 @@ export type JSXElementType = string | HarmajaComponent
 
 export type HarmajaProps = Record<string, any>
 export type HarmajaChild = HarmajaObservableChild | DOMElement | string | number | null
+export type HarmajaChildren = (HarmajaChild | HarmajaChild[])[]
 export type HarmajaObservableChild = Bacon.Property<HarmajaChild>
 
-export type DOMElement = HTMLElement | Text
+export type DOMElement = Element | Text
 
 
 /**
@@ -18,7 +19,7 @@ export type DOMElement = HTMLElement | Text
  *  - `onMount` callbacks will be called
  *  - `onMountEvent` will be triggered
  */
-export function mount(harmajaElement: DOMElement, root: HTMLElement) {
+export function mount(harmajaElement: Element, root: Element) {
     root.parentElement!.replaceChild(harmajaElement, root)
     callOnMounts(harmajaElement)
 }
@@ -47,7 +48,7 @@ type TransientState = {
 /**
  *  Element constructor used by JSX.
  */
-export function createElement(type: JSXElementType, props: HarmajaProps, ...children: (HarmajaChild | HarmajaChild[])[]): DOMElement {
+export function createElement(type: JSXElementType, props: HarmajaProps, ...children: HarmajaChildren): DOMElement {
     const flattenedChildren = children.flatMap(flattenChildren)
     if (props && props.children) {
         delete props.children // TODO: ugly hack, occurred in todoapp example
@@ -59,7 +60,7 @@ export function createElement(type: JSXElementType, props: HarmajaProps, ...chil
         const element = constructor({...mappedProps, children: flattenedChildren})
         if (!isDOMElement(element)) {
             // Components must return a DOM element. Otherwise we cannot attach mount/unmounts callbacks.
-            throw new Error("Expecting an HTMLElement or Text node, got " + element)
+            throw new Error("Expecting an HTML Element or Text node, got " + element)
         }
         const transientState = transientStateStack.pop()!
         for (const callback of transientState.unmountCallbacks || []) {
@@ -70,7 +71,7 @@ export function createElement(type: JSXElementType, props: HarmajaProps, ...chil
         }
         return element
     } else if (typeof type == "string") {
-        return renderHTMLElement(type, props, flattenedChildren)
+        return renderElement(type, props, flattenedChildren)
     } else {
         console.error("Unexpected createElement call with arguments", arguments)
         throw Error(`Unknown type ${type}`)
@@ -147,7 +148,7 @@ function flattenChildren(child: HarmajaChild | HarmajaChild[]): HarmajaChild[] {
     return [child]
 }
 
-function renderHTMLElement(type: string, props: HarmajaProps, children: HarmajaChild[]): HTMLElement {
+function renderElement(type: string, props: HarmajaProps, children: HarmajaChild[]): DOMElement {
     const el = document.createElement(type)
     for (let [key, value] of Object.entries(props || {})) {
         if (value instanceof Bacon.Property) {
@@ -209,10 +210,10 @@ function renderChild(child: HarmajaChild): DOMElement {
 }
 
 function isDOMElement(child: any): child is DOMElement {
-    return child instanceof HTMLElement || child instanceof Text
+    return child instanceof Element || child instanceof Text
 }
 
-function setProp(el: HTMLElement, key: string, value: any) {
+function setProp(el: Element, key: string, value: any) {
     if (key === "ref") {
         if (typeof value !== "function") {
             throw Error("Expecting ref prop to be a function, got " + value)
@@ -290,7 +291,7 @@ function callOnUnmounts(element: Element | Text | ChildNode) {
     elementAny.unmounted = true
 }
 
-function attachOnMount(element: HTMLElement | Text, onMount: Callback) {
+function attachOnMount(element: DOMElement, onMount: Callback) {
     if (typeof onMount !== "function") {
         throw Error("not a function: " + onMount);
     }
@@ -300,7 +301,7 @@ function attachOnMount(element: HTMLElement | Text, onMount: Callback) {
     }
     elementAny.onMounts.push(onMount)
 }
-function attachOnUnmount(element: HTMLElement | Text, onUnmount: Callback) {
+function attachOnUnmount(element: DOMElement, onUnmount: Callback) {
     if (typeof onUnmount !== "function") {
         throw Error("not a function: " + onUnmount);
     }
@@ -312,7 +313,7 @@ function attachOnUnmount(element: HTMLElement | Text, onUnmount: Callback) {
     elementAny.onUnmounts.push(onUnmount)
 }
 
-function detachOnUnmount(element: HTMLElement | Text, onUnmount: Callback) {
+function detachOnUnmount(element: DOMElement, onUnmount: Callback) {
     let elementAny = element as any
     if (!elementAny.onUnmounts) {
         return
@@ -330,7 +331,7 @@ function detachOnUnmount(element: HTMLElement | Text, onUnmount: Callback) {
     }
 }
 
-function replaceElement(oldElement: ChildNode, newElement: HTMLElement | Text) {
+function replaceElement(oldElement: ChildNode, newElement: DOMElement) {
     let wasMounted = (oldElement as any).mounted
     
     if (wasMounted) {
@@ -352,7 +353,7 @@ function removeElement(oldElement: ChildNode) {
     oldElement.remove()
 }  
 
-function appendElement(rootElement: HTMLElement, child: DOMElement) {
+function appendElement(rootElement: DOMElement, child: DOMElement) {
     rootElement.appendChild(child)
     if ((rootElement as any).mounted) {
         callOnMounts(child)
@@ -360,7 +361,7 @@ function appendElement(rootElement: HTMLElement, child: DOMElement) {
 }
 
 export function debug(element: DOMElement | ChildNode) {
-    if (element instanceof HTMLElement) {
+    if (element instanceof Element) {
         return element.outerHTML;
     } else {
         return element.textContent
