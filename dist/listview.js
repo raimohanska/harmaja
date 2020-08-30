@@ -1,7 +1,7 @@
 import { LowLevelApi as H } from "./harmaja";
 export function ListView(props) {
     var observable = ("atom" in props) ? props.atom : props.observable;
-    var _a = props.key, key = _a === void 0 ? (function (x) { return x; }) : _a;
+    var _a = props.getKey, key = _a === void 0 ? (function (x) { return x; }) : _a;
     // TODO: would work better if could return multiple elements!
     var rootElement = document.createElement("span");
     var currentValues = null;

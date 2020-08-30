@@ -93,7 +93,7 @@ const ItemList = ({ items }: { items: B.Property<TodoItem[]>}) => {
       <ListView 
         observable={items} 
         renderObservable={(id: number, item: B.Property<TodoItem>) => <li><ItemView id={id} item={item} editState={editState}/></li>}
-        key={ item => item.id }
+        getKey={ item => item.id }
       />
     </ul>
   );

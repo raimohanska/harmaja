@@ -38,14 +38,14 @@ const App = () => {
 const ItemList = ({ items }: { items: Atom<TodoItem[]>}) => {
   return (
     <ul>
-      <ListView 
+      <ListView
         atom={items} 
         renderAtom={(id, item, removeItem) => {
           // This variant of ListView (with renderAtom) gives a read-write
           // view for each item view. It also gives you a handle for removing the item
           return <li><ItemView {...{item, removeItem}}/></li>          
         }}
-        key={item => item.id}
+        getKey={item => item.id}
       />
     </ul>
   );

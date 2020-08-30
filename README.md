@@ -93,7 +93,7 @@ ListView implements an efficient view into read-only and read-write list data. I
 ```typescript
 const items: Bacon.Property<A[]>;
 const renderObservable: (item: Bacon.Property<A>) => DOMElement;
-const keyFunction: (item: A) => string;
+const getKey: (item: A) => string;
 ```
 
 Then you can render the items using ListView thus:
@@ -102,12 +102,12 @@ Then you can render the items using ListView thus:
 <ListView 
     observable={items} 
     renderObservable={renderObservable}
-    key={keyFunction}
+    getKey={getKey}
 />
 ```
 
 What ListView does here is that it observes `items` for changes and renders each item using the `renderer` function.
-When the list of items changes (something is replaced, added or removed) it uses the given `key` function to determine 
+When the list of items changes (something is replaced, added or removed) it uses the given `getKey` function to determine 
 whether to replace individual item views. Each item view gets a `Bacon.Property<A>` so that they can update when the content 
 in that particular item is changed. See an example at [examples/todoapp](examples/todoapp/index.ts).
 
@@ -128,7 +128,7 @@ You can have read-write access to the items by using ListView thus:
 <ListView 
     atom={items} 
     renderAtom={renderAtom}
-    key={ keyFunction }
+    getKey={ keyFunction }
 />
 ```
 
@@ -514,7 +514,7 @@ To render the TodoItems represented by the `allItems` property you can use ListV
     renderObservable={ (item: B.Property<TodoItem>) => (
         <ItemView item={item}/>
     )}
-    key={(a: TodoItem) => a.id }
+    getKey={(a: TodoItem) => a.id }
 />
 
 const ItemView = ({ item }: { item: B.Property<TodoItem> }) => {
@@ -523,8 +523,8 @@ const ItemView = ({ item }: { item: B.Property<TodoItem> }) => {
 ```
 
 What ListView does here is that it observes `allItems` for changes and renders each item using the ItemView component. 
-When the list of items changes (something is replaced, added or removed) it uses the given `key` function to determine 
-whether to replace individual item views. With the given `key` implementation it replaces views only when the `id` field doesn't match, 
+When the list of items changes (something is replaced, added or removed) it uses the given `getKey` function to determine 
+whether to replace individual item views. With the given `getKey` implementation it replaces views only when the `id` field doesn't match, 
 i.e. the view no longer represents the same item. Each item view gets a `Property<TodoItem>` so that they can update when the content 
 in that particular TodoItem is changed. See full implementation in [examples/todoapp](examples/todoapp/index.ts).
 
@@ -542,7 +542,7 @@ You can have read-write access to the items by using ListView thus:
     renderAtom={(item, removeItem) => {
         return <li><ItemView {...{item, removeItem}}/></li>          
     }}
-    key={ a => a.id }
+    getKey={ a => a.id }
 />
 ```
 

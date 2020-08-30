@@ -6,19 +6,19 @@ import { Atom } from "./atom"
 export type ListViewProps<A, K = A> = {
     observable: Bacon.Property<A[]>, 
     renderObservable: (key: K, x: Bacon.Property<A>) => any, 
-    key: (x: A) => K
+    getKey: (x: A) => K
 } | {
     observable: Bacon.Property<A[]>, 
     renderItem: (x: A) => any,
-    key?: (x: A) => K
+    getKey?: (x: A) => K
 } | {
     atom: Atom<A[]>, 
     renderAtom: (key: K, x: Atom<A>, remove: () => void) => any, 
-    key: (x: A) => K
+    getKey: (x: A) => K
 }
 export function ListView<A, K>(props: ListViewProps<A, K>) {
     const observable = ("atom" in props) ? props.atom : props.observable
-    const { key = ((x: A): K => x as any) } = props    
+    const { getKey: key = ((x: A): K => x as any) } = props    
     // TODO: would work better if could return multiple elements!
     const rootElement = document.createElement("span")
     let currentValues: A[] | null = null

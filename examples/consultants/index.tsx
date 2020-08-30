@@ -81,7 +81,7 @@ export default function App() {
       <ListView {...{
         observable: consultants,
         renderObservable: (id: Id, consultant: B.Property<Consultant>) => <ConsultantCard id={id} consultant={consultant} editState={editState}/>,
-        key: (c: Consultant) => c.id
+        getKey: (c: Consultant) => c.id
       }}/>
       
       <div style={{ display: "flex" }}>
