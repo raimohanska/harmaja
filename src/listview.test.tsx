@@ -12,11 +12,11 @@ describe("Listview", () => {
             observable={value}
             renderItem={item => <li>{item.name}</li>}
         /></ul>
-        expect(htmlOf(el)).toEqual("<ul><span><li>first</li></span></ul>")
+        expect(htmlOf(el)).toEqual("<ul><li>first</li></ul>")
         set([])
-        expect(htmlOf(el)).toEqual("<ul><span></span></ul>")
+        expect(htmlOf(el)).toEqual("<ul></ul>")
         set(testItems)
-        expect(htmlOf(el)).toEqual("<ul><span><li>first</li></span></ul>")
+        expect(htmlOf(el)).toEqual("<ul><li>first</li></ul>")
         return el
     }))
 })

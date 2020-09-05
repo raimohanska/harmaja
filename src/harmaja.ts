@@ -331,6 +331,16 @@ function detachOnUnmount(element: DOMElement, onUnmount: Callback) {
     }
 }
 
+function detachOnUnmounts(element: DOMElement): Callback[] {
+    let elementAny = element as any
+    if (!elementAny.onUnmounts) {
+        return []
+    }
+    let unmounts = elementAny.onUnmounts
+    delete elementAny.onUnmounts
+    return unmounts
+}
+
 function replaceElement(oldElement: ChildNode, newElement: DOMElement) {
     let wasMounted = (oldElement as any).mounted
     
@@ -367,6 +377,11 @@ function replaceMany(oldContent: HarmajaOutput, newContent: HarmajaOutput) {
     }
 }
 
+function addAfterElement(current: ChildNode, next: ChildNode) {
+    current.after(next)
+    callOnMounts(next)
+}
+
 function toDOMElements(elements: HarmajaOutput): DOMElement[] {
     if (elements instanceof Array) return elements.flatMap(toDOMElements)
     return [elements]
@@ -398,9 +413,15 @@ export function debug(element: DOMElement | ChildNode) {
 }
 
 export const LowLevelApi = {
+    createPlaceholder,
     attachOnMount,
     attachOnUnmount,
+    detachOnUnmount,
+    detachOnUnmounts,
     appendElement,
     removeElement,
-    replaceElement
+    addAfterElement,
+    replaceElement,
+    replaceMany,
+    toDOMElements
 }
