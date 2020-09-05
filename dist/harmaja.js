@@ -46,8 +46,7 @@ import { isAtom } from "./atom";
  *  - `onMountEvent` will be triggered
  */
 export function mount(harmajaElement, root) {
-    root.parentElement.replaceChild(harmajaElement, root);
-    callOnMounts(harmajaElement);
+    replaceMany([root], harmajaElement);
 }
 /**
  *  Unmounts the given element, removing it from the DOM.
@@ -80,8 +79,12 @@ export function createElement(type, props) {
             var _b = __read(_a, 2), key = _b[0], value = _b[1];
             return [key, applyComponentScopeToObservable(value)];
         }));
-        var element = constructor(__assign(__assign({}, mappedProps), { children: flattenedChildren }));
+        var elements = constructor(__assign(__assign({}, mappedProps), { children: flattenedChildren }));
+        var element = elements instanceof Array ? elements[0] : elements;
         if (!isDOMElement(element)) {
+            if (elements instanceof Array && elements.length == 0) {
+                throw new Error("Empty array is not a valid output");
+            }
             // Components must return a DOM element. Otherwise we cannot attach mount/unmounts callbacks.
             throw new Error("Expecting an HTML Element or Text node, got " + element);
         }
@@ -112,7 +115,7 @@ export function createElement(type, props) {
             }
             finally { if (e_2) throw e_2.error; }
         }
-        return element;
+        return elements;
     }
     else if (typeof type == "string") {
         return renderElement(type, props, flattenedChildren);
@@ -189,7 +192,7 @@ function flattenChildren(child) {
     return [child];
 }
 function renderElement(type, props, children) {
-    var e_3, _a, e_4, _b;
+    var e_3, _a;
     var el = document.createElement(type);
     var _loop_1 = function (key, value) {
         if (value instanceof Bacon.Property) {
@@ -206,31 +209,19 @@ function renderElement(type, props, children) {
         }
     };
     try {
-        for (var _c = __values(Object.entries(props || {})), _d = _c.next(); !_d.done; _d = _c.next()) {
-            var _e = __read(_d.value, 2), key = _e[0], value = _e[1];
+        for (var _b = __values(Object.entries(props || {})), _c = _b.next(); !_c.done; _c = _b.next()) {
+            var _d = __read(_c.value, 2), key = _d[0], value = _d[1];
             _loop_1(key, value);
         }
     }
     catch (e_3_1) { e_3 = { error: e_3_1 }; }
     finally {
         try {
-            if (_d && !_d.done && (_a = _c.return)) _a.call(_c);
+            if (_c && !_c.done && (_a = _b.return)) _a.call(_b);
         }
         finally { if (e_3) throw e_3.error; }
     }
-    try {
-        for (var _f = __values(children || []), _g = _f.next(); !_g.done; _g = _f.next()) {
-            var child = _g.value;
-            el.appendChild(renderChild(child));
-        }
-    }
-    catch (e_4_1) { e_4 = { error: e_4_1 }; }
-    finally {
-        try {
-            if (_g && !_g.done && (_b = _f.return)) _b.call(_f);
-        }
-        finally { if (e_4) throw e_4.error; }
-    }
+    (children || []).map(renderChild).flatMap(toDOMElements).forEach(function (childElement) { return el.appendChild(childElement); });
     return el;
 }
 function createPlaceholder() {
@@ -245,28 +236,25 @@ function renderChild(child) {
     }
     if (child instanceof Bacon.Property) {
         var observable_2 = child;
-        var element_1 = createPlaceholder();
-        attachOnMount(element_1, function () {
+        var outputElements_1 = [createPlaceholder()];
+        attachOnMount(outputElements_1[0], function () {
             //console.log("Subscribing in " + debug(element))
-            var unsub = observable_2.skipDuplicates().forEach(function (nextValue) {
-                if (!element_1) {
-                    element_1 = renderChild(nextValue);
+            var unsub = observable_2.skipDuplicates().forEach(function (nextChildren) {
+                var oldElements = outputElements_1;
+                outputElements_1 = flattenChildren(nextChildren).flatMap(renderChild).flatMap(toDOMElements);
+                if (outputElements_1.length === 0) {
+                    outputElements_1 = [createPlaceholder()];
                 }
-                else {
-                    var oldElement = element_1;
-                    element_1 = renderChild(nextValue);
-                    // TODO: can we handle a case where the observable yields multiple elements? Currently not.
-                    //console.log("Replacing (" + (unsub ? "after sub" : "before sub") + ") " + debug(oldElement) + " with " + debug(element) + " mounted=" + (oldElement as any).mounted)                 
-                    if (unsub)
-                        detachOnUnmount(oldElement, unsub); // <- attaching unsub to the replaced element instead
-                    replaceElement(oldElement, element_1);
-                    if (unsub)
-                        attachOnUnmount(element_1, unsub);
-                }
+                //console.log("Replacing (" + (unsub ? "after sub" : "before sub") + ") " + debug(oldElement) + " with " + debug(element) + " mounted=" + (oldElement as any).mounted)                 
+                if (unsub)
+                    detachOnUnmount(oldElements[0], unsub); // <- attaching unsub to the replaced element instead
+                replaceMany(oldElements, outputElements_1);
+                if (unsub)
+                    attachOnUnmount(outputElements_1[0], unsub);
             });
-            attachOnUnmount(element_1, unsub);
+            attachOnUnmount(outputElements_1[0], unsub);
         });
-        return element_1;
+        return outputElements_1;
     }
     if (isDOMElement(child)) {
         return child;
@@ -317,7 +305,7 @@ function toKebabCase(inputString) {
         .join('');
 }
 export function callOnMounts(element) {
-    var e_5, _a, e_6, _b;
+    var e_4, _a, e_5, _b;
     //console.log("onMounts in " + debug(element) + " mounted=" + (element as any).mounted)
     var elementAny = element;
     if (elementAny.mounted) {
@@ -334,12 +322,12 @@ export function callOnMounts(element) {
                 sub();
             }
         }
-        catch (e_5_1) { e_5 = { error: e_5_1 }; }
+        catch (e_4_1) { e_4 = { error: e_4_1 }; }
         finally {
             try {
                 if (_d && !_d.done && (_a = _c.return)) _a.call(_c);
             }
-            finally { if (e_5) throw e_5.error; }
+            finally { if (e_4) throw e_4.error; }
         }
     }
     try {
@@ -348,16 +336,16 @@ export function callOnMounts(element) {
             callOnMounts(child);
         }
     }
-    catch (e_6_1) { e_6 = { error: e_6_1 }; }
+    catch (e_5_1) { e_5 = { error: e_5_1 }; }
     finally {
         try {
             if (_f && !_f.done && (_b = _e.return)) _b.call(_e);
         }
-        finally { if (e_6) throw e_6.error; }
+        finally { if (e_5) throw e_5.error; }
     }
 }
 function callOnUnmounts(element) {
-    var e_7, _a, e_8, _b;
+    var e_6, _a, e_7, _b;
     var elementAny = element;
     if (!elementAny.mounted) {
         return;
@@ -370,12 +358,12 @@ function callOnUnmounts(element) {
                 unsub();
             }
         }
-        catch (e_7_1) { e_7 = { error: e_7_1 }; }
+        catch (e_6_1) { e_6 = { error: e_6_1 }; }
         finally {
             try {
                 if (_d && !_d.done && (_a = _c.return)) _a.call(_c);
             }
-            finally { if (e_7) throw e_7.error; }
+            finally { if (e_6) throw e_6.error; }
         }
     }
     try {
@@ -385,12 +373,12 @@ function callOnUnmounts(element) {
             callOnUnmounts(child);
         }
     }
-    catch (e_8_1) { e_8 = { error: e_8_1 }; }
+    catch (e_7_1) { e_7 = { error: e_7_1 }; }
     finally {
         try {
             if (_f && !_f.done && (_b = _e.return)) _b.call(_e);
         }
-        finally { if (e_8) throw e_8.error; }
+        finally { if (e_7) throw e_7.error; }
     }
     elementAny.mounted = false;
     elementAny.unmounted = true;
@@ -447,10 +435,62 @@ function replaceElement(oldElement, newElement) {
         callOnMounts(newElement);
     }
 }
+function replaceMany(oldContent, newContent) {
+    var e_8, _a, e_9, _b;
+    var oldNodes = toDOMElements(oldContent);
+    var newNodes = toDOMElements(newContent);
+    if (oldNodes.length === 0)
+        throw new Error("Cannot replace zero nodes");
+    if (newNodes.length === 0)
+        throw new Error("Cannot replace with zero nodes");
+    try {
+        for (var oldNodes_1 = __values(oldNodes), oldNodes_1_1 = oldNodes_1.next(); !oldNodes_1_1.done; oldNodes_1_1 = oldNodes_1.next()) {
+            var node = oldNodes_1_1.value;
+            callOnUnmounts(node);
+        }
+    }
+    catch (e_8_1) { e_8 = { error: e_8_1 }; }
+    finally {
+        try {
+            if (oldNodes_1_1 && !oldNodes_1_1.done && (_a = oldNodes_1.return)) _a.call(oldNodes_1);
+        }
+        finally { if (e_8) throw e_8.error; }
+    }
+    oldNodes[0].parentElement.replaceChild(newNodes[0], oldNodes[0]);
+    for (var i = 1; i < oldNodes.length; i++) {
+        oldNodes[i].remove();
+    }
+    for (var i = 1; i < newNodes.length; i++) {
+        newNodes[i - 1].after(newNodes[i]);
+    }
+    try {
+        for (var newNodes_1 = __values(newNodes), newNodes_1_1 = newNodes_1.next(); !newNodes_1_1.done; newNodes_1_1 = newNodes_1.next()) {
+            var node = newNodes_1_1.value;
+            callOnMounts(node);
+        }
+    }
+    catch (e_9_1) { e_9 = { error: e_9_1 }; }
+    finally {
+        try {
+            if (newNodes_1_1 && !newNodes_1_1.done && (_b = newNodes_1.return)) _b.call(newNodes_1);
+        }
+        finally { if (e_9) throw e_9.error; }
+    }
+}
+function toDOMElements(elements) {
+    if (elements instanceof Array)
+        return elements.flatMap(toDOMElements);
+    return [elements];
+}
 function removeElement(oldElement) {
     //console.log("removeElement " + debug(oldElement) + ", mounted = " + (oldElement as any).mounted);
-    callOnUnmounts(oldElement);
-    oldElement.remove();
+    if (oldElement instanceof Array) {
+        oldElement.forEach(removeElement);
+    }
+    else {
+        callOnUnmounts(oldElement);
+        oldElement.remove();
+    }
 }
 function appendElement(rootElement, child) {
     rootElement.appendChild(child);

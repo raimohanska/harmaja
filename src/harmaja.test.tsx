@@ -1,11 +1,12 @@
 import { h, mount, mountEvent, onMount, onUnmount, unmount, unmountEvent } from "./index"
 import * as H from "./index"
 import { htmlOf, testRender } from "./test-utils"
+import { HarmajaOutput } from "./harmaja"
 
 function body() {
     let body = <body/>
     let document = <html>{body}</html>
-    return body
+    return body as Element
 }
 
 describe("Harmaja", () => {
@@ -62,7 +63,7 @@ describe("Harmaja", () => {
         return el
     }))
 
-    it("renders observable HTMLElement as child", () => testRender(<input type="text"/> as HTMLElement | null, (value, set) => {
+    it("renders observable HTMLElement as child", () => testRender(<input type="text"/> as HarmajaOutput | null, (value, set) => {
         const el = <h1>{value}</h1>
         //console.log((el as any).outerHTML)
         expect(htmlOf(el)).toEqual(`<h1><input type="text"></h1>`)
@@ -93,5 +94,22 @@ describe("Harmaja", () => {
         expect(() => (<h1>{true}</h1>)).toThrow("true is not a valid element")
         expect(() => (<h1>{new Date()}</h1>)).toThrow()
         expect(() => (<h1>{({})}</h1>)).toThrow()
+    })
+
+    it("Deals with multiple elements from component function", () => {
+        const Component = ({ things }: { things: string[] }) => things.map(t => <ul>{t}</ul>)
+        expect(htmlOf(<Component things={["a", "b", "c"]}/>)).toEqual("<ul>a</ul><ul>b</ul><ul>c</ul>")
+    })
+
+    it("Replaces multiple elements correctly", () => {
+        const Component = ({ things }: { things: H.Atom<string[]> }) => <ul>{things.map(ts => ts.map(t => <li>{t}</li>))}</ul>
+        const things = H.atom(["a"])
+        expect(htmlOf(<Component things={things}/>)).toEqual("<ul><li>a</li></ul>")
+        things.set([])
+        expect(htmlOf(<Component things={things}/>)).toEqual("<ul></ul>")
+        things.set(["b", "d"])
+        expect(htmlOf(<Component things={things}/>)).toEqual("<ul><li>b</li><li>d</li></ul>")
+        things.set(["x"])
+        expect(htmlOf(<Component things={things}/>)).toEqual("<ul><li>x</li></ul>")
     })
 })

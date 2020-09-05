@@ -6,10 +6,11 @@ export type JSXElementType = string | HarmajaComponent
 
 export type HarmajaProps = Record<string, any>
 export type HarmajaChild = HarmajaObservableChild | DOMElement | string | number | null
-export type HarmajaChildren = (HarmajaChild | HarmajaChild[])[]
-export type HarmajaObservableChild = Bacon.Property<HarmajaChild>
-
-export type DOMElement = Element | Text
+export type HarmajaChildren = (HarmajaChild | HarmajaChildren)[]
+export type HarmajaChildOrChildren = HarmajaChild | HarmajaChildren
+export type HarmajaObservableChild = Bacon.Property<HarmajaChildOrChildren>
+export type HarmajaOutput = DOMElement | HarmajaOutput[] // Can be one or more, but an empty array is not allowed
+export type DOMElement = ChildNode
 
 
 /**
@@ -19,9 +20,8 @@ export type DOMElement = Element | Text
  *  - `onMount` callbacks will be called
  *  - `onMountEvent` will be triggered
  */
-export function mount(harmajaElement: Element, root: Element) {
-    root.parentElement!.replaceChild(harmajaElement, root)
-    callOnMounts(harmajaElement)
+export function mount(harmajaElement: HarmajaOutput, root: Element) {
+    replaceMany([root], harmajaElement)
 }
 
 /**
@@ -31,7 +31,7 @@ export function mount(harmajaElement: Element, root: Element) {
  *  - `onUnmount` callbacks will be called
  *  - `onUnmountEvent` will be triggered
  */
-export function unmount(harmajaElement: DOMElement) {
+export function unmount(harmajaElement: HarmajaOutput) {
     removeElement(harmajaElement)
 }
 
@@ -48,7 +48,7 @@ type TransientState = {
 /**
  *  Element constructor used by JSX.
  */
-export function createElement(type: JSXElementType, props: HarmajaProps, ...children: HarmajaChildren): DOMElement {
+export function createElement(type: JSXElementType, props: HarmajaProps, ...children: HarmajaChildren): HarmajaOutput {
     const flattenedChildren = children.flatMap(flattenChildren)
     if (props && props.children) {
         delete props.children // TODO: ugly hack, occurred in todoapp example
@@ -57,8 +57,12 @@ export function createElement(type: JSXElementType, props: HarmajaProps, ...chil
         const constructor = type as HarmajaComponent
         transientStateStack.push({})
         const mappedProps = props && Object.fromEntries(Object.entries(props).map(([key, value]) => [key, applyComponentScopeToObservable(value)]))
-        const element = constructor({...mappedProps, children: flattenedChildren})
+        const elements = constructor({...mappedProps, children: flattenedChildren})
+        const element: DOMElement = elements instanceof Array ? elements[0] : elements
         if (!isDOMElement(element)) {
+            if (elements instanceof Array && elements.length == 0) {
+                throw new Error("Empty array is not a valid output")
+            }
             // Components must return a DOM element. Otherwise we cannot attach mount/unmounts callbacks.
             throw new Error("Expecting an HTML Element or Text node, got " + element)
         }
@@ -69,7 +73,7 @@ export function createElement(type: JSXElementType, props: HarmajaProps, ...chil
         for (const callback of transientState.mountCallbacks || []) {
             attachOnMount(element, callback)
         }
-        return element
+        return elements
     } else if (typeof type == "string") {
         return renderElement(type, props, flattenedChildren)
     } else {
@@ -143,7 +147,7 @@ export function unmountEvent(): Bacon.EventStream<void> {
     return transientState.unmountE
 }
 
-function flattenChildren(child: HarmajaChild | HarmajaChild[]): HarmajaChild[] {
+function flattenChildren(child: HarmajaChildOrChildren): HarmajaChild[] {
     if (child instanceof Array) return child.flatMap(flattenChildren)
     return [child]
 }
@@ -164,9 +168,7 @@ function renderElement(type: string, props: HarmajaProps, children: HarmajaChild
         }
     }
     
-    for (const child of children || []) {
-        el.appendChild(renderChild(child))
-    }
+    (children || []).map(renderChild).flatMap(toDOMElements).forEach(childElement => el.appendChild(childElement))
     return el
 }
 
@@ -174,7 +176,7 @@ function createPlaceholder() {
     return document.createTextNode("")
 }
 
-function renderChild(child: HarmajaChild): DOMElement {
+function renderChild(child: HarmajaChild): HarmajaOutput {
     if (typeof child === "string" || typeof child === "number") {
         return document.createTextNode(child.toString())
     }
@@ -183,26 +185,24 @@ function renderChild(child: HarmajaChild): DOMElement {
     }
     if (child instanceof Bacon.Property) {
         const observable = child as HarmajaObservableChild        
-        let element: DOMElement = createPlaceholder()
-        attachOnMount(element, () => {
+        let outputElements: DOMElement[] = [createPlaceholder()]
+        attachOnMount(outputElements[0], () => {
             //console.log("Subscribing in " + debug(element))
-            const unsub: any = observable.skipDuplicates().forEach(nextValue => {
-                if (!element) {
-                    element = renderChild(nextValue)
-                } else {
-                    let oldElement = element
-                    element = renderChild(nextValue)
-                    // TODO: can we handle a case where the observable yields multiple elements? Currently not.
-                    //console.log("Replacing (" + (unsub ? "after sub" : "before sub") + ") " + debug(oldElement) + " with " + debug(element) + " mounted=" + (oldElement as any).mounted)                 
-                    if (unsub) detachOnUnmount(oldElement, unsub) // <- attaching unsub to the replaced element instead
-                    replaceElement(oldElement, element)
-                    if (unsub) attachOnUnmount(element, unsub)
-                } 
+            const unsub: any = observable.skipDuplicates().forEach((nextChildren: HarmajaChildOrChildren) => {
+                let oldElements = outputElements    
+                outputElements = flattenChildren(nextChildren).flatMap(renderChild).flatMap(toDOMElements)                
+                if (outputElements.length === 0) {
+                    outputElements = [createPlaceholder()]
+                }
+                //console.log("Replacing (" + (unsub ? "after sub" : "before sub") + ") " + debug(oldElement) + " with " + debug(element) + " mounted=" + (oldElement as any).mounted)                 
+                if (unsub) detachOnUnmount(oldElements[0], unsub) // <- attaching unsub to the replaced element instead
+                replaceMany(oldElements, outputElements)
+                if (unsub) attachOnUnmount(outputElements[0], unsub)
             })
-            attachOnUnmount(element, unsub)
+            attachOnUnmount(outputElements[0], unsub)
         })        
-        return element
-    }
+        return outputElements
+    }    
     if (isDOMElement(child)) {
         return child
     }
@@ -247,7 +247,7 @@ function toKebabCase(inputString: string) {
     .join('');
 }
 
-export function callOnMounts(element: Element | Text | ChildNode) {    
+export function callOnMounts(element: Node) {    
     //console.log("onMounts in " + debug(element) + " mounted=" + (element as any).mounted)
     let elementAny = element as any
     if (elementAny.mounted) {
@@ -270,7 +270,7 @@ export function callOnMounts(element: Element | Text | ChildNode) {
 }
 
 
-function callOnUnmounts(element: Element | Text | ChildNode) {
+function callOnUnmounts(element: Node) {
     let elementAny = element as any
     if (!elementAny.mounted) {        
         return
@@ -347,10 +347,39 @@ function replaceElement(oldElement: ChildNode, newElement: DOMElement) {
     }
 }
 
-function removeElement(oldElement: ChildNode) {
+function replaceMany(oldContent: HarmajaOutput, newContent: HarmajaOutput) {
+    const oldNodes = toDOMElements(oldContent)
+    const newNodes = toDOMElements(newContent)
+    if (oldNodes.length === 0) throw new Error("Cannot replace zero nodes");
+    if (newNodes.length === 0) throw new Error("Cannot replace with zero nodes");
+    for (let node of oldNodes) {
+        callOnUnmounts(node)
+    }
+    oldNodes[0].parentElement!.replaceChild(newNodes[0], oldNodes[0])
+    for (let i = 1; i < oldNodes.length; i++) {
+        oldNodes[i].remove()
+    }
+    for (let i = 1; i < newNodes.length; i++) {
+        newNodes[i - 1].after(newNodes[i])
+    }
+    for (let node of newNodes) {
+        callOnMounts(node)
+    }
+}
+
+function toDOMElements(elements: HarmajaOutput): DOMElement[] {
+    if (elements instanceof Array) return elements.flatMap(toDOMElements)
+    return [elements]
+}
+
+function removeElement(oldElement: HarmajaOutput) {
     //console.log("removeElement " + debug(oldElement) + ", mounted = " + (oldElement as any).mounted);
-    callOnUnmounts(oldElement)
-    oldElement.remove()
+    if (oldElement instanceof Array) {
+        oldElement.forEach(removeElement)
+    } else {
+        callOnUnmounts(oldElement)
+        oldElement.remove()
+    }
 }  
 
 function appendElement(rootElement: DOMElement, child: DOMElement) {

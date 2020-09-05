@@ -11,6 +11,7 @@ type WithObservablesInFields<T> = {
     [K in keyof T]: T[K] | B.Property<T[K]>
 }
 type NativeElement = Element
+
 // Notice the types below are copied from https://github.com/DefinitelyTyped/DefinitelyTyped/blob/master/types/react/index.d.ts
 // TODO: bivarianceHack!?
 type NativeEvent = Event
@@ -30,7 +31,7 @@ type Booleanish = boolean | 'true' | 'false';
 
 declare global {
     namespace JSX {
-        function h(type: H.JSXElementType, props: H.HarmajaProps, ...children: H.HarmajaChildren): Element;
+        function h(type: H.JSXElementType, props: H.HarmajaProps, ...children: H.HarmajaChildren): H.HarmajaOutput;
     
         export interface IntrinsicElements {
             // HTML
@@ -213,7 +214,7 @@ declare global {
             view: SVGProps<SVGViewElement>;
         } 
 
-        export type Element = NativeElement
+        export type Element = H.HarmajaOutput
         
    //
     // Event System

@@ -1,9 +1,9 @@
 import { h } from "./index"
 import * as H from "./index"
 import * as B from "baconjs"
-import { DOMElement, unmount, callOnMounts } from "./harmaja"
+import { DOMElement, unmount, callOnMounts, HarmajaOutput } from "./harmaja"
 
-export function testRender<T>(init: T, test: (property: B.Property<T>, set: (v: T) => any) => DOMElement) {
+export function testRender<T>(init: T, test: (property: B.Property<T>, set: (v: T) => any) => HarmajaOutput) {
     const bus = new B.Bus<T>()
     const property = bus.toProperty(init)
     const element = test(property, bus.push)
@@ -12,11 +12,15 @@ export function testRender<T>(init: T, test: (property: B.Property<T>, set: (v: 
     expect((property as any).dispatcher.subscriptions.length).toEqual(0)
 }
 
-export function htmlOf(element: H.DOMElement) {
-    callOnMounts(element)
-    if (element instanceof HTMLElement) {
-        return element.outerHTML;
+export function htmlOf(element: H.HarmajaOutput): string {
+    if (element instanceof Array) {
+        return element.map(htmlOf).join("")
     } else {
-        return element.textContent
+        callOnMounts(element)
+        if (element instanceof HTMLElement) {
+            return element.outerHTML;
+        } else {
+            return element.textContent || ""
+        }
     }
 }
