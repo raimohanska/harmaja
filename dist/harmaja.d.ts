@@ -49,18 +49,30 @@ export declare function mountEvent(): Bacon.EventStream<void>;
  *  NOTE: Call only in component constructors. Otherwise will not do anything useful.
  */
 export declare function unmountEvent(): Bacon.EventStream<void>;
+declare function createPlaceholder(): Text;
 export declare function callOnMounts(element: Node): void;
 declare function attachOnMount(element: DOMElement, onMount: Callback): void;
 declare function attachOnUnmount(element: DOMElement, onUnmount: Callback): void;
+declare function detachOnUnmount(element: DOMElement, onUnmount: Callback): void;
+declare function detachOnUnmounts(element: DOMElement): Callback[];
 declare function replaceElement(oldElement: ChildNode, newElement: DOMElement): void;
+declare function replaceMany(oldContent: HarmajaOutput, newContent: HarmajaOutput): void;
+declare function addAfterElement(current: ChildNode, next: ChildNode): void;
+declare function toDOMElements(elements: HarmajaOutput): DOMElement[];
 declare function removeElement(oldElement: HarmajaOutput): void;
 declare function appendElement(rootElement: DOMElement, child: DOMElement): void;
 export declare function debug(element: DOMElement | ChildNode): string | null;
 export declare const LowLevelApi: {
+    createPlaceholder: typeof createPlaceholder;
     attachOnMount: typeof attachOnMount;
     attachOnUnmount: typeof attachOnUnmount;
+    detachOnUnmount: typeof detachOnUnmount;
+    detachOnUnmounts: typeof detachOnUnmounts;
     appendElement: typeof appendElement;
     removeElement: typeof removeElement;
+    addAfterElement: typeof addAfterElement;
     replaceElement: typeof replaceElement;
+    replaceMany: typeof replaceMany;
+    toDOMElements: typeof toDOMElements;
 };
 export {};

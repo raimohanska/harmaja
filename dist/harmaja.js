@@ -421,6 +421,15 @@ function detachOnUnmount(element, onUnmount) {
         }
     }
 }
+function detachOnUnmounts(element) {
+    var elementAny = element;
+    if (!elementAny.onUnmounts) {
+        return [];
+    }
+    var unmounts = elementAny.onUnmounts;
+    delete elementAny.onUnmounts;
+    return unmounts;
+}
 function replaceElement(oldElement, newElement) {
     var wasMounted = oldElement.mounted;
     if (wasMounted) {
@@ -477,6 +486,10 @@ function replaceMany(oldContent, newContent) {
         finally { if (e_9) throw e_9.error; }
     }
 }
+function addAfterElement(current, next) {
+    current.after(next);
+    callOnMounts(next);
+}
 function toDOMElements(elements) {
     if (elements instanceof Array)
         return elements.flatMap(toDOMElements);
@@ -507,9 +520,15 @@ export function debug(element) {
     }
 }
 export var LowLevelApi = {
+    createPlaceholder: createPlaceholder,
     attachOnMount: attachOnMount,
     attachOnUnmount: attachOnUnmount,
+    detachOnUnmount: detachOnUnmount,
+    detachOnUnmounts: detachOnUnmounts,
     appendElement: appendElement,
     removeElement: removeElement,
-    replaceElement: replaceElement
+    addAfterElement: addAfterElement,
+    replaceElement: replaceElement,
+    replaceMany: replaceMany,
+    toDOMElements: toDOMElements
 };
