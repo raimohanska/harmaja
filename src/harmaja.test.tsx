@@ -112,4 +112,11 @@ describe("Harmaja", () => {
         things.set(["x"])
         expect(htmlOf(<Component things={things}/>)).toEqual("<ul><li>x</li></ul>")
     })
+
+    it("Renders component children", () => {
+        const C1 = ({children}:{children?:any}) => <div>{children}</div>
+        expect(htmlOf(<C1/>)).toEqual("<div></div>")
+        expect(htmlOf(<C1>hello</C1>)).toEqual("<div>hello</div>")
+        expect(htmlOf(<C1><a>wat</a>BOOM</C1>)).toEqual("<div><a>wat</a>BOOM</div>")
+    })
 })
