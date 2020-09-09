@@ -40,6 +40,21 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
                     let nextElements = [H.createPlaceholder()] // TODO: switch unsub
                     H.replaceMany(currentElements, nextElements)
                     currentElements = nextElements
+                } else if (currentValues.length === 0) {
+                    let prevElement = currentElements[0] // i.e. the placeholder element
+                    for (let i = 0; i < nextValues.length; i++) {
+                        const nextItemKey = key(nextValues[i])
+                        const newElement = renderItem(nextItemKey, nextValues, i)
+                        if (i == 0) {
+                            H.replaceElement(prevElement, newElement)
+                            currentElements[i] = newElement           
+                        } else {
+                            H.addAfterElement(prevElement, newElement)
+                            currentElements.push(newElement)
+                        }                        
+                        prevElement = newElement
+                    }
+
                 } else {
                     // 1. replace at common indices
                     for (let i = 0; i < nextValues.length && i < currentValues.length; i++) {
