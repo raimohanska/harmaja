@@ -37,6 +37,22 @@ export function ListView(props) {
                     H.replaceMany(currentElements, nextElements);
                     currentElements = nextElements;
                 }
+                else if (currentValues.length === 0) {
+                    var prevElement = currentElements[0]; // i.e. the placeholder element
+                    for (var i = 0; i < nextValues.length; i++) {
+                        var nextItemKey = key(nextValues[i]);
+                        var newElement = renderItem(nextItemKey, nextValues, i);
+                        if (i == 0) {
+                            H.replaceElement(prevElement, newElement);
+                            currentElements[i] = newElement;
+                        }
+                        else {
+                            H.addAfterElement(prevElement, newElement);
+                            currentElements.push(newElement);
+                        }
+                        prevElement = newElement;
+                    }
+                }
                 else {
                     // 1. replace at common indices
                     for (var i = 0; i < nextValues.length && i < currentValues.length; i++) {
