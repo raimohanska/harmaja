@@ -11,31 +11,7 @@ export type HarmajaChildOrChildren = HarmajaChild | HarmajaChildren
 export type HarmajaObservableChild = Bacon.Property<HarmajaChildOrChildren>
 export type HarmajaOutput = DOMElement | HarmajaOutput[] // Can be one or more, but an empty array is not allowed
 export type DOMElement = ChildNode
-
-
-/**
- *  Mounts the given element to the document, replacing the given root element.
- * 
- *  - Causes the component to be activated, i.e. to start listening to observables 
- *  - `onMount` callbacks will be called
- *  - `onMountEvent` will be triggered
- */
-export function mount(harmajaElement: HarmajaOutput, root: Element) {
-    replaceMany([root], harmajaElement)
-}
-
-/**
- *  Unmounts the given element, removing it from the DOM.
- * 
- *  - Causes the component to be deactivated, i.e. to stop listening to observables 
- *  - `onUnmount` callbacks will be called
- *  - `onUnmountEvent` will be triggered
- */
-export function unmount(harmajaElement: HarmajaOutput) {
-    removeElement(harmajaElement)
-}
-
-type Callback = () => void
+export type Callback = () => void
 
 let transientStateStack: TransientState[] = []
 type TransientState = { 
@@ -80,71 +56,6 @@ export function createElement(type: JSXElementType, props: HarmajaProps, ...chil
         console.error("Unexpected createElement call with arguments", arguments)
         throw Error(`Unknown type ${type}`)
     }
-}
-
-function applyComponentScopeToObservable(value: any) {
-    if (value instanceof Bacon.Observable && !(value instanceof Bacon.Bus) && !(isAtom(value))) {
-        return value.takeUntil(unmountEvent())
-    }
-    return value
-}
-
-function getTransientState() {
-    return transientStateStack[transientStateStack.length - 1]
-}
-
-/**
- *  Add onMount callback. Called once after the component has been mounted on the document.
- *  NOTE: Call only in component constructors. Otherwise will not do anything useful.
- */
-export function onMount(callback: Callback) {
-    const transientState = getTransientState()
-    if (!transientState.mountCallbacks) transientState.mountCallbacks = []
-    transientState.mountCallbacks.push(callback)
-}
-
-/**
- *  Add onUnmount callback. Called once after the component has been unmounted from the document.
- *  NOTE: Call only in component constructors. Otherwise will not do anything useful.
- */
-export function onUnmount(callback: Callback) {
-    const transientState = getTransientState()
-    if (!transientState.unmountCallbacks) transientState.unmountCallbacks = []
-    transientState.unmountCallbacks.push(callback)
-}
-
-/**
- *  The onMount event as EventStream, emitting a value after the component has been mounted to the document.
- *  NOTE: Call only in component constructors. Otherwise will not do anything useful.
- */
-export function mountEvent(): Bacon.EventStream<void> {
-    const transientState = getTransientState()
-    if (!transientState.mountE) {
-        const event = new Bacon.Bus<void>()
-        onMount(() => {
-            event.push()
-            event.end()
-        })    
-        transientState.mountE = event
-    }
-    return transientState.mountE
-}
-
-/**
- *  The onUnmount event as EventStream, emitting a value after the component has been unmounted from the document.
- *  NOTE: Call only in component constructors. Otherwise will not do anything useful.
- */
-export function unmountEvent(): Bacon.EventStream<void> {
-    const transientState = getTransientState()
-    if (!transientState.unmountE) {
-        const event = new Bacon.Bus<void>()
-        onUnmount(() => {
-            event.push()
-            event.end()
-        })    
-        transientState.unmountE = event
-    }
-    return transientState.unmountE
 }
 
 function flattenChildren(child: HarmajaChildOrChildren): HarmajaChild[] {
@@ -209,6 +120,8 @@ function renderChild(child: HarmajaChild): HarmajaOutput {
     throw Error(child + " is not a valid element")
 }
 
+
+
 function isDOMElement(child: any): child is DOMElement {
     return child instanceof Element || child instanceof Text
 }
@@ -245,6 +158,93 @@ function toKebabCase(inputString: string) {
         }
     })
     .join('');
+}
+
+function applyComponentScopeToObservable(value: any) {
+    if (value instanceof Bacon.Observable && !(value instanceof Bacon.Bus) && !(isAtom(value))) {
+        return value.takeUntil(unmountEvent())
+    }
+    return value
+}
+
+function getTransientState() {
+    return transientStateStack[transientStateStack.length - 1]
+}
+
+/**
+ *  Mounts the given element to the document, replacing the given root element.
+ * 
+ *  - Causes the component to be activated, i.e. to start listening to observables 
+ *  - `onMount` callbacks will be called
+ *  - `onMountEvent` will be triggered
+ */
+export function mount(harmajaElement: HarmajaOutput, root: Element) {
+    replaceMany([root], harmajaElement)
+}
+
+/**
+ *  Unmounts the given element, removing it from the DOM.
+ * 
+ *  - Causes the component to be deactivated, i.e. to stop listening to observables 
+ *  - `onUnmount` callbacks will be called
+ *  - `onUnmountEvent` will be triggered
+ */
+export function unmount(harmajaElement: HarmajaOutput) {
+    removeElement(harmajaElement)
+}
+
+/**
+ *  Add onMount callback. Called once after the component has been mounted on the document.
+ *  NOTE: Call only in component constructors. Otherwise will not do anything useful.
+ */
+export function onMount(callback: Callback) {
+    const transientState = getTransientState()
+    if (!transientState.mountCallbacks) transientState.mountCallbacks = []
+    transientState.mountCallbacks.push(callback)
+}
+
+/**
+ *  Add onUnmount callback. Called once after the component has been unmounted from the document.
+ *  NOTE: Call only in component constructors. Otherwise will not do anything useful.
+ */
+export function onUnmount(callback: Callback) {
+    const transientState = getTransientState()
+    if (!transientState.unmountCallbacks) transientState.unmountCallbacks = []
+    transientState.unmountCallbacks.push(callback)
+}
+
+/**
+ *  The onMount event as EventStream, emitting a value after the component has been mounted to the document.
+ *  NOTE: Call only in component constructors. Otherwise will not do anything useful.
+ */
+export function mountEvent(): Bacon.EventStream<void> {
+    const transientState = getTransientState()
+    if (!transientState.mountE) {
+        const event = new Bacon.Bus<void>()
+        onMount(() => {
+            event.push()
+            event.end()
+        })    
+        transientState.mountE = event
+    }
+    return transientState.mountE
+}
+
+/**
+ *  The onUnmount event as EventStream, emitting a value after the component has been unmounted from the document.
+ *  NOTE: Call only in component constructors. Otherwise will not do anything useful.
+ */
+export function unmountEvent(): Bacon.EventStream<void> {
+    const transientState = getTransientState()
+    if (!transientState.unmountE) {
+        const event = new Bacon.Bus<void>()
+        onUnmount(() => {
+            event.push()
+            event.end()
+        })    
+        transientState.unmountE = event
+    }
+    return transientState.unmountE
 }
 
 export function callOnMounts(element: Node) {    
