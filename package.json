@@ -14,7 +14,7 @@
     "baconjs": "^3.0.15"
   },
   "scripts": {
-    "example-first": "yarn build && parcel --out-dir dist/examples examples/first/index.html",
+    "start": "yarn build && parcel --out-dir dist/examples examples/first/index.html",
     "build": "tsc",
     "test": "jest",
     "test:watch": "jest --watchAll",
