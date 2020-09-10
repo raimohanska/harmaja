@@ -8,6 +8,3 @@ document.getElementById("root")!.appendChild(element)
 
 // Event handlers
 element.onclick = (e: MouseEvent) => alert("HELLO")
-
-// Setting style as string
-element.setAttribute("style", "text-decoration: underline;");

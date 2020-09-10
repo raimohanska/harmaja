@@ -1,1 +1,1 @@
-import B from "baconjs"
+import * as B from "baconjs"
