@@ -98,14 +98,12 @@ function renderChild(child: HarmajaChild): HarmajaOutput {
         const observable = child as HarmajaObservableChild        
         let outputElements: DOMElement[] = [createPlaceholder()]
         attachOnMount(outputElements[0], () => {
-            //console.log("Subscribing in " + debug(element))
             const unsub: any = observable.skipDuplicates().forEach((nextChildren: HarmajaChildOrChildren) => {
                 let oldElements = outputElements    
                 outputElements = flattenChildren(nextChildren).flatMap(renderChild).flatMap(toDOMElements)                
                 if (outputElements.length === 0) {
                     outputElements = [createPlaceholder()]
                 }
-                //console.log("Replacing (" + (unsub ? "after sub" : "before sub") + ") " + debug(oldElement) + " with " + debug(element) + " mounted=" + (oldElement as any).mounted)                 
                 if (unsub) detachOnUnmount(oldElements[0], unsub) // <- attaching unsub to the replaced element instead
                 replaceMany(oldElements, outputElements)
                 if (unsub) attachOnUnmount(outputElements[0], unsub)
@@ -169,6 +167,21 @@ function applyComponentScopeToObservable(value: any) {
 
 function getTransientState() {
     return transientStateStack[transientStateStack.length - 1]
+}
+
+type NodeState = {
+    mounted: boolean
+    unmounted: boolean
+    onUnmounts: Callback[]
+    onMounts: Callback[]
+}
+
+function getNodeState(node: Node): NodeState {
+    let nodeAny = node as any
+    if (!nodeAny.__h) {
+        nodeAny.__h = {}
+    }
+    return nodeAny.__h
 }
 
 /**
@@ -248,18 +261,18 @@ export function unmountEvent(): Bacon.EventStream<void> {
 }
 
 export function callOnMounts(element: Node) {    
-    //console.log("onMounts in " + debug(element) + " mounted=" + (element as any).mounted)
-    let elementAny = element as any
-    if (elementAny.mounted) {
+    //console.log("onMounts in " + debug(element) + " mounted=" + getNodeState(element).mounted)
+    let state = getNodeState(element)
+    if (state.mounted) {
         return
     }
-    if (elementAny.unmounted) {
+    if (state.unmounted) {
         throw new Error("Component re-mount not supported")
     }
     
-    elementAny.mounted = true
-    if (elementAny.onMounts) {
-        for (const sub of elementAny.onMounts as Callback[]) {
+    state.mounted = true
+    if (state.onMounts) {
+        for (const sub of state.onMounts as Callback[]) {
             sub()
         }
     }
@@ -271,78 +284,72 @@ export function callOnMounts(element: Node) {
 
 
 function callOnUnmounts(element: Node) {
-    let elementAny = element as any
-    if (!elementAny.mounted) {        
+    let state = getNodeState(element)
+    if (!state.mounted) {        
         return
     }
 
-    if (elementAny.onUnmounts) {
-        for (const unsub of elementAny.onUnmounts as Callback[]) {
+    if (state.onUnmounts) {
+        for (const unsub of state.onUnmounts as Callback[]) {
             //console.log("Calling unsub in " + debug(element))
             unsub()
         }
     }
 
     for (const child of element.childNodes) {
-        //console.log("Going to child " + debug(child) + " mounted=" + (child as any).mounted)
+        //console.log("Going to child " + debug(child) + " mounted=" + getNodeState(child).mounted)
         callOnUnmounts(child)
     }
-    elementAny.mounted = false
-    elementAny.unmounted = true
+    state.mounted = false
+    state.unmounted = true
 }
 
 function attachOnMount(element: DOMElement, onMount: Callback) {
     if (typeof onMount !== "function") {
         throw Error("not a function: " + onMount);
     }
-    let elementAny = element as any
-    if (!elementAny.onMounts) {
-        elementAny.onMounts = []
+    let state = getNodeState(element)
+    if (!state.onMounts) {
+        state.onMounts = []
     }
-    elementAny.onMounts.push(onMount)
+    state.onMounts.push(onMount)
 }
 function attachOnUnmount(element: DOMElement, onUnmount: Callback) {
     if (typeof onUnmount !== "function") {
         throw Error("not a function: " + onUnmount);
     }
-    //console.log("attachOnUnmount " + (typeof onUnmount) + " to " + debug(element))
-    let elementAny = element as any
-    if (!elementAny.onUnmounts) {
-        elementAny.onUnmounts = []
+    let state = getNodeState(element)
+    if (!state.onUnmounts) {
+        state.onUnmounts = []
     }
-    elementAny.onUnmounts.push(onUnmount)
+    state.onUnmounts.push(onUnmount)
 }
 
 function detachOnUnmount(element: DOMElement, onUnmount: Callback) {
-    let elementAny = element as any
-    if (!elementAny.onUnmounts) {
+    let state = getNodeState(element)
+    if (!state.onUnmounts) {
         return
     }
-    //console.log("detachOnUnmount " + (typeof onUnmount) + " from " + debug(element) + " having " + elementAny.onUnmounts.length + " onUmounts")
-    
-    for (let i = 0; i < elementAny.onUnmounts.length; i++) {
-        if (elementAny.onUnmounts[i] === onUnmount) {
-            //console.log("Actually detaching unmount")
-            elementAny.onUnmounts.splice(i, 1)
+    for (let i = 0; i < state.onUnmounts.length; i++) {
+        if (state.onUnmounts[i] === onUnmount) {
+            state.onUnmounts.splice(i, 1)
             return
-        } else {
-            //console.log("Fn unequal " + elementAny.onUnmounts[i] + "  vs  " + onUnmount)
         }
     }
 }
 
 function detachOnUnmounts(element: DOMElement): Callback[] {
-    let elementAny = element as any
-    if (!elementAny.onUnmounts) {
+    let state = getNodeState(element)
+    if (!state.onUnmounts) {
         return []
     }
-    let unmounts = elementAny.onUnmounts
-    delete elementAny.onUnmounts
+    let unmounts = state.onUnmounts
+    delete state.onUnmounts
     return unmounts
 }
 
 function replaceElement(oldElement: ChildNode, newElement: DOMElement) {
-    let wasMounted = (oldElement as any).mounted
+    let wasMounted = getNodeState(oldElement).mounted
     
     if (wasMounted) {
         callOnUnmounts(oldElement)
@@ -388,7 +395,6 @@ function toDOMElements(elements: HarmajaOutput): DOMElement[] {
 }
 
 function removeElement(oldElement: HarmajaOutput) {
-    //console.log("removeElement " + debug(oldElement) + ", mounted = " + (oldElement as any).mounted);
     if (oldElement instanceof Array) {
         oldElement.forEach(removeElement)
     } else {
@@ -399,12 +405,12 @@ function removeElement(oldElement: HarmajaOutput) {
 
 function appendElement(rootElement: DOMElement, child: DOMElement) {
     rootElement.appendChild(child)
-    if ((rootElement as any).mounted) {
+    if (getNodeState(rootElement).mounted) {
         callOnMounts(child)
     }
 }
 
-export function debug(element: DOMElement | ChildNode) {
+export function debug(element: Node) {
     if (element instanceof Element) {
         return element.outerHTML;
     } else {

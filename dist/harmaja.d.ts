@@ -8,6 +8,12 @@ export declare type HarmajaChildOrChildren = HarmajaChild | HarmajaChildren;
 export declare type HarmajaObservableChild = Bacon.Property<HarmajaChildOrChildren>;
 export declare type HarmajaOutput = DOMElement | HarmajaOutput[];
 export declare type DOMElement = ChildNode;
+export declare type Callback = () => void;
+/**
+ *  Element constructor used by JSX.
+ */
+export declare function createElement(type: JSXElementType, props: HarmajaProps, ...children: HarmajaChildren): HarmajaOutput;
+declare function createPlaceholder(): Text;
 /**
  *  Mounts the given element to the document, replacing the given root element.
  *
@@ -24,11 +30,6 @@ export declare function mount(harmajaElement: HarmajaOutput, root: Element): voi
  *  - `onUnmountEvent` will be triggered
  */
 export declare function unmount(harmajaElement: HarmajaOutput): void;
-declare type Callback = () => void;
-/**
- *  Element constructor used by JSX.
- */
-export declare function createElement(type: JSXElementType, props: HarmajaProps, ...children: HarmajaChildren): HarmajaOutput;
 /**
  *  Add onMount callback. Called once after the component has been mounted on the document.
  *  NOTE: Call only in component constructors. Otherwise will not do anything useful.
@@ -49,7 +50,6 @@ export declare function mountEvent(): Bacon.EventStream<void>;
  *  NOTE: Call only in component constructors. Otherwise will not do anything useful.
  */
 export declare function unmountEvent(): Bacon.EventStream<void>;
-declare function createPlaceholder(): Text;
 export declare function callOnMounts(element: Node): void;
 declare function attachOnMount(element: DOMElement, onMount: Callback): void;
 declare function attachOnUnmount(element: DOMElement, onUnmount: Callback): void;
@@ -61,7 +61,7 @@ declare function addAfterElement(current: ChildNode, next: ChildNode): void;
 declare function toDOMElements(elements: HarmajaOutput): DOMElement[];
 declare function removeElement(oldElement: HarmajaOutput): void;
 declare function appendElement(rootElement: DOMElement, child: DOMElement): void;
-export declare function debug(element: DOMElement | ChildNode): string | null;
+export declare function debug(element: Node): string | null;
 export declare const LowLevelApi: {
     createPlaceholder: typeof createPlaceholder;
     attachOnMount: typeof attachOnMount;

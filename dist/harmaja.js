@@ -38,26 +38,6 @@ var __values = (this && this.__values) || function(o) {
 };
 import * as Bacon from "baconjs";
 import { isAtom } from "./atom";
-/**
- *  Mounts the given element to the document, replacing the given root element.
- *
- *  - Causes the component to be activated, i.e. to start listening to observables
- *  - `onMount` callbacks will be called
- *  - `onMountEvent` will be triggered
- */
-export function mount(harmajaElement, root) {
-    replaceMany([root], harmajaElement);
-}
-/**
- *  Unmounts the given element, removing it from the DOM.
- *
- *  - Causes the component to be deactivated, i.e. to stop listening to observables
- *  - `onUnmount` callbacks will be called
- *  - `onUnmountEvent` will be triggered
- */
-export function unmount(harmajaElement) {
-    removeElement(harmajaElement);
-}
 var transientStateStack = [];
 /**
  *  Element constructor used by JSX.
@@ -125,67 +105,6 @@ export function createElement(type, props) {
         throw Error("Unknown type " + type);
     }
 }
-function applyComponentScopeToObservable(value) {
-    if (value instanceof Bacon.Observable && !(value instanceof Bacon.Bus) && !(isAtom(value))) {
-        return value.takeUntil(unmountEvent());
-    }
-    return value;
-}
-function getTransientState() {
-    return transientStateStack[transientStateStack.length - 1];
-}
-/**
- *  Add onMount callback. Called once after the component has been mounted on the document.
- *  NOTE: Call only in component constructors. Otherwise will not do anything useful.
- */
-export function onMount(callback) {
-    var transientState = getTransientState();
-    if (!transientState.mountCallbacks)
-        transientState.mountCallbacks = [];
-    transientState.mountCallbacks.push(callback);
-}
-/**
- *  Add onUnmount callback. Called once after the component has been unmounted from the document.
- *  NOTE: Call only in component constructors. Otherwise will not do anything useful.
- */
-export function onUnmount(callback) {
-    var transientState = getTransientState();
-    if (!transientState.unmountCallbacks)
-        transientState.unmountCallbacks = [];
-    transientState.unmountCallbacks.push(callback);
-}
-/**
- *  The onMount event as EventStream, emitting a value after the component has been mounted to the document.
- *  NOTE: Call only in component constructors. Otherwise will not do anything useful.
- */
-export function mountEvent() {
-    var transientState = getTransientState();
-    if (!transientState.mountE) {
-        var event_1 = new Bacon.Bus();
-        onMount(function () {
-            event_1.push();
-            event_1.end();
-        });
-        transientState.mountE = event_1;
-    }
-    return transientState.mountE;
-}
-/**
- *  The onUnmount event as EventStream, emitting a value after the component has been unmounted from the document.
- *  NOTE: Call only in component constructors. Otherwise will not do anything useful.
- */
-export function unmountEvent() {
-    var transientState = getTransientState();
-    if (!transientState.unmountE) {
-        var event_2 = new Bacon.Bus();
-        onUnmount(function () {
-            event_2.push();
-            event_2.end();
-        });
-        transientState.unmountE = event_2;
-    }
-    return transientState.unmountE;
-}
 function flattenChildren(child) {
     if (child instanceof Array)
         return child.flatMap(flattenChildren);
@@ -238,14 +157,12 @@ function renderChild(child) {
         var observable_2 = child;
         var outputElements_1 = [createPlaceholder()];
         attachOnMount(outputElements_1[0], function () {
-            //console.log("Subscribing in " + debug(element))
             var unsub = observable_2.skipDuplicates().forEach(function (nextChildren) {
                 var oldElements = outputElements_1;
                 outputElements_1 = flattenChildren(nextChildren).flatMap(renderChild).flatMap(toDOMElements);
                 if (outputElements_1.length === 0) {
                     outputElements_1 = [createPlaceholder()];
                 }
-                //console.log("Replacing (" + (unsub ? "after sub" : "before sub") + ") " + debug(oldElement) + " with " + debug(element) + " mounted=" + (oldElement as any).mounted)                 
                 if (unsub)
                     detachOnUnmount(oldElements[0], unsub); // <- attaching unsub to the replaced element instead
                 replaceMany(oldElements, outputElements_1);
@@ -304,20 +221,108 @@ function toKebabCase(inputString) {
     })
         .join('');
 }
+function applyComponentScopeToObservable(value) {
+    if (value instanceof Bacon.Observable && !(value instanceof Bacon.Bus) && !(isAtom(value))) {
+        return value.takeUntil(unmountEvent());
+    }
+    return value;
+}
+function getTransientState() {
+    return transientStateStack[transientStateStack.length - 1];
+}
+function getNodeState(node) {
+    var nodeAny = node;
+    if (!nodeAny.__h) {
+        nodeAny.__h = {};
+    }
+    return nodeAny.__h;
+}
+/**
+ *  Mounts the given element to the document, replacing the given root element.
+ *
+ *  - Causes the component to be activated, i.e. to start listening to observables
+ *  - `onMount` callbacks will be called
+ *  - `onMountEvent` will be triggered
+ */
+export function mount(harmajaElement, root) {
+    replaceMany([root], harmajaElement);
+}
+/**
+ *  Unmounts the given element, removing it from the DOM.
+ *
+ *  - Causes the component to be deactivated, i.e. to stop listening to observables
+ *  - `onUnmount` callbacks will be called
+ *  - `onUnmountEvent` will be triggered
+ */
+export function unmount(harmajaElement) {
+    removeElement(harmajaElement);
+}
+/**
+ *  Add onMount callback. Called once after the component has been mounted on the document.
+ *  NOTE: Call only in component constructors. Otherwise will not do anything useful.
+ */
+export function onMount(callback) {
+    var transientState = getTransientState();
+    if (!transientState.mountCallbacks)
+        transientState.mountCallbacks = [];
+    transientState.mountCallbacks.push(callback);
+}
+/**
+ *  Add onUnmount callback. Called once after the component has been unmounted from the document.
+ *  NOTE: Call only in component constructors. Otherwise will not do anything useful.
+ */
+export function onUnmount(callback) {
+    var transientState = getTransientState();
+    if (!transientState.unmountCallbacks)
+        transientState.unmountCallbacks = [];
+    transientState.unmountCallbacks.push(callback);
+}
+/**
+ *  The onMount event as EventStream, emitting a value after the component has been mounted to the document.
+ *  NOTE: Call only in component constructors. Otherwise will not do anything useful.
+ */
+export function mountEvent() {
+    var transientState = getTransientState();
+    if (!transientState.mountE) {
+        var event_1 = new Bacon.Bus();
+        onMount(function () {
+            event_1.push();
+            event_1.end();
+        });
+        transientState.mountE = event_1;
+    }
+    return transientState.mountE;
+}
+/**
+ *  The onUnmount event as EventStream, emitting a value after the component has been unmounted from the document.
+ *  NOTE: Call only in component constructors. Otherwise will not do anything useful.
+ */
+export function unmountEvent() {
+    var transientState = getTransientState();
+    if (!transientState.unmountE) {
+        var event_2 = new Bacon.Bus();
+        onUnmount(function () {
+            event_2.push();
+            event_2.end();
+        });
+        transientState.unmountE = event_2;
+    }
+    return transientState.unmountE;
+}
 export function callOnMounts(element) {
     var e_4, _a, e_5, _b;
-    //console.log("onMounts in " + debug(element) + " mounted=" + (element as any).mounted)
-    var elementAny = element;
-    if (elementAny.mounted) {
+    //console.log("onMounts in " + debug(element) + " mounted=" + getNodeState(element).mounted)
+    var state = getNodeState(element);
+    if (state.mounted) {
         return;
     }
-    if (elementAny.unmounted) {
+    if (state.unmounted) {
         throw new Error("Component re-mount not supported");
     }
-    elementAny.mounted = true;
-    if (elementAny.onMounts) {
+    state.mounted = true;
+    if (state.onMounts) {
         try {
-            for (var _c = __values(elementAny.onMounts), _d = _c.next(); !_d.done; _d = _c.next()) {
+            for (var _c = __values(state.onMounts), _d = _c.next(); !_d.done; _d = _c.next()) {
                 var sub = _d.value;
                 sub();
             }
@@ -346,13 +351,13 @@ export function callOnMounts(element) {
 }
 function callOnUnmounts(element) {
     var e_6, _a, e_7, _b;
-    var elementAny = element;
-    if (!elementAny.mounted) {
+    var state = getNodeState(element);
+    if (!state.mounted) {
         return;
     }
-    if (elementAny.onUnmounts) {
+    if (state.onUnmounts) {
         try {
-            for (var _c = __values(elementAny.onUnmounts), _d = _c.next(); !_d.done; _d = _c.next()) {
+            for (var _c = __values(state.onUnmounts), _d = _c.next(); !_d.done; _d = _c.next()) {
                 var unsub = _d.value;
                 //console.log("Calling unsub in " + debug(element))
                 unsub();
@@ -369,7 +374,7 @@ function callOnUnmounts(element) {
     try {
         for (var _e = __values(element.childNodes), _f = _e.next(); !_f.done; _f = _e.next()) {
             var child = _f.value;
-            //console.log("Going to child " + debug(child) + " mounted=" + (child as any).mounted)
+            //console.log("Going to child " + debug(child) + " mounted=" + getNodeState(child).mounted)
             callOnUnmounts(child);
         }
     }
@@ -380,58 +385,52 @@ function callOnUnmounts(element) {
         }
         finally { if (e_7) throw e_7.error; }
     }
-    elementAny.mounted = false;
-    elementAny.unmounted = true;
+    state.mounted = false;
+    state.unmounted = true;
 }
 function attachOnMount(element, onMount) {
     if (typeof onMount !== "function") {
         throw Error("not a function: " + onMount);
     }
-    var elementAny = element;
-    if (!elementAny.onMounts) {
-        elementAny.onMounts = [];
+    var state = getNodeState(element);
+    if (!state.onMounts) {
+        state.onMounts = [];
     }
-    elementAny.onMounts.push(onMount);
+    state.onMounts.push(onMount);
 }
 function attachOnUnmount(element, onUnmount) {
     if (typeof onUnmount !== "function") {
         throw Error("not a function: " + onUnmount);
     }
-    //console.log("attachOnUnmount " + (typeof onUnmount) + " to " + debug(element))
-    var elementAny = element;
-    if (!elementAny.onUnmounts) {
-        elementAny.onUnmounts = [];
+    var state = getNodeState(element);
+    if (!state.onUnmounts) {
+        state.onUnmounts = [];
     }
-    elementAny.onUnmounts.push(onUnmount);
+    state.onUnmounts.push(onUnmount);
 }
 function detachOnUnmount(element, onUnmount) {
-    var elementAny = element;
-    if (!elementAny.onUnmounts) {
+    var state = getNodeState(element);
+    if (!state.onUnmounts) {
         return;
     }
-    //console.log("detachOnUnmount " + (typeof onUnmount) + " from " + debug(element) + " having " + elementAny.onUnmounts.length + " onUmounts")
-    for (var i = 0; i < elementAny.onUnmounts.length; i++) {
-        if (elementAny.onUnmounts[i] === onUnmount) {
-            //console.log("Actually detaching unmount")
-            elementAny.onUnmounts.splice(i, 1);
+    for (var i = 0; i < state.onUnmounts.length; i++) {
+        if (state.onUnmounts[i] === onUnmount) {
+            state.onUnmounts.splice(i, 1);
             return;
-        }
-        else {
-            //console.log("Fn unequal " + elementAny.onUnmounts[i] + "  vs  " + onUnmount)
         }
     }
 }
 function detachOnUnmounts(element) {
-    var elementAny = element;
-    if (!elementAny.onUnmounts) {
+    var state = getNodeState(element);
+    if (!state.onUnmounts) {
         return [];
     }
-    var unmounts = elementAny.onUnmounts;
-    delete elementAny.onUnmounts;
+    var unmounts = state.onUnmounts;
+    delete state.onUnmounts;
     return unmounts;
 }
 function replaceElement(oldElement, newElement) {
-    var wasMounted = oldElement.mounted;
+    var wasMounted = getNodeState(oldElement).mounted;
     if (wasMounted) {
         callOnUnmounts(oldElement);
     }
@@ -496,7 +495,6 @@ function toDOMElements(elements) {
     return [elements];
 }
 function removeElement(oldElement) {
-    //console.log("removeElement " + debug(oldElement) + ", mounted = " + (oldElement as any).mounted);
     if (oldElement instanceof Array) {
         oldElement.forEach(removeElement);
     }
@@ -507,7 +505,7 @@ function removeElement(oldElement) {
 }
 function appendElement(rootElement, child) {
     rootElement.appendChild(child);
-    if (rootElement.mounted) {
+    if (getNodeState(rootElement).mounted) {
         callOnMounts(child);
     }
 }
