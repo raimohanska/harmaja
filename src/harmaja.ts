@@ -372,9 +372,9 @@ function detachController(oldElements: ChildNode[], controller: NodeController) 
         const index = state.controllers?.indexOf(controller)
         if (index === undefined || index < 0) {
             throw Error("Controller not attached to " + el)
-        } else {
-            //state.controllers.splice(index, 1)
         }
+        // Not removing controller from list. Even though the element is discarded, it's still not ok to
+        // attach other controllers to it.        
     }
     if (controller.unsub) detachOnUnmount(oldElements[0], controller.unsub)
 }
