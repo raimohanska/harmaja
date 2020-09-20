@@ -176,6 +176,11 @@ type NodeState = {
     onMounts: Callback[]
 }
 
+function maybeGetNodeState(node: Node): NodeState | undefined {
+    let nodeAny = node as any
+    return nodeAny.__h
+}
+
 function getNodeState(node: Node): NodeState {
     let nodeAny = node as any
     if (!nodeAny.__h) {
@@ -326,8 +331,8 @@ function attachOnUnmount(element: DOMElement, onUnmount: Callback) {
 }
 
 function detachOnUnmount(element: DOMElement, onUnmount: Callback) {
-    let state = getNodeState(element)
-    if (!state.onUnmounts) {
+    let state = maybeGetNodeState(element)
+    if (state === undefined || !state.onUnmounts) {
         return
     }
     for (let i = 0; i < state.onUnmounts.length; i++) {
@@ -339,8 +344,8 @@ function detachOnUnmount(element: DOMElement, onUnmount: Callback) {
 }
 
 function detachOnUnmounts(element: DOMElement): Callback[] {
-    let state = getNodeState(element)
-    if (!state.onUnmounts) {
+    let state = maybeGetNodeState(element)
+    if (state === undefined || !state.onUnmounts) {
         return []
     }
     let unmounts = state.onUnmounts
@@ -349,7 +354,7 @@ function detachOnUnmounts(element: DOMElement): Callback[] {
 }
 
 function replaceElement(oldElement: ChildNode, newElement: DOMElement) {
-    let wasMounted = getNodeState(oldElement).mounted
+    let wasMounted = maybeGetNodeState(oldElement)?.mounted
     
     if (wasMounted) {
         callOnUnmounts(oldElement)
@@ -405,7 +410,7 @@ function removeElement(oldElement: HarmajaOutput) {
 
 function appendElement(rootElement: DOMElement, child: DOMElement) {
     rootElement.appendChild(child)
-    if (getNodeState(rootElement).mounted) {
+    if (maybeGetNodeState(rootElement)?.mounted) {
         callOnMounts(child)
     }
 }
