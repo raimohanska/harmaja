@@ -27,6 +27,7 @@ describe("Listview", () => {
             renderObservable={(key, item) => <li>{item.map(i => i.name)}</li>}
             getKey={item => item.id}
         /></ul>
+        htmlOf(el)
         expect(htmlOf(el)).toEqual("<ul><li>first</li></ul>")
         set([])
         expect(htmlOf(el)).toEqual("<ul></ul>")
@@ -52,4 +53,4 @@ describe("Listview", () => {
     }))
 })
 
-// TODO: other variants, different transitions
+// TODO: test component replacement / caching based on id
