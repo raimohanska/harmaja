@@ -2,6 +2,8 @@ import { h, mount, mountEvent, onMount, onUnmount, unmount, unmountEvent } from 
 import * as H from "./index"
 import { htmlOf, testRender } from "./test-utils"
 import { HarmajaOutput } from "./harmaja"
+import { ListView } from "./listview"
+import * as B from "baconjs"
 
 function body() {
     let body = <body/>
@@ -120,23 +122,47 @@ describe("Harmaja", () => {
         expect(htmlOf(<C1><a>wat</a>BOOM</C1>)).toEqual("<div><a>wat</a>BOOM</div>")
     })
 
-    it("Forbidden combos", () => {
-        const inner = H.atom(["a","b"])
-        const outer = H.atom([1, inner])
-        const c = <div>{outer}</div>
-        expect(() => {
-            htmlOf(c)
-            /*
-            // Here's what should happen in case we added nested controller support!
-            expect(htmlOf(c)).toEqual("<div>1ab</div>")
-            inner.set(["c", "d"])
-            expect(htmlOf(c)).toEqual("<div>1cd</div>")
-            outer.set([1, 2])
-            // Here it fails, as outer fails to replace c and d of which doesn't know about
-            expect(htmlOf(c)).toEqual("<div>12</div>")    
-            */
-        }).toThrow()
+    describe("Forbidden combos", () => {
+        it("Observable-in-observable", () => {
+            const inner = H.atom(["a","b"])
+            const outer = H.atom([1, inner])
+            const c = <div>{outer}</div>
+            expect(() => {
+                htmlOf(c)
+                /*
+                // Here's what should happen in case we added nested controller support!
+                expect(htmlOf(c)).toEqual("<div>1ab</div>")
+                inner.set(["c", "d"])
+                expect(htmlOf(c)).toEqual("<div>1cd</div>")
+                outer.set([1, 2])
+                // Here it fails, as outer fails to replace c and d of which doesn't know about
+                expect(htmlOf(c)).toEqual("<div>12</div>")    
+                */
+            }).toThrow()    
+        })
 
+        it ("Observable-in-ListView", () => {
+            // Prevented on the compliler level: the following doesn't compile
+            /*
+            const outer = <ListView 
+                observable = { B.constant([1, 2, 3]) }
+                renderItem = { item => B.constant(item) }
+            />
+            */
+        })
+
+        it ("ListView-in-Observable", () => {
+            const inner = <ListView observable={B.constant([1,2,3])} renderItem={i => <span>i</span>}/>
+            const outer = H.atom([0, inner])
+            const c = <div>{outer}</div>
+            expect(() => {
+                htmlOf(c)
+                /*
+                // Here's what should happen in case we added nested controller support!
+                expect(htmlOf(c)).toEqual("<div>0123</div>")
+                */
+            }).toThrow() 
+        })
     })
 
     // TODO: test for scoping observables to lifecycle
