@@ -187,8 +187,6 @@ When this component is unmounted, it will stop listening to updates in the globa
 to add some side-effect to scrollPos, like:
 
 ```typescript
-const scrollPos = B.fromEvent(window, "scroll").map(() => window.scrollY).toProperty(window.scrollY)
-
 const ScrollPosDisplay = () => {
   scrollPos.forEach( pos => console.log(pos) )
   // ...
@@ -202,7 +200,7 @@ import { unmountEvent } from "harmaja";
 
 const ScrollPosDisplay = () => {
   scrollPos
-    .takeUntil(unmountEvent()) // takeUntil is necessary here! Otherwise the forEach side-effect will continue after component unMount
+    .takeUntil(unmountEvent())
     .forEach( pos => console.log(pos) )
   // ...
 }
