@@ -119,4 +119,25 @@ describe("Harmaja", () => {
         expect(htmlOf(<C1>hello</C1>)).toEqual("<div>hello</div>")
         expect(htmlOf(<C1><a>wat</a>BOOM</C1>)).toEqual("<div><a>wat</a>BOOM</div>")
     })
+
+    it("Forbidden combos", () => {
+        const inner = H.atom(["a","b"])
+        const outer = H.atom([1, inner])
+        const c = <div>{outer}</div>
+        expect(() => {
+            htmlOf(c)
+            /*
+            // Here's what should happen in case we added nested controller support!
+            expect(htmlOf(c)).toEqual("<div>1ab</div>")
+            inner.set(["c", "d"])
+            expect(htmlOf(c)).toEqual("<div>1cd</div>")
+            outer.set([1, 2])
+            // Here it fails, as outer fails to replace c and d of which doesn't know about
+            expect(htmlOf(c)).toEqual("<div>12</div>")    
+            */
+        }).toThrow()
+
+    })
+
+    // TODO: test for scoping observables to lifecycle
 })

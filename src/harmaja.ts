@@ -11,7 +11,6 @@ export type HarmajaChildOrChildren = HarmajaChild | HarmajaChildren
 export type HarmajaObservableChild = Bacon.Property<HarmajaChildOrChildren>
 export type HarmajaOutput = DOMElement | HarmajaOutput[] // Can be one or more, but an empty array is not allowed
 export type DOMElement = ChildNode
-export type Callback = () => void
 
 let transientStateStack: TransientState[] = []
 type TransientState = { 
@@ -32,7 +31,7 @@ export function createElement(type: JSXElementType, props: HarmajaProps, ...chil
     if (typeof type == "function") {        
         const constructor = type as HarmajaComponent
         transientStateStack.push({})
-        const mappedProps = props && Object.fromEntries(Object.entries(props).map(([key, value]) => [key, applyComponentScopeToObservable(value)]))
+        const mappedProps = props && Object.fromEntries(Object.entries(props).map(([key, value]) => [key, applyComponentScopeToObservable(value, constructor)]))
         const elements = constructor({...mappedProps, children: flattenedChildren})
         const element: DOMElement = elements instanceof Array ? elements[0] : elements
         if (!isDOMElement(element)) {
@@ -87,6 +86,8 @@ function createPlaceholder() {
     return document.createTextNode("")
 }
 
+let counter = 1
+
 function renderChild(child: HarmajaChild): HarmajaOutput {
     if (typeof child === "string" || typeof child === "number") {
         return document.createTextNode(child.toString())
@@ -95,22 +96,25 @@ function renderChild(child: HarmajaChild): HarmajaOutput {
         return createPlaceholder()
     }
     if (child instanceof Bacon.Property) {
+        let myId = counter++
+        const controller: NodeController = {
+            currentElements: [createPlaceholder()] as DOMElement[]
+        }
         const observable = child as HarmajaObservableChild        
-        let outputElements: DOMElement[] = [createPlaceholder()]
-        attachOnMount(outputElements[0], () => {
-            const unsub: any = observable.skipDuplicates().forEach((nextChildren: HarmajaChildOrChildren) => {
-                let oldElements = outputElements    
-                outputElements = flattenChildren(nextChildren).flatMap(renderChild).flatMap(toDOMElements)                
-                if (outputElements.length === 0) {
-                    outputElements = [createPlaceholder()]
-                }
-                if (unsub) detachOnUnmount(oldElements[0], unsub) // <- attaching unsub to the replaced element instead
-                replaceMany(oldElements, outputElements)
-                if (unsub) attachOnUnmount(outputElements[0], unsub)
-            })
-            attachOnUnmount(outputElements[0], unsub)
-        })        
-        return outputElements
+        //console.log(myId + " assuming control over " + debug(controller.currentElements))
+        attachController(controller, () => observable.skipDuplicates().forEach((nextChildren: HarmajaChildOrChildren) => {
+            let oldElements = controller.currentElements    
+            controller.currentElements = flattenChildren(nextChildren).flatMap(renderChild).flatMap(toDOMElements)                
+            if (controller.currentElements.length === 0) {
+                controller.currentElements = [createPlaceholder()]
+            }
+            //console.log("New values", debug(controller.currentElements))
+            detachController(oldElements, controller)                
+            replaceMany(oldElements, controller.currentElements)
+            //console.log(myId + " assuming control over " + debug(controller.currentElements))
+            attachController(controller)                
+        }))        
+        return controller.currentElements
     }    
     if (isDOMElement(child)) {
         return child
@@ -158,22 +162,36 @@ function toKebabCase(inputString: string) {
     .join('');
 }
 
-function applyComponentScopeToObservable(value: any) {
-    if (value instanceof Bacon.Observable && !(value instanceof Bacon.Bus) && !(isAtom(value))) {
-        return value.takeUntil(unmountEvent())
+function applyComponentScopeToObservable(value: any, constructor: HarmajaComponent) {
+    if (!(value instanceof Bacon.Observable)) {
+        return value
     }
-    return value
+    if ((constructor as any).scopeObservables === false) {
+        return value
+    }
+    if (value instanceof Bacon.Bus || isAtom(value)) {
+        return value    
+    }
+    return value.takeUntil(unmountEvent())    
 }
 
 function getTransientState() {
     return transientStateStack[transientStateStack.length - 1]
 }
 
+export type Callback = () => void
+
 type NodeState = {
     mounted: boolean
     unmounted: boolean
     onUnmounts: Callback[]
-    onMounts: Callback[]
+    onMounts: Callback[],
+    controllers: NodeController[]
+}
+
+export type NodeController = {
+    unsub?: Callback,
+    currentElements: DOMElement[]
 }
 
 function maybeGetNodeState(node: Node): NodeState | undefined {
@@ -327,6 +345,10 @@ function attachOnUnmount(element: DOMElement, onUnmount: Callback) {
     if (!state.onUnmounts) {
         state.onUnmounts = []
     }
+    if (state.onUnmounts.includes(onUnmount)) {
+        //console.log("Duplicate")
+        return
+    }
     state.onUnmounts.push(onUnmount)
 }
 
@@ -349,8 +371,64 @@ function detachOnUnmounts(element: DOMElement): Callback[] {
         return []
     }
     let unmounts = state.onUnmounts
+    //console.log("Detaching " + state.onUnmounts.length + " unmounts")
     delete state.onUnmounts
     return unmounts
+}
+
+function detachController(oldElements: ChildNode[], controller: NodeController) {
+    for (const el of oldElements) {
+        const state = getNodeState(el)
+        //console.log("Detach controller from " + debug(el))
+        const index = state.controllers?.indexOf(controller)
+        if (index === undefined || index < 0) {
+            throw Error("Controller not attached to " + el)
+        } else {
+            //state.controllers.splice(index, 1)
+        }
+    }
+    if (controller.unsub) detachOnUnmount(oldElements[0], controller.unsub)
+}
+
+function attachController(controller: NodeController, bootstrap?: () => Callback) {
+    for (let i = 0; i < controller.currentElements.length; i++) {
+        let el = controller.currentElements[i]
+        const state = getNodeState(el)    
+        // Checking for double controllers    
+        if (!state.controllers) {
+            state.controllers = [controller]
+            //console.log("Attach first controller to " + debug(el) + " (now with " + state.controllers.length + ")")
+        } else if (state.controllers.includes(controller)) {
+            //console.log("Skip duplicate controller to " + debug(el) + " (now with " + state.controllers.length + ")")
+        } else if (state.controllers.length > 0) {
+            throw Error(`Element ${debug(el)} is already controlled. Please mind that the following combinations are not currently supported:
+  - Embedding an observable, which has a wrapped Observable as value
+  - Returning an observable from the renderObservable/renderAtom function in ListView
+  - Returning a ListView from an embedded Observable
+`)
+        } else {
+            //console.log("Attach controller to " + debug(el) + " (now with " + state.controllers.length + ")")
+            state.controllers.push(controller)
+        }    
+        // Sub/unsub logic                
+        if (i == 0) {
+            if (bootstrap) {
+                if (state.mounted) {
+                    throw Error("Unexpected: Component already mounted")
+                } else {
+                    attachOnMount(el, () => {
+                        const unsub = bootstrap()                        
+                        controller.unsub = unsub
+                        el = controller.currentElements[0] // may have changed in bootstrap!                        
+                        attachOnUnmount(el, controller.unsub)
+                    })
+                }
+            }
+            if (controller.unsub) {
+                attachOnUnmount(el, controller.unsub)
+            }
+        }
+    }
 }
 
 function replaceElement(oldElement: ChildNode, newElement: DOMElement) {
@@ -364,6 +442,7 @@ function replaceElement(oldElement: ChildNode, newElement: DOMElement) {
         return
     }
     oldElement.parentElement.replaceChild(newElement, oldElement)
+    //console.log("Replaced " + debug(oldElement) + " with " + debug(newElement) + " wasMounted=" + wasMounted)
     if (wasMounted) {
         callOnMounts(newElement)
     }
@@ -387,6 +466,7 @@ function replaceMany(oldContent: HarmajaOutput, newContent: HarmajaOutput) {
     for (let node of newNodes) {
         callOnMounts(node)
     }
+    //console.log("Replaced " + debug(oldContent) + " with " + debug(newContent))
 }
 
 function addAfterElement(current: ChildNode, next: ChildNode) {
@@ -399,12 +479,13 @@ function toDOMElements(elements: HarmajaOutput): DOMElement[] {
     return [elements]
 }
 
-function removeElement(oldElement: HarmajaOutput) {
+function removeElement(oldElement: HarmajaOutput) {    
     if (oldElement instanceof Array) {
         oldElement.forEach(removeElement)
     } else {
         callOnUnmounts(oldElement)
         oldElement.remove()
+        //console.log("Removed " + debug(oldElement))
     }
 }  
 
@@ -415,11 +496,13 @@ function appendElement(rootElement: DOMElement, child: DOMElement) {
     }
 }
 
-export function debug(element: Node) {
-    if (element instanceof Element) {
+export function debug(element: HarmajaOutput | Node): string {
+    if (element instanceof Array) {
+        return element.map(debug).join(",")
+    } else if (element instanceof Element) {
         return element.outerHTML;
     } else {
-        return element.textContent
+        return element.textContent || "<empty text node>"
     }
 }
 
@@ -429,6 +512,8 @@ export const LowLevelApi = {
     attachOnUnmount,
     detachOnUnmount,
     detachOnUnmounts,
+    attachController,
+    detachController,
     appendElement,
     removeElement,
     addAfterElement,
