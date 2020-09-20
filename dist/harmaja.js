@@ -53,13 +53,13 @@ export function createElement(type, props) {
         delete props.children; // TODO: ugly hack, occurred in todoapp example
     }
     if (typeof type == "function") {
-        var constructor = type;
+        var constructor_1 = type;
         transientStateStack.push({});
         var mappedProps = props && Object.fromEntries(Object.entries(props).map(function (_a) {
             var _b = __read(_a, 2), key = _b[0], value = _b[1];
-            return [key, applyComponentScopeToObservable(value)];
+            return [key, applyComponentScopeToObservable(value, constructor_1)];
         }));
-        var elements = constructor(__assign(__assign({}, mappedProps), { children: flattenedChildren }));
+        var elements = constructor_1(__assign(__assign({}, mappedProps), { children: flattenedChildren }));
         var element = elements instanceof Array ? elements[0] : elements;
         if (!isDOMElement(element)) {
             if (elements instanceof Array && elements.length == 0) {
@@ -146,6 +146,7 @@ function renderElement(type, props, children) {
 function createPlaceholder() {
     return document.createTextNode("");
 }
+var counter = 1;
 function renderChild(child) {
     if (typeof child === "string" || typeof child === "number") {
         return document.createTextNode(child.toString());
@@ -154,24 +155,25 @@ function renderChild(child) {
         return createPlaceholder();
     }
     if (child instanceof Bacon.Property) {
+        var myId = counter++;
+        var controller_1 = {
+            currentElements: [createPlaceholder()]
+        };
         var observable_2 = child;
-        var outputElements_1 = [createPlaceholder()];
-        attachOnMount(outputElements_1[0], function () {
-            var unsub = observable_2.skipDuplicates().forEach(function (nextChildren) {
-                var oldElements = outputElements_1;
-                outputElements_1 = flattenChildren(nextChildren).flatMap(renderChild).flatMap(toDOMElements);
-                if (outputElements_1.length === 0) {
-                    outputElements_1 = [createPlaceholder()];
-                }
-                if (unsub)
-                    detachOnUnmount(oldElements[0], unsub); // <- attaching unsub to the replaced element instead
-                replaceMany(oldElements, outputElements_1);
-                if (unsub)
-                    attachOnUnmount(outputElements_1[0], unsub);
-            });
-            attachOnUnmount(outputElements_1[0], unsub);
-        });
-        return outputElements_1;
+        //console.log(myId + " assuming control over " + debug(controller.currentElements))
+        attachController(controller_1, function () { return observable_2.skipDuplicates().forEach(function (nextChildren) {
+            var oldElements = controller_1.currentElements;
+            controller_1.currentElements = flattenChildren(nextChildren).flatMap(renderChild).flatMap(toDOMElements);
+            if (controller_1.currentElements.length === 0) {
+                controller_1.currentElements = [createPlaceholder()];
+            }
+            //console.log("New values", debug(controller.currentElements))
+            detachController(oldElements, controller_1);
+            replaceMany(oldElements, controller_1.currentElements);
+            //console.log(myId + " assuming control over " + debug(controller.currentElements))
+            attachController(controller_1);
+        }); });
+        return controller_1.currentElements;
     }
     if (isDOMElement(child)) {
         return child;
@@ -221,14 +223,24 @@ function toKebabCase(inputString) {
     })
         .join('');
 }
-function applyComponentScopeToObservable(value) {
-    if (value instanceof Bacon.Observable && !(value instanceof Bacon.Bus) && !(isAtom(value))) {
-        return value.takeUntil(unmountEvent());
+function applyComponentScopeToObservable(value, constructor) {
+    if (!(value instanceof Bacon.Observable)) {
+        return value;
     }
-    return value;
+    if (constructor.scopeObservables === false) {
+        return value;
+    }
+    if (value instanceof Bacon.Bus || isAtom(value)) {
+        return value;
+    }
+    return value.takeUntil(unmountEvent());
 }
 function getTransientState() {
     return transientStateStack[transientStateStack.length - 1];
+}
+function maybeGetNodeState(node) {
+    var nodeAny = node;
+    return nodeAny.__h;
 }
 function getNodeState(node) {
     var nodeAny = node;
@@ -406,11 +418,15 @@ function attachOnUnmount(element, onUnmount) {
     if (!state.onUnmounts) {
         state.onUnmounts = [];
     }
+    if (state.onUnmounts.includes(onUnmount)) {
+        //console.log("Duplicate")
+        return;
+    }
     state.onUnmounts.push(onUnmount);
 }
 function detachOnUnmount(element, onUnmount) {
-    var state = getNodeState(element);
-    if (!state.onUnmounts) {
+    var state = maybeGetNodeState(element);
+    if (state === undefined || !state.onUnmounts) {
         return;
     }
     for (var i = 0; i < state.onUnmounts.length; i++) {
@@ -421,16 +437,88 @@ function detachOnUnmount(element, onUnmount) {
     }
 }
 function detachOnUnmounts(element) {
-    var state = getNodeState(element);
-    if (!state.onUnmounts) {
+    var state = maybeGetNodeState(element);
+    if (state === undefined || !state.onUnmounts) {
         return [];
     }
     var unmounts = state.onUnmounts;
+    //console.log("Detaching " + state.onUnmounts.length + " unmounts")
     delete state.onUnmounts;
     return unmounts;
 }
+function detachController(oldElements, controller) {
+    var e_8, _a;
+    var _b;
+    try {
+        for (var oldElements_1 = __values(oldElements), oldElements_1_1 = oldElements_1.next(); !oldElements_1_1.done; oldElements_1_1 = oldElements_1.next()) {
+            var el = oldElements_1_1.value;
+            var state = getNodeState(el);
+            //console.log("Detach controller from " + debug(el))
+            var index = (_b = state.controllers) === null || _b === void 0 ? void 0 : _b.indexOf(controller);
+            if (index === undefined || index < 0) {
+                throw Error("Controller not attached to " + el);
+            }
+            else {
+                //state.controllers.splice(index, 1)
+            }
+        }
+    }
+    catch (e_8_1) { e_8 = { error: e_8_1 }; }
+    finally {
+        try {
+            if (oldElements_1_1 && !oldElements_1_1.done && (_a = oldElements_1.return)) _a.call(oldElements_1);
+        }
+        finally { if (e_8) throw e_8.error; }
+    }
+    if (controller.unsub)
+        detachOnUnmount(oldElements[0], controller.unsub);
+}
+function attachController(controller, bootstrap) {
+    var _loop_2 = function (i) {
+        var el = controller.currentElements[i];
+        var state = getNodeState(el);
+        // Checking for double controllers    
+        if (!state.controllers) {
+            state.controllers = [controller];
+            //console.log("Attach first controller to " + debug(el) + " (now with " + state.controllers.length + ")")
+        }
+        else if (state.controllers.includes(controller)) {
+            //console.log("Skip duplicate controller to " + debug(el) + " (now with " + state.controllers.length + ")")
+        }
+        else if (state.controllers.length > 0) {
+            throw Error("Element " + debug(el) + " is already controlled. Please mind that the following combinations are not currently supported:\n  - Embedding an observable, which has a wrapped Observable as value\n  - Returning an observable from the renderObservable/renderAtom function in ListView\n  - Returning a ListView from an embedded Observable\n");
+        }
+        else {
+            //console.log("Attach controller to " + debug(el) + " (now with " + state.controllers.length + ")")
+            state.controllers.push(controller);
+        }
+        // Sub/unsub logic                
+        if (i == 0) {
+            if (bootstrap) {
+                if (state.mounted) {
+                    throw Error("Unexpected: Component already mounted");
+                }
+                else {
+                    attachOnMount(el, function () {
+                        var unsub = bootstrap();
+                        controller.unsub = unsub;
+                        el = controller.currentElements[0]; // may have changed in bootstrap!                        
+                        attachOnUnmount(el, controller.unsub);
+                    });
+                }
+            }
+            if (controller.unsub) {
+                attachOnUnmount(el, controller.unsub);
+            }
+        }
+    };
+    for (var i = 0; i < controller.currentElements.length; i++) {
+        _loop_2(i);
+    }
+}
 function replaceElement(oldElement, newElement) {
-    var wasMounted = getNodeState(oldElement).mounted;
+    var _a;
+    var wasMounted = (_a = maybeGetNodeState(oldElement)) === null || _a === void 0 ? void 0 : _a.mounted;
     if (wasMounted) {
         callOnUnmounts(oldElement);
     }
@@ -439,12 +527,13 @@ function replaceElement(oldElement, newElement) {
         return;
     }
     oldElement.parentElement.replaceChild(newElement, oldElement);
+    //console.log("Replaced " + debug(oldElement) + " with " + debug(newElement) + " wasMounted=" + wasMounted)
     if (wasMounted) {
         callOnMounts(newElement);
     }
 }
 function replaceMany(oldContent, newContent) {
-    var e_8, _a, e_9, _b;
+    var e_9, _a, e_10, _b;
     var oldNodes = toDOMElements(oldContent);
     var newNodes = toDOMElements(newContent);
     if (oldNodes.length === 0)
@@ -457,12 +546,12 @@ function replaceMany(oldContent, newContent) {
             callOnUnmounts(node);
         }
     }
-    catch (e_8_1) { e_8 = { error: e_8_1 }; }
+    catch (e_9_1) { e_9 = { error: e_9_1 }; }
     finally {
         try {
             if (oldNodes_1_1 && !oldNodes_1_1.done && (_a = oldNodes_1.return)) _a.call(oldNodes_1);
         }
-        finally { if (e_8) throw e_8.error; }
+        finally { if (e_9) throw e_9.error; }
     }
     oldNodes[0].parentElement.replaceChild(newNodes[0], oldNodes[0]);
     for (var i = 1; i < oldNodes.length; i++) {
@@ -477,13 +566,14 @@ function replaceMany(oldContent, newContent) {
             callOnMounts(node);
         }
     }
-    catch (e_9_1) { e_9 = { error: e_9_1 }; }
+    catch (e_10_1) { e_10 = { error: e_10_1 }; }
     finally {
         try {
             if (newNodes_1_1 && !newNodes_1_1.done && (_b = newNodes_1.return)) _b.call(newNodes_1);
         }
-        finally { if (e_9) throw e_9.error; }
+        finally { if (e_10) throw e_10.error; }
     }
+    //console.log("Replaced " + debug(oldContent) + " with " + debug(newContent))
 }
 function addAfterElement(current, next) {
     current.after(next);
@@ -501,20 +591,25 @@ function removeElement(oldElement) {
     else {
         callOnUnmounts(oldElement);
         oldElement.remove();
+        //console.log("Removed " + debug(oldElement))
     }
 }
 function appendElement(rootElement, child) {
+    var _a;
     rootElement.appendChild(child);
-    if (getNodeState(rootElement).mounted) {
+    if ((_a = maybeGetNodeState(rootElement)) === null || _a === void 0 ? void 0 : _a.mounted) {
         callOnMounts(child);
     }
 }
 export function debug(element) {
-    if (element instanceof Element) {
+    if (element instanceof Array) {
+        return element.map(debug).join(",");
+    }
+    else if (element instanceof Element) {
         return element.outerHTML;
     }
     else {
-        return element.textContent;
+        return element.textContent || "<empty text node>";
     }
 }
 export var LowLevelApi = {
@@ -523,6 +618,8 @@ export var LowLevelApi = {
     attachOnUnmount: attachOnUnmount,
     detachOnUnmount: detachOnUnmount,
     detachOnUnmounts: detachOnUnmounts,
+    attachController: attachController,
+    detachController: detachController,
     appendElement: appendElement,
     removeElement: removeElement,
     addAfterElement: addAfterElement,

@@ -8,12 +8,16 @@ export declare type HarmajaChildOrChildren = HarmajaChild | HarmajaChildren;
 export declare type HarmajaObservableChild = Bacon.Property<HarmajaChildOrChildren>;
 export declare type HarmajaOutput = DOMElement | HarmajaOutput[];
 export declare type DOMElement = ChildNode;
-export declare type Callback = () => void;
 /**
  *  Element constructor used by JSX.
  */
 export declare function createElement(type: JSXElementType, props: HarmajaProps, ...children: HarmajaChildren): HarmajaOutput;
 declare function createPlaceholder(): Text;
+export declare type Callback = () => void;
+export declare type NodeController = {
+    unsub?: Callback;
+    currentElements: DOMElement[];
+};
 /**
  *  Mounts the given element to the document, replacing the given root element.
  *
@@ -55,19 +59,23 @@ declare function attachOnMount(element: DOMElement, onMount: Callback): void;
 declare function attachOnUnmount(element: DOMElement, onUnmount: Callback): void;
 declare function detachOnUnmount(element: DOMElement, onUnmount: Callback): void;
 declare function detachOnUnmounts(element: DOMElement): Callback[];
+declare function detachController(oldElements: ChildNode[], controller: NodeController): void;
+declare function attachController(controller: NodeController, bootstrap?: () => Callback): void;
 declare function replaceElement(oldElement: ChildNode, newElement: DOMElement): void;
 declare function replaceMany(oldContent: HarmajaOutput, newContent: HarmajaOutput): void;
 declare function addAfterElement(current: ChildNode, next: ChildNode): void;
 declare function toDOMElements(elements: HarmajaOutput): DOMElement[];
 declare function removeElement(oldElement: HarmajaOutput): void;
 declare function appendElement(rootElement: DOMElement, child: DOMElement): void;
-export declare function debug(element: Node): string | null;
+export declare function debug(element: HarmajaOutput | Node): string;
 export declare const LowLevelApi: {
     createPlaceholder: typeof createPlaceholder;
     attachOnMount: typeof attachOnMount;
     attachOnUnmount: typeof attachOnUnmount;
     detachOnUnmount: typeof detachOnUnmount;
     detachOnUnmounts: typeof detachOnUnmounts;
+    attachController: typeof attachController;
+    detachController: typeof detachController;
     appendElement: typeof appendElement;
     removeElement: typeof removeElement;
     addAfterElement: typeof addAfterElement;
