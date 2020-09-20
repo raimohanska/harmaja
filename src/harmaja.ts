@@ -161,7 +161,10 @@ function toKebabCase(inputString: string) {
     .join('');
 }
 
-function getTransientState() {
+function getTransientState(forMethod: string) {
+    if (transientStateStack.length == 0) {
+        throw Error(`Illegal ${forMethod} call outside component constructor call`)
+    }
     return transientStateStack[transientStateStack.length - 1]
 }
 
@@ -220,7 +223,7 @@ export function unmount(harmajaElement: HarmajaOutput) {
  *  NOTE: Call only in component constructors. Otherwise will not do anything useful.
  */
 export function onMount(callback: Callback) {
-    const transientState = getTransientState()
+    const transientState = getTransientState("onMount")
     if (!transientState.mountCallbacks) transientState.mountCallbacks = []
     transientState.mountCallbacks.push(callback)
 }
@@ -230,7 +233,7 @@ export function onMount(callback: Callback) {
  *  NOTE: Call only in component constructors. Otherwise will not do anything useful.
  */
 export function onUnmount(callback: Callback) {
-    const transientState = getTransientState()
+    const transientState = getTransientState("onUnmount")
     if (!transientState.unmountCallbacks) transientState.unmountCallbacks = []
     transientState.unmountCallbacks.push(callback)
 }
@@ -240,7 +243,7 @@ export function onUnmount(callback: Callback) {
  *  NOTE: Call only in component constructors. Otherwise will not do anything useful.
  */
 export function mountEvent(): Bacon.EventStream<void> {
-    const transientState = getTransientState()
+    const transientState = getTransientState("mountEvent")
     if (!transientState.mountE) {
         const event = new Bacon.Bus<void>()
         onMount(() => {
@@ -257,7 +260,7 @@ export function mountEvent(): Bacon.EventStream<void> {
  *  NOTE: Call only in component constructors. Otherwise will not do anything useful.
  */
 export function unmountEvent(): Bacon.EventStream<void> {
-    const transientState = getTransientState()
+    const transientState = getTransientState("unmountEvent")
     if (!transientState.unmountE) {
         const event = new Bacon.Bus<void>()
         onUnmount(() => {

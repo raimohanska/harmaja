@@ -38,6 +38,8 @@ describe("Harmaja", () => {
         expect(mountCalled).toEqual(2)
 
         expect(() => mount(el, body())).toThrow("Component re-mount not supported")
+
+        expect(() => unmountEvent()).toThrow("Illegal unmountEvent call outside component constructor call")
     })
 
     it("Supports refs", () => {
