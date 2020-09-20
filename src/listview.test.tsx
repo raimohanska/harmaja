@@ -21,36 +21,43 @@ describe("Listview", () => {
         return el
     }))
 
-    it("With renderObservable", () => testRender(testItems, (value, set) => {
-        const el = <ul><ListView
-            observable={value}
-            renderObservable={(key, item) => <li>{item.map(i => i.name)}</li>}
-            getKey={item => item.id}
-        /></ul>
-        htmlOf(el)
-        expect(htmlOf(el)).toEqual("<ul><li>first</li></ul>")
-        set([])
-        expect(htmlOf(el)).toEqual("<ul></ul>")
-        set(testItems)
-        expect(htmlOf(el)).toEqual("<ul><li>first</li></ul>")
-        return el
-    }))
+    describe("With renderObservable", () => {
+        it("Non-empty -> empty -> Non-empty", () => testRender(testItems, (value, set) => {
+            const el = <ul><ListView
+                observable={value}
+                renderObservable={(key, item) => <li>{item.map(i => i.name)}</li>}
+                getKey={item => item.id}
+            /></ul>
+            htmlOf(el)
+            expect(htmlOf(el)).toEqual("<ul><li>first</li></ul>")
+            set([])
+            expect(htmlOf(el)).toEqual("<ul></ul>")
+            set(testItems)
+            expect(htmlOf(el)).toEqual("<ul><li>first</li></ul>")
+            return el
+        }))    
 
-    it("With renderObservable 2", () => testRender([] as Item[], (value, set) => {
-        const el = <ul><ListView
-            observable={value}
-            renderObservable={(key, item) => <li>{item.map(i => i.name)}</li>}
-            getKey={item => item.id}
-        /></ul>
-        expect(htmlOf(el)).toEqual("<ul></ul>")
-        set(testItems2)
-        expect(htmlOf(el)).toEqual("<ul><li>first</li><li>second</li></ul>")
-        set(testItems)
-        expect(htmlOf(el)).toEqual("<ul><li>first</li></ul>")
-        set(testItems2)
-        expect(htmlOf(el)).toEqual("<ul><li>first</li><li>second</li></ul>")
-        return el
-    }))
+        it("Re-using nodes", () => testRender([] as Item[], (value, set) => {
+            let renderedIds: number[] = []
+            const el = <ul><ListView
+                observable={value}
+                renderObservable={(id: number, item) => {
+                    renderedIds.push(id)
+                    return <li>{item.map(i => i.name)}</li>
+                }}
+                getKey={item => item.id}
+            /></ul>
+            expect(htmlOf(el)).toEqual("<ul></ul>")
+            set(testItems2)
+            expect(htmlOf(el)).toEqual("<ul><li>first</li><li>second</li></ul>")
+            expect(renderedIds).toEqual([1, 2]) // Render both items once first
+            set(testItems)
+            expect(htmlOf(el)).toEqual("<ul><li>first</li></ul>")
+            expect(renderedIds).toEqual([1, 2]) // re-using existing component "first"
+            set(testItems2)
+            expect(htmlOf(el)).toEqual("<ul><li>first</li><li>second</li></ul>")
+            expect(renderedIds).toEqual([1, 2, 2]) // re-using existing component "first", rendering "second" again, because it was not present on previous rendering round.
+            return el
+        }))
+    })
 })
-
-// TODO: test component replacement / caching based on id
