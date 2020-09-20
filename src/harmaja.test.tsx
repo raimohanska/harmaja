@@ -164,6 +164,4 @@ describe("Harmaja", () => {
             }).toThrow() 
         })
     })
-
-    // TODO: test for scoping observables to lifecycle
 })
