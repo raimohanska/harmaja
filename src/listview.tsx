@@ -111,7 +111,4 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
         }
         return props.renderItem(values[index])            
     }
-
 }
-
-(ListView as any).scopeObservables = false

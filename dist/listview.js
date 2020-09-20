@@ -98,4 +98,3 @@ export function ListView(props) {
         return props.renderItem(values[index]);
     }
 }
-ListView.scopeObservables = false;

@@ -31,8 +31,7 @@ export function createElement(type: JSXElementType, props: HarmajaProps, ...chil
     if (typeof type == "function") {        
         const constructor = type as HarmajaComponent
         transientStateStack.push({})
-        const mappedProps = props && Object.fromEntries(Object.entries(props).map(([key, value]) => [key, applyComponentScopeToObservable(value, constructor)]))
-        const elements = constructor({...mappedProps, children: flattenedChildren})
+        const elements = constructor({...props, children: flattenedChildren})
         const element: DOMElement = elements instanceof Array ? elements[0] : elements
         if (!isDOMElement(element)) {
             if (elements instanceof Array && elements.length == 0) {
@@ -160,19 +159,6 @@ function toKebabCase(inputString: string) {
         }
     })
     .join('');
-}
-
-function applyComponentScopeToObservable(value: any, constructor: HarmajaComponent) {
-    if (!(value instanceof Bacon.Observable)) {
-        return value
-    }
-    if ((constructor as any).scopeObservables === false) {
-        return value
-    }
-    if (value instanceof Bacon.Bus || isAtom(value)) {
-        return value    
-    }
-    return value.takeUntil(unmountEvent())    
 }
 
 function getTransientState() {

@@ -9,6 +9,17 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
+var __values = (this && this.__values) || function(o) {
+    var s = typeof Symbol === "function" && Symbol.iterator, m = s && o[s], i = 0;
+    if (m) return m.call(o);
+    if (o && typeof o.length === "number") return {
+        next: function () {
+            if (o && i >= o.length) o = void 0;
+            return { value: o && o[i++], done: !o };
+        }
+    };
+    throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
+};
 var __read = (this && this.__read) || function (o, n) {
     var m = typeof Symbol === "function" && o[Symbol.iterator];
     if (!m) return o;
@@ -25,19 +36,7 @@ var __read = (this && this.__read) || function (o, n) {
     }
     return ar;
 };
-var __values = (this && this.__values) || function(o) {
-    var s = typeof Symbol === "function" && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) return m.call(o);
-    if (o && typeof o.length === "number") return {
-        next: function () {
-            if (o && i >= o.length) o = void 0;
-            return { value: o && o[i++], done: !o };
-        }
-    };
-    throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
-};
 import * as Bacon from "baconjs";
-import { isAtom } from "./atom";
 var transientStateStack = [];
 /**
  *  Element constructor used by JSX.
@@ -53,13 +52,9 @@ export function createElement(type, props) {
         delete props.children; // TODO: ugly hack, occurred in todoapp example
     }
     if (typeof type == "function") {
-        var constructor_1 = type;
+        var constructor = type;
         transientStateStack.push({});
-        var mappedProps = props && Object.fromEntries(Object.entries(props).map(function (_a) {
-            var _b = __read(_a, 2), key = _b[0], value = _b[1];
-            return [key, applyComponentScopeToObservable(value, constructor_1)];
-        }));
-        var elements = constructor_1(__assign(__assign({}, mappedProps), { children: flattenedChildren }));
+        var elements = constructor(__assign(__assign({}, props), { children: flattenedChildren }));
         var element = elements instanceof Array ? elements[0] : elements;
         if (!isDOMElement(element)) {
             if (elements instanceof Array && elements.length == 0) {
@@ -222,18 +217,6 @@ function toKebabCase(inputString) {
         }
     })
         .join('');
-}
-function applyComponentScopeToObservable(value, constructor) {
-    if (!(value instanceof Bacon.Observable)) {
-        return value;
-    }
-    if (constructor.scopeObservables === false) {
-        return value;
-    }
-    if (value instanceof Bacon.Bus || isAtom(value)) {
-        return value;
-    }
-    return value.takeUntil(unmountEvent());
 }
 function getTransientState() {
     return transientStateStack[transientStateStack.length - 1];

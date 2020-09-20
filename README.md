@@ -149,7 +149,9 @@ There's a third variation of TextView still, for read-only views:
 In this variant, everything is replaced on any change to the list. Use only for read-only
 views into small views of data.
 
-## Pitfalls
+## Pitfalls, be aware!
+
+### Unwanted reloads
 
 My component reloads all the time => make sure you've eliminated duplicates in the Bacon Property that you use for swithing components.
 
@@ -167,7 +169,46 @@ In the above, the nested components will be re-constructed each time `someProper
 </div>
 ```
 
-This is actually something that should be fixed in Bacon.js: automatically skipping duplicates in Properties would be great.
+### Dangling subscriptions
+
+When embedding observables in to the DOM, Harmaja will automatically subscribe an unsubscribe to the source observable. So, this is ok:
+
+```typescript
+const scrollPos = B.fromEvent(window, "scroll").map(() => window.scrollY).toProperty(window.scrollY)
+
+const ScrollPosDisplay = () => {
+  return <div style={{ position: "fixed", right: "20px", background: "black", color: "white", padding: "10px" }}>{ 
+    scrollPos /* This is ok! Harmaja will unsubscribe if the component is unmounted */
+  }</div>
+}
+```
+
+When this component is unmounted, it will stop listening to updates in the global scrollPos property. But you are in trouble if you want 
+to add some side-effect to scrollPos, like:
+
+```typescript
+const scrollPos = B.fromEvent(window, "scroll").map(() => window.scrollY).toProperty(window.scrollY)
+
+const ScrollPosDisplay = () => {
+  scrollPos.forEach( pos => console.log(pos) )
+  // ...
+}
+```
+
+Now this side-effect will continue executing after your component is unmounted. To fix this, you can simply scope it to component lifecycle like this:
+
+```typescript
+import { unmountEvent } from "harmaja";
+
+const ScrollPosDisplay = () => {
+  scrollPos
+    .takeUntil(unmountEvent()) // takeUntil is necessary here! Otherwise the forEach side-effect will continue after component unMount
+    .forEach( pos => console.log(pos) )
+  // ...
+}
+```
+
+And you're good to go! See the full example at [examples/side-effects](examples/side-effects/index.tsx).
 
 ## Examples
 
