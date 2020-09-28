@@ -1,5 +1,6 @@
 import * as B from "baconjs"
 import * as A from "./atom"
+import { getCurrentValue } from "./utilities"
 
 describe("Atom", () => {
     describe("Array index lenses", () => {
@@ -99,6 +100,24 @@ describe("Dependent Atom", () => {
             atom.set(null)
             expect(atom.get()).toEqual("world")        
         })    
+
+        it.only("Complex case", () => {        
+            const a = A.atom<string | null>("hello");
+            
+            const mapped = a.skipDuplicates(x => typeof x === "string").flatMapLatest((s) => {
+                if (typeof s === "string") {
+                    return (a.freezeUnless((x) => !!x) as A.Atom<string>).view("length");
+                } else {
+                    return a.freezeUnless((x) => !x).map(x => 0);
+                }              
+            });
+            
+            expect(getCurrentValue(mapped)).toEqual(5)
+            a.set(null)
+            expect(getCurrentValue(mapped)).toEqual(0)
+            a.set("boom")
+            expect(getCurrentValue(mapped)).toEqual(4)
+        })        
     })
 
     it("Recognizes non-atoms", () => {

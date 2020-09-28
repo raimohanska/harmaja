@@ -77,8 +77,7 @@ export function atom<A>(x: any, y?: any): Atom<A> {
         const modify = (f: (a: A) => A) => {
             set(f(get()))
             return theAtom as Atom<A>
-        }
-        get() // Sanity check: the given property must have an initial value
+        }        
         return mkAtom(theAtom, get, modify, set) 
     }
 }
