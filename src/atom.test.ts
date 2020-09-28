@@ -62,6 +62,25 @@ describe("Atom", () => {
         })    
     })
 
+    describe("Case", () => {
+        it("Works", () => {
+            const a = A.atom<string | null>("hello")
+            const p = a.case(
+                (v): v is string => v !== null,
+                (d) => d.view('length'),
+                (v): v is null => v === null,
+                () => B.constant(-1),
+            )
+            expect(getCurrentValue(p)).toEqual(5)
+            a.set('foo')
+            expect(getCurrentValue(p)).toEqual(3)
+            a.set(null)
+            expect(getCurrentValue(p)).toEqual(-1)
+            a.set('hello')
+            expect(getCurrentValue(p)).toEqual(5)
+        })
+
+    })
 })
 
 describe("Dependent Atom", () => {

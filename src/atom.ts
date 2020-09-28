@@ -12,6 +12,10 @@ export interface Atom<A> extends B.Property<A> {
     // to prevent crashing when an element is removed and should no longer be rendered
     freezeUnless<E extends A>(fn: (a: A) => a is E): Atom<E>
     freezeUnless(fn: (a: A) => boolean): Atom<A>
+    case<S1 extends A, O>(match1: BranchMatch<A, S1>, map1: BranchMap<A, S1, O>): O
+    case<S1 extends A, S2 extends A, O>(match1: BranchMatch<A, S1>, map1: BranchMap<A, S1, O>, match2: BranchMatch<A, S2>, map2: BranchMap<A, S2, O>): O
+    case<S1 extends A, S2 extends A, S3 extends A, O>(match1: BranchMatch<A, S1>, map1: BranchMap<A, S1, O>, match2: BranchMatch<A, S2>, map2: BranchMap<A, S2, O>, match3: BranchMatch<A, S3>, map3: BranchMap<A, S3, O>): O
+    case<S1 extends A, S2 extends A, S3 extends A, S4 extends A, O>(match1: BranchMatch<A, S1>, map1: BranchMap<A, S1, O>, match2: BranchMatch<A, S2>, map2: BranchMap<A, S2, O>, match3: BranchMatch<A, S3>, map3: BranchMap<A, S3, O>, match4: BranchMatch<A, S4>, map4: BranchMap<A, S4, O>): O
 }
 
 /**
@@ -86,6 +90,9 @@ export function isAtom<A>(x: any): x is Atom<A> {
     return !!((x instanceof B.Property) && (x as any).get && ((x as any).freezeUnless))
 }
 
+type BranchMatch<A, S extends A> = (value: A) => value is S
+type BranchMap<A, S extends A, O> = (atom: Atom<S>) => O
+
 // Note: actually mutates the given observable into an Atom!
 function mkAtom<A>(observable: B.Property<A>, get: () => A, modify: ( (fn: (a : A) => A) => Atom<A>), set: (a: A) => Atom<A>): Atom<A> {
     const theAtom = observable as Atom<A>
@@ -119,6 +126,24 @@ function mkAtom<A>(observable: B.Property<A>, get: () => A, modify: ( (fn: (a : 
             const lens = view
             return lensedAtom(theAtom, lens)
         }        
+    }
+    theAtom.case = (...fns: any) => {
+        const matchingBranch = (value: A) => {
+            let i = 0
+            while (i < fns.length) {
+                const match = fns[i++]
+                const map = fns[i++]
+                if (match(value)) return { i, match, map }
+            }
+            throw new Error(`No branch matched value ${value}`)
+        }
+
+        return theAtom.skipDuplicates((left, right) => {
+            return matchingBranch(left).i === matchingBranch(right).i
+        }).flatMapLatest(value => {
+            const { match, map } = matchingBranch(value)
+            return map(theAtom.freezeUnless(match))
+        })
     }
     return theAtom
 }
