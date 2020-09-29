@@ -101,7 +101,7 @@ describe("Dependent Atom", () => {
             expect(atom.get()).toEqual("world")        
         })    
 
-        it.only("Complex case", () => {        
+        it("Complex case", () => {        
             const a = A.atom<string | null>("hello");
             
             const mapped = a.skipDuplicates(x => typeof x === "string").flatMapLatest((s) => {
