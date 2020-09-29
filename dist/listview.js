@@ -6,13 +6,12 @@ export function ListView(props) {
     var controller = {
         currentElements: [H.createPlaceholder()]
     };
-    H.attachController(controller, function () { return observable.forEach(function (nextValues) {
-        H.detachController(controller.currentElements, controller);
+    H.attachController(controller.currentElements, controller, function () { return observable.forEach(function (nextValues) {
         if (!currentValues) {
             if (nextValues.length) {
-                var nextElements = nextValues.map(function (x, i) { return renderItem(key(x), nextValues, i); }).flatMap(H.toDOMElements);
-                H.replaceMany(controller.currentElements, nextElements);
-                controller.currentElements = nextElements;
+                var oldElements = controller.currentElements;
+                var nextElements = nextValues.map(function (x, i) { return renderItem(key(x), nextValues, i); }).flatMap(H.toDOMNodes);
+                H.replaceMany(controller, oldElements, nextElements);
             }
         }
         else {
@@ -22,8 +21,8 @@ export function ListView(props) {
             // newCount>oldCount => assume insertion on non-equality                
             if (nextValues.length === 0) {
                 var nextElements = [H.createPlaceholder()];
-                H.replaceMany(controller.currentElements, nextElements);
-                controller.currentElements = nextElements;
+                var oldElements = controller.currentElements;
+                H.replaceMany(controller, oldElements, nextElements);
             }
             else if (currentValues.length === 0) {
                 var prevElement = controller.currentElements[0]; // i.e. the placeholder element
@@ -31,12 +30,10 @@ export function ListView(props) {
                     var nextItemKey = key(nextValues[i]);
                     var newElement = renderItem(nextItemKey, nextValues, i);
                     if (i == 0) {
-                        H.replaceElement(prevElement, newElement);
-                        controller.currentElements[i] = newElement;
+                        H.replaceNode(controller, i, newElement);
                     }
                     else {
-                        H.addAfterElement(prevElement, newElement);
-                        controller.currentElements.push(newElement);
+                        H.addAfterNode(controller, prevElement, newElement);
                     }
                     prevElement = newElement;
                 }
@@ -48,8 +45,7 @@ export function ListView(props) {
                     if (nextItemKey !== key(currentValues[i])) {
                         //console.log("Replace element for", nextValues[i])
                         var nextElement = renderItem(nextItemKey, nextValues, i);
-                        H.replaceElement(controller.currentElements[i], nextElement);
-                        controller.currentElements[i] = nextElement;
+                        H.replaceNode(controller, i, nextElement);
                     }
                     else {
                         // Key match => no need to replace
@@ -61,21 +57,18 @@ export function ListView(props) {
                     for (var i = currentValues.length; i < nextValues.length; i++) {
                         var nextItemKey = key(nextValues[i]);
                         var newElement = renderItem(nextItemKey, nextValues, i);
-                        H.addAfterElement(prevElement, newElement);
+                        H.addAfterNode(controller, prevElement, newElement);
                         prevElement = newElement;
-                        controller.currentElements.push(newElement);
                     }
                 }
                 else if (nextValues.length < currentValues.length) {
-                    for (var i = nextValues.length; i < currentValues.length; i++) {
-                        H.removeElement(controller.currentElements[i]);
+                    for (var i = currentValues.length - 1; i >= nextValues.length; i--) {
+                        H.removeNode(controller, i, controller.currentElements[i]);
                     }
-                    controller.currentElements.splice(nextValues.length);
                 }
             }
         }
         currentValues = nextValues;
-        H.attachController(controller);
     }); });
     return controller.currentElements;
     function renderItem(key, values, index) {
