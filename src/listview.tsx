@@ -4,7 +4,7 @@ import { Atom } from "./atom"
 
 export type ListViewProps<A, K = A> = {
     observable: Bacon.Property<A[]>, 
-    renderObservable: (key: K, x: Bacon.Property<A>) => HarmajaOutput, 
+    renderObservable: (key: K, x: Bacon.Property<A>) => HarmajaOutput, // Actually requires a DOMNode but JSX forces this wider type
     getKey: (x: A) => K
 } | {
     observable: Bacon.Property<A[]>, 
