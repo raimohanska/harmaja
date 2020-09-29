@@ -231,7 +231,8 @@ function maybeGetNodeState(node) {
 function getNodeState(node) {
     var nodeAny = node;
     if (!nodeAny.__h) {
-        nodeAny.__h = {};
+        var state = {};
+        nodeAny.__h = state;
     }
     return nodeAny.__h;
 }
