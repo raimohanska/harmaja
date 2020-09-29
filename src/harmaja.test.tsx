@@ -138,28 +138,43 @@ describe("Harmaja", () => {
             // Here it fails, as outer fails to replace c and d of which doesn't know about
             expect(htmlOf(c)).toEqual("<div>12</div>")    
         })
-        
-        it ("ListView-in-Observable-1", () => {
-            const items = H.atom([1,2,3])
-            const inner = <ListView observable={items} renderItem={i => <span>{i}</span>}/>
-            const outer = H.atom([0, inner, 2])
-            const c = <div>{outer}</div>
-            expect(htmlOf(c)).toEqual("<div>0<span>1</span><span>2</span><span>3</span>2</div>") 
-            outer.set([0, 2])
-            expect(htmlOf(c)).toEqual("<div>02</div>") 
-        })
 
-        it ("ListView-in-Observable-2", () => {
-            const items = H.atom([1,2,3])
-            const inner = <ListView observable={items} renderItem={i => <span>{i}</span>}/>
-            const outer = H.atom([0, inner, 2])
-            const c = <div>{outer}</div>
-            expect(htmlOf(c)).toEqual("<div>0<span>1</span><span>2</span><span>3</span>2</div>") 
-            items.set([4,5,6])
-            expect(htmlOf(c)).toEqual("<div>0<span>4</span><span>5</span><span>6</span>2</div>") 
-            outer.set([0, 2])
-            expect(htmlOf(c)).toEqual("<div>02</div>") 
+        describe("Listview-in-Observable", () => {
+            it ("Simplest", () => {
+                const items = H.atom([1,2,3])
+                const inner = <ListView observable={items} renderItem={i => <span>{i}</span>}/>
+                const outer = H.atom([0, inner, 2])
+                const c = <div>{outer}</div>
+                expect(htmlOf(c)).toEqual("<div>0<span>1</span><span>2</span><span>3</span>2</div>") 
+                outer.set([0, 2])
+                expect(htmlOf(c)).toEqual("<div>02</div>") 
+            })
+    
+            it ("Replacing whole list", () => {
+                const items = H.atom([1,2,3])
+                const inner = <ListView observable={items} renderItem={i => <span>{i}</span>}/>
+                const outer = H.atom([0, inner, 2])
+                const c = <div>{outer}</div>
+                expect(htmlOf(c)).toEqual("<div>0<span>1</span><span>2</span><span>3</span>2</div>") 
+                items.set([4,5,6])
+                expect(htmlOf(c)).toEqual("<div>0<span>4</span><span>5</span><span>6</span>2</div>") 
+                outer.set([0, 2])
+                expect(htmlOf(c)).toEqual("<div>02</div>") 
+            })
+            it ("Replacing partial list", () => {
+                const items = H.atom([1,2,3])
+                const inner = <ListView observable={items} renderItem={i => <span>{i}</span>}/>
+                const outer = H.atom([0, inner, 2])
+                const c = <div>{outer}</div>
+                expect(htmlOf(c)).toEqual("<div>0<span>1</span><span>2</span><span>3</span>2</div>") 
+                items.set([1])
+                expect(htmlOf(c)).toEqual("<div>0<span>1</span>2</div>") 
+                outer.set([0, 2])
+                expect(htmlOf(c)).toEqual("<div>02</div>") 
+            })
         })
+        
+
 
         // TODO: there's a lot of attach/detach code in ListView. Needs testing.
 

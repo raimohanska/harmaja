@@ -76,7 +76,7 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
                         prevElement = newElement                        
                     }
                 } else if (nextValues.length < currentValues.length) {
-                    for (let i = nextValues.length; i < currentValues.length; i++) {
+                    for (let i = currentValues.length - 1; i >= nextValues.length; i--) {
                         H.removeNode(controller, i, controller.currentElements[i])
                     }                    
                 }
