@@ -4,15 +4,15 @@ import { Atom } from "./atom"
 
 export type ListViewProps<A, K = A> = {
     observable: Bacon.Property<A[]>, 
-    renderObservable: (key: K, x: Bacon.Property<A>) => HarmajaOutput, 
+    renderObservable: (key: K, x: Bacon.Property<A>) => DOMElement, 
     getKey: (x: A) => K
 } | {
     observable: Bacon.Property<A[]>, 
-    renderItem: (x: A) => HarmajaOutput,
+    renderItem: (x: A) => DOMElement,
     getKey?: (x: A) => K
 } | {
     atom: Atom<A[]>, 
-    renderAtom: (key: K, x: Atom<A>, remove: () => void) => HarmajaOutput, 
+    renderAtom: (key: K, x: Atom<A>, remove: () => void) => DOMElement, 
     getKey: (x: A) => K
 }
 export function ListView<A, K>(props: ListViewProps<A, K>) {
