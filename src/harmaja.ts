@@ -171,11 +171,11 @@ function getTransientState(forMethod: string) {
 export type Callback = () => void
 
 type NodeState = {
-    mounted: boolean
-    unmounted: boolean
-    onUnmounts: Callback[]
-    onMounts: Callback[],
-    controllers: NodeController[]
+    mounted?: boolean
+    unmounted?: boolean
+    onUnmounts?: Callback[]
+    onMounts?: Callback[],
+    controllers?: NodeController[]
 }
 
 export type NodeController = {
@@ -191,7 +191,8 @@ function maybeGetNodeState(node: Node): NodeState | undefined {
 function getNodeState(node: Node): NodeState {
     let nodeAny = node as any
     if (!nodeAny.__h) {
-        nodeAny.__h = {}
+        const state: NodeState = {}
+        nodeAny.__h = state
     }
     return nodeAny.__h
 }
