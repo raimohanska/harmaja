@@ -18,6 +18,9 @@
   "peerDependencies": {
     "baconjs": "^3.0.15"
   },
+  "engines": {
+    "node": "^13.7"
+  },
   "scripts": {
     "example-first": "yarn build && parcel --out-dir dist/examples examples/first/index.html",
     "example-search": "yarn build && parcel --out-dir dist/examples examples/search/index.html",
