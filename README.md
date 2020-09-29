@@ -92,7 +92,7 @@ ListView implements an efficient view into read-only and read-write list data. I
 
 ```typescript
 const items: Bacon.Property<A[]>;
-const renderObservable: (item: Bacon.Property<A>) => DOMElement;
+const renderObservable: (item: Bacon.Property<A>) => ChildNode;
 const getKey: (item: A) => string;
 ```
 
@@ -117,7 +117,7 @@ ListView also supports read-write access using `Atom`. So if you have
 
 ```typescript
 const items: Atom<A[]>;
-const renderAtom: (item: Atom<A>, remove: () => void) => DOMElement;
+const renderAtom: (item: Atom<A>, remove: () => void) => ChildNode;
 const keyFunction: (item: A) => string;
 
 ```

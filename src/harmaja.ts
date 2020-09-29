@@ -1,16 +1,16 @@
 import * as Bacon from "baconjs"
 import { isAtom } from "./atom"
 
-export type HarmajaComponent = (props: HarmajaProps) => DOMElement
+export type HarmajaComponent = (props: HarmajaProps) => DOMNode
 export type JSXElementType = string | HarmajaComponent
 
 export type HarmajaProps = Record<string, any>
-export type HarmajaChild = HarmajaObservableChild | DOMElement | string | number | null
+export type HarmajaChild = HarmajaObservableChild | DOMNode | string | number | null
 export type HarmajaChildren = (HarmajaChild | HarmajaChildren)[]
 export type HarmajaChildOrChildren = HarmajaChild | HarmajaChildren
 export type HarmajaObservableChild = Bacon.Property<HarmajaChildOrChildren>
-export type HarmajaOutput = DOMElement | HarmajaOutput[] // Can be one or more, but an empty array is not allowed
-export type DOMElement = ChildNode
+export type HarmajaOutput = DOMNode | HarmajaOutput[] // Can be one or more, but an empty array is not allowed
+export type DOMNode = ChildNode
 
 let transientStateStack: TransientState[] = []
 type TransientState = { 
@@ -32,7 +32,7 @@ export function createElement(type: JSXElementType, props: HarmajaProps, ...chil
         const constructor = type as HarmajaComponent
         transientStateStack.push({})
         const elements = constructor({...props, children: flattenedChildren})
-        const element: DOMElement = elements instanceof Array ? elements[0] : elements
+        const element: DOMNode = elements instanceof Array ? elements[0] : elements
         if (!isDOMElement(element)) {
             if (elements instanceof Array && elements.length == 0) {
                 throw new Error("Empty array is not a valid output")
@@ -61,7 +61,7 @@ function flattenChildren(child: HarmajaChildOrChildren): HarmajaChild[] {
     return [child]
 }
 
-function renderElement(type: string, props: HarmajaProps, children: HarmajaChild[]): DOMElement {
+function renderElement(type: string, props: HarmajaProps, children: HarmajaChild[]): DOMNode {
     const el = document.createElement(type)
     for (let [key, value] of Object.entries(props || {})) {
         if (value instanceof Bacon.Property) {
@@ -97,7 +97,7 @@ function renderChild(child: HarmajaChild): HarmajaOutput {
     if (child instanceof Bacon.Property) {
         let myId = counter++
         const controller: NodeController = {
-            currentElements: [createPlaceholder()] as DOMElement[]
+            currentElements: [createPlaceholder()] as DOMNode[]
         }
         const observable = child as HarmajaObservableChild        
         //console.log(myId + " assuming control over " + debug(controller.currentElements))
@@ -123,7 +123,7 @@ function renderChild(child: HarmajaChild): HarmajaOutput {
 
 
 
-function isDOMElement(child: any): child is DOMElement {
+function isDOMElement(child: any): child is DOMNode {
     return child instanceof Element || child instanceof Text
 }
 
@@ -180,7 +180,7 @@ type NodeState = {
 
 export type NodeController = {
     unsub?: Callback,
-    currentElements: DOMElement[]
+    currentElements: DOMNode[]
 }
 
 function maybeGetNodeState(node: Node): NodeState | undefined {
@@ -316,7 +316,7 @@ function callOnUnmounts(element: Node) {
     state.unmounted = true
 }
 
-function attachOnMount(element: DOMElement, onMount: Callback) {
+function attachOnMount(element: DOMNode, onMount: Callback) {
     if (typeof onMount !== "function") {
         throw Error("not a function: " + onMount);
     }
@@ -326,7 +326,7 @@ function attachOnMount(element: DOMElement, onMount: Callback) {
     }
     state.onMounts.push(onMount)
 }
-function attachOnUnmount(element: DOMElement, onUnmount: Callback) {
+function attachOnUnmount(element: DOMNode, onUnmount: Callback) {
     if (typeof onUnmount !== "function") {
         throw Error("not a function: " + onUnmount);
     }
@@ -341,7 +341,7 @@ function attachOnUnmount(element: DOMElement, onUnmount: Callback) {
     state.onUnmounts.push(onUnmount)
 }
 
-function detachOnUnmount(element: DOMElement, onUnmount: Callback) {
+function detachOnUnmount(element: DOMNode, onUnmount: Callback) {
     let state = maybeGetNodeState(element)
     if (state === undefined || !state.onUnmounts) {
         return
@@ -354,7 +354,7 @@ function detachOnUnmount(element: DOMElement, onUnmount: Callback) {
     }
 }
 
-function detachOnUnmounts(element: DOMElement): Callback[] {
+function detachOnUnmounts(element: DOMNode): Callback[] {
     let state = maybeGetNodeState(element)
     if (state === undefined || !state.onUnmounts) {
         return []
@@ -420,7 +420,7 @@ function attachController(controller: NodeController, bootstrap?: () => Callback
     }
 }
 
-function replaceElement(oldElement: ChildNode, newElement: DOMElement) {
+function replaceElement(oldElement: ChildNode, newElement: DOMNode) {
     let wasMounted = maybeGetNodeState(oldElement)?.mounted
     
     if (wasMounted) {
@@ -463,7 +463,7 @@ function addAfterElement(current: ChildNode, next: ChildNode) {
     callOnMounts(next)
 }
 
-function toDOMElements(elements: HarmajaOutput): DOMElement[] {
+function toDOMElements(elements: HarmajaOutput): DOMNode[] {
     if (elements instanceof Array) return elements.flatMap(toDOMElements)
     return [elements]
 }
@@ -478,7 +478,7 @@ function removeElement(oldElement: HarmajaOutput) {
     }
 }  
 
-function appendElement(rootElement: DOMElement, child: DOMElement) {
+function appendElement(rootElement: DOMNode, child: DOMNode) {
     rootElement.appendChild(child)
     if (maybeGetNodeState(rootElement)?.mounted) {
         callOnMounts(child)

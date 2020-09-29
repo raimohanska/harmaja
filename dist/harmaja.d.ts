@@ -1,13 +1,13 @@
 import * as Bacon from "baconjs";
-export declare type HarmajaComponent = (props: HarmajaProps) => DOMElement;
+export declare type HarmajaComponent = (props: HarmajaProps) => DOMNode;
 export declare type JSXElementType = string | HarmajaComponent;
 export declare type HarmajaProps = Record<string, any>;
-export declare type HarmajaChild = HarmajaObservableChild | DOMElement | string | number | null;
+export declare type HarmajaChild = HarmajaObservableChild | DOMNode | string | number | null;
 export declare type HarmajaChildren = (HarmajaChild | HarmajaChildren)[];
 export declare type HarmajaChildOrChildren = HarmajaChild | HarmajaChildren;
 export declare type HarmajaObservableChild = Bacon.Property<HarmajaChildOrChildren>;
-export declare type HarmajaOutput = DOMElement | HarmajaOutput[];
-export declare type DOMElement = ChildNode;
+export declare type HarmajaOutput = DOMNode | HarmajaOutput[];
+export declare type DOMNode = ChildNode;
 /**
  *  Element constructor used by JSX.
  */
@@ -16,7 +16,7 @@ declare function createPlaceholder(): Text;
 export declare type Callback = () => void;
 export declare type NodeController = {
     unsub?: Callback;
-    currentElements: DOMElement[];
+    currentElements: DOMNode[];
 };
 /**
  *  Mounts the given element to the document, replacing the given root element.
@@ -55,18 +55,18 @@ export declare function mountEvent(): Bacon.EventStream<void>;
  */
 export declare function unmountEvent(): Bacon.EventStream<void>;
 export declare function callOnMounts(element: Node): void;
-declare function attachOnMount(element: DOMElement, onMount: Callback): void;
-declare function attachOnUnmount(element: DOMElement, onUnmount: Callback): void;
-declare function detachOnUnmount(element: DOMElement, onUnmount: Callback): void;
-declare function detachOnUnmounts(element: DOMElement): Callback[];
+declare function attachOnMount(element: DOMNode, onMount: Callback): void;
+declare function attachOnUnmount(element: DOMNode, onUnmount: Callback): void;
+declare function detachOnUnmount(element: DOMNode, onUnmount: Callback): void;
+declare function detachOnUnmounts(element: DOMNode): Callback[];
 declare function detachController(oldElements: ChildNode[], controller: NodeController): void;
 declare function attachController(controller: NodeController, bootstrap?: () => Callback): void;
-declare function replaceElement(oldElement: ChildNode, newElement: DOMElement): void;
+declare function replaceElement(oldElement: ChildNode, newElement: DOMNode): void;
 declare function replaceMany(oldContent: HarmajaOutput, newContent: HarmajaOutput): void;
 declare function addAfterElement(current: ChildNode, next: ChildNode): void;
-declare function toDOMElements(elements: HarmajaOutput): DOMElement[];
+declare function toDOMElements(elements: HarmajaOutput): DOMNode[];
 declare function removeElement(oldElement: HarmajaOutput): void;
-declare function appendElement(rootElement: DOMElement, child: DOMElement): void;
+declare function appendElement(rootElement: DOMNode, child: DOMNode): void;
 export declare function debug(element: HarmajaOutput | Node): string;
 export declare const LowLevelApi: {
     createPlaceholder: typeof createPlaceholder;

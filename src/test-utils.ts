@@ -1,7 +1,7 @@
 import { h } from "./index"
 import * as H from "./index"
 import * as B from "baconjs"
-import { DOMElement, unmount, callOnMounts, HarmajaOutput } from "./harmaja"
+import { DOMNode, unmount, callOnMounts, HarmajaOutput } from "./harmaja"
 
 export function testRender<T>(init: T, test: (property: B.Property<T>, set: (v: T) => any) => HarmajaOutput) {
     const bus = new B.Bus<T>()

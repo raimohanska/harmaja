@@ -1,18 +1,18 @@
 import * as Bacon from "baconjs"
-import { LowLevelApi as H, HarmajaOutput, DOMElement, NodeController, debug } from "./harmaja"
+import { LowLevelApi as H, HarmajaOutput, DOMNode, NodeController, debug } from "./harmaja"
 import { Atom } from "./atom"
 
 export type ListViewProps<A, K = A> = {
     observable: Bacon.Property<A[]>, 
-    renderObservable: (key: K, x: Bacon.Property<A>) => DOMElement, 
+    renderObservable: (key: K, x: Bacon.Property<A>) => DOMNode, 
     getKey: (x: A) => K
 } | {
     observable: Bacon.Property<A[]>, 
-    renderItem: (x: A) => DOMElement,
+    renderItem: (x: A) => DOMNode,
     getKey?: (x: A) => K
 } | {
     atom: Atom<A[]>, 
-    renderAtom: (key: K, x: Atom<A>, remove: () => void) => DOMElement, 
+    renderAtom: (key: K, x: Atom<A>, remove: () => void) => DOMNode, 
     getKey: (x: A) => K
 }
 export function ListView<A, K>(props: ListViewProps<A, K>) {
