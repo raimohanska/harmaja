@@ -218,7 +218,10 @@ function toKebabCase(inputString) {
     })
         .join('');
 }
-function getTransientState() {
+function getTransientState(forMethod) {
+    if (transientStateStack.length == 0) {
+        throw Error("Illegal " + forMethod + " call outside component constructor call");
+    }
     return transientStateStack[transientStateStack.length - 1];
 }
 function maybeGetNodeState(node) {
@@ -257,7 +260,7 @@ export function unmount(harmajaElement) {
  *  NOTE: Call only in component constructors. Otherwise will not do anything useful.
  */
 export function onMount(callback) {
-    var transientState = getTransientState();
+    var transientState = getTransientState("onMount");
     if (!transientState.mountCallbacks)
         transientState.mountCallbacks = [];
     transientState.mountCallbacks.push(callback);
@@ -267,7 +270,7 @@ export function onMount(callback) {
  *  NOTE: Call only in component constructors. Otherwise will not do anything useful.
  */
 export function onUnmount(callback) {
-    var transientState = getTransientState();
+    var transientState = getTransientState("onUnmount");
     if (!transientState.unmountCallbacks)
         transientState.unmountCallbacks = [];
     transientState.unmountCallbacks.push(callback);
@@ -277,7 +280,7 @@ export function onUnmount(callback) {
  *  NOTE: Call only in component constructors. Otherwise will not do anything useful.
  */
 export function mountEvent() {
-    var transientState = getTransientState();
+    var transientState = getTransientState("mountEvent");
     if (!transientState.mountE) {
         var event_1 = new Bacon.Bus();
         onMount(function () {
@@ -293,7 +296,7 @@ export function mountEvent() {
  *  NOTE: Call only in component constructors. Otherwise will not do anything useful.
  */
 export function unmountEvent() {
-    var transientState = getTransientState();
+    var transientState = getTransientState("unmountEvent");
     if (!transientState.unmountE) {
         var event_2 = new Bacon.Bus();
         onUnmount(function () {
@@ -441,9 +444,8 @@ function detachController(oldElements, controller) {
             if (index === undefined || index < 0) {
                 throw Error("Controller not attached to " + el);
             }
-            else {
-                //state.controllers.splice(index, 1)
-            }
+            // Not removing controller from list. Even though the element is discarded, it's still not ok to
+            // attach other controllers to it.        
         }
     }
     catch (e_8_1) { e_8 = { error: e_8_1 }; }

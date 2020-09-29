@@ -38,7 +38,6 @@ export function atom(x, y) {
             set_1(f(get_1()));
             return theAtom_2;
         };
-        get_1(); // Sanity check: the given property must have an initial value
         return mkAtom(theAtom_2, get_1, modify, set_1);
     }
 }
