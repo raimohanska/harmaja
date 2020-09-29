@@ -23,13 +23,15 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
         currentElements: [H.createPlaceholder()] as ChildNode[]
     }
 
-    H.attachController(controller, () => observable.forEach((nextValues: A[]) => {
-        H.detachController(controller.currentElements, controller)
+    H.attachController(controller.currentElements, controller, () => observable.forEach((nextValues: A[]) => {
         if (!currentValues) {
             if (nextValues.length) {
+                const oldElements = controller.currentElements
                 let nextElements = nextValues.map((x, i) => renderItem(key(x), nextValues, i)).flatMap(H.toDOMElements)            
-                H.replaceMany(controller.currentElements, nextElements)
                 controller.currentElements = nextElements
+                H.detachController(oldElements, controller)
+                H.attachController(controller.currentElements, controller)
+                H.replaceMany(controller, oldElements, nextElements)
             }
         } else {
             // Optization idea: different strategy based on count change:
@@ -38,17 +40,23 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
             // newCount>oldCount => assume insertion on non-equality                
             if (nextValues.length === 0) {
                 let nextElements = [H.createPlaceholder()]
-                H.replaceMany(controller.currentElements, nextElements)
+                const oldElements = controller.currentElements
+                H.detachController(oldElements, controller)
                 controller.currentElements = nextElements
+                H.attachController(nextElements, controller)
+                H.replaceMany(controller, oldElements, nextElements)
             } else if (currentValues.length === 0) {
                 let prevElement = controller.currentElements[0] // i.e. the placeholder element
                 for (let i = 0; i < nextValues.length; i++) {
                     const nextItemKey = key(nextValues[i])
                     const newElement = renderItem(nextItemKey, nextValues, i)
                     if (i == 0) {
-                        H.replaceElement(prevElement, newElement)
+                        H.detachController([prevElement], controller)
+                        H.attachController([newElement], controller)
+                        H.replaceElement(controller, prevElement, newElement)
                         controller.currentElements[i] = newElement           
                     } else {
+                        H.attachController([newElement], controller)
                         H.addAfterElement(prevElement, newElement)
                         controller.currentElements.push(newElement)
                     }                        
@@ -62,7 +70,9 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
                     if (nextItemKey !== key(currentValues[i])) {
                         //console.log("Replace element for", nextValues[i])
                         const nextElement = renderItem(nextItemKey, nextValues, i)
-                        H.replaceElement(controller.currentElements[i], nextElement)
+                        H.detachController([controller.currentElements[i]], controller)
+                        H.attachController([nextElement], controller)
+                        H.replaceElement(controller, controller.currentElements[i], nextElement)
                         controller.currentElements[i] = nextElement           
                     } else {
                         // Key match => no need to replace
@@ -74,20 +84,22 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
                     for (let i = currentValues.length; i < nextValues.length; i++) {
                         const nextItemKey = key(nextValues[i])
                         const newElement = renderItem(nextItemKey, nextValues, i)
+                        H.attachController([newElement], controller)
                         H.addAfterElement(prevElement, newElement)
                         prevElement = newElement
                         controller.currentElements.push(newElement)
                     }
                 } else if (nextValues.length < currentValues.length) {
                     for (let i = nextValues.length; i < currentValues.length; i++) {
-                        H.removeElement(controller.currentElements[i])
+                        H.detachController([controller.currentElements[i]], controller)
+                        H.removeElement(controller, controller.currentElements[i])
                     }
                     controller.currentElements.splice(nextValues.length)
                 }
             }
         } 
         currentValues = nextValues
-        H.attachController(controller)
+        
     }))
     
     return controller.currentElements

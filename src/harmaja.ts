@@ -82,7 +82,9 @@ function renderElement(type: string, props: HarmajaProps, children: HarmajaChild
 }
 
 function createPlaceholder() {
-    return document.createTextNode("")
+    const placeholder = document.createTextNode("");
+    (placeholder as any)._h_id = counter++;
+    return placeholder
 }
 
 let counter = 1
@@ -100,19 +102,21 @@ function renderChild(child: HarmajaChild): HarmajaOutput {
             currentElements: [createPlaceholder()] as DOMNode[]
         }
         const observable = child as HarmajaObservableChild        
-        //console.log(myId + " assuming control over " + debug(controller.currentElements))
-        attachController(controller, () => observable.skipDuplicates().forEach((nextChildren: HarmajaChildOrChildren) => {
+        let replaced = false
+        attachController(controller.currentElements, controller, () => observable.skipDuplicates().forEach((nextChildren: HarmajaChildOrChildren) => {
+            replaced = true
             let oldElements = controller.currentElements    
             controller.currentElements = flattenChildren(nextChildren).flatMap(renderChild).flatMap(toDOMElements)                
             if (controller.currentElements.length === 0) {
                 controller.currentElements = [createPlaceholder()]
             }
             //console.log("New values", debug(controller.currentElements))
+            //console.log(`${debug(oldElements)} replaced by ${debug(controller.currentElements)} in observable`)
             detachController(oldElements, controller)                
-            replaceMany(oldElements, controller.currentElements)
-            //console.log(myId + " assuming control over " + debug(controller.currentElements))
-            attachController(controller)                
+            attachController(controller.currentElements, controller)                
+            replaceMany(controller, oldElements, controller.currentElements)
         }))        
+        //console.log(`Created ${debug(controller.currentElements)}, replaced=${replaced}`)
         return controller.currentElements
     }    
     if (isDOMElement(child)) {
@@ -205,7 +209,7 @@ function getNodeState(node: Node): NodeState {
  *  - `onMountEvent` will be triggered
  */
 export function mount(harmajaElement: HarmajaOutput, root: Element) {
-    replaceMany([root], harmajaElement)
+    replaceMany(null, [root], harmajaElement)
 }
 
 /**
@@ -216,7 +220,7 @@ export function mount(harmajaElement: HarmajaOutput, root: Element) {
  *  - `onUnmountEvent` will be triggered
  */
 export function unmount(harmajaElement: HarmajaOutput) {
-    removeElement(harmajaElement)
+    removeNode(null, harmajaElement)
 }
 
 /**
@@ -380,9 +384,9 @@ function detachController(oldElements: ChildNode[], controller: NodeController) 
     if (controller.unsub) detachOnUnmount(oldElements[0], controller.unsub)
 }
 
-function attachController(controller: NodeController, bootstrap?: () => Callback) {
-    for (let i = 0; i < controller.currentElements.length; i++) {
-        let el = controller.currentElements[i]
+function attachController(elements: ChildNode[], controller: NodeController, bootstrap?: () => Callback) {
+    for (let i = 0; i < elements.length; i++) {
+        let el = elements[i]
         const state = getNodeState(el)    
         // Checking for double controllers    
         if (!state.controllers) {
@@ -390,15 +394,9 @@ function attachController(controller: NodeController, bootstrap?: () => Callback
             //console.log("Attach first controller to " + debug(el) + " (now with " + state.controllers.length + ")")
         } else if (state.controllers.includes(controller)) {
             //console.log("Skip duplicate controller to " + debug(el) + " (now with " + state.controllers.length + ")")
-        } else if (state.controllers.length > 0) {
-            throw Error(`Element ${debug(el)} is already controlled. Please mind that the following combinations are not currently supported:
-  - Embedding an observable, which has a wrapped Observable as value
-  - Returning an observable from the renderObservable/renderAtom function in ListView
-  - Returning a ListView from an embedded Observable
-`)
         } else {
-            //console.log("Attach controller to " + debug(el) + " (now with " + state.controllers.length + ")")
             state.controllers.push(controller)
+            //console.log("Attach controller to " + debug(el) + " (now with " + state.controllers.length + ")")
         }    
         // Sub/unsub logic                
         if (i == 0) {
@@ -421,24 +419,88 @@ function attachController(controller: NodeController, bootstrap?: () => Callback
     }
 }
 
-function replaceElement(oldElement: ChildNode, newElement: DOMNode) {
-    let wasMounted = maybeGetNodeState(oldElement)?.mounted
-    
-    if (wasMounted) {
-        callOnUnmounts(oldElement)
+// When some elements are replaced externally (i.e. by their own controllers) we have to do some bookkeeping.
+function replacedExternally(controller: NodeController, oldNodes: DOMNode[], newNodes: DOMNode[]) {
+    //console.log(`Moving controller ${controller} from ${debug(oldNodes)} to ${debug(newNodes)}. Currently has elements ${debug(controller.currentElements)}`)
+    let firstIndex = -1
+    let lastIndex = -1
+    if (oldNodes.length === 0) throw Error("Empty list of nodes")
+    for (const oldNode of oldNodes) {
+        const index = controller.currentElements.indexOf(oldNode)
+        if (index < 0) {
+            throw Error(`Element not found: ${debug(oldNode)}`)
+        }
+        if (lastIndex >= 0 && index != lastIndex + 1) {
+            throw Error("Non-consecutive nodes " + oldNodes)
+        }
+        if (firstIndex < 0) {
+            firstIndex = index
+        }
+        lastIndex = index
     }
-    if (!oldElement.parentElement) {
-        //console.warn("Parent element not found for", oldElement, " => fail to replace")
-        return
+    if (firstIndex < 0 || lastIndex < 0) throw Error("Assertion failed")
+    detachController(oldNodes, controller)
+    controller.currentElements = [
+        ...controller.currentElements.slice(0, firstIndex), 
+        ...newNodes, 
+        ...controller.currentElements.slice(lastIndex + 1)
+    ]
+    attachController(controller.currentElements, controller)
+    //console.log(`Moved controller ${controller} from ${debug(oldNodes)} to ${debug(newNodes)}. Now has elements ${debug(controller.currentElements)}`)
+}
+
+function replacedByController(controller: NodeController | null, oldNodes: DOMNode[], newNodes: DOMNode[]) {
+    if (!controller) return
+    // Controllers are in leaf-to-root order (because leaf controllers are added first)
+    const controllers = getNodeState(oldNodes[0]).controllers 
+    if (!controllers) throw new Error("Assertion failed: Controllers not found for " + debug(oldNodes[0]))
+    const index = controllers.indexOf(controller)    
+    //console.log(`${debug(oldNodes)} replaced by ${debug(newNodes)} controller ${index} of ${controllers.length}`)
+    const parentControllers = controllers.slice(index + 1)
+    for (let i = 1; i < oldNodes.length; i++) {
+        const controllersHere = (getNodeState(oldNodes[i]).controllers || [])
+        const indexHere = controllersHere.indexOf(controller)
+        if (indexHere < 0) {
+            throw new Error(`Controller ${controller} not found in ${debug(oldNodes[i])}`)
+        }
+        const parentControllersHere = controllersHere.slice(indexHere + 1)
+        if (!arrayEq(parentControllers, parentControllersHere)) {
+            throw new Error(`Assertion failed: controller array of ${debug(oldNodes[i])} (${controllersHere}, replacer index ${indexHere}) not equal to that of ${debug(oldNodes[0])} (${controllers}).`)
+        }
     }
-    oldElement.parentElement.replaceChild(newElement, oldElement)
-    //console.log("Replaced " + debug(oldElement) + " with " + debug(newElement) + " wasMounted=" + wasMounted)
-    if (wasMounted) {
-        callOnMounts(newElement)
+    // We need to replace the upper controllers
+    for (let parentController of parentControllers) {
+        replacedExternally(parentController, oldNodes, newNodes)
     }
 }
 
-function replaceMany(oldContent: HarmajaOutput, newContent: HarmajaOutput) {
+function arrayEq<A>(xs: A[], ys: A[]) {
+    if (xs.length !== ys.length) return false
+    for (let i = 0; i < xs.length; i++) {
+        if (xs[i] !== ys[i]) return false
+    }
+    return true
+}
+
+function replaceElement(controller: NodeController | null, oldNode: ChildNode, newNode: DOMNode) {
+    let wasMounted = maybeGetNodeState(oldNode)?.mounted
+    
+    if (wasMounted) {
+        callOnUnmounts(oldNode)
+    }
+    if (!oldNode.parentElement) {
+        //console.warn("Parent element not found for", oldElement, " => fail to replace")
+        return
+    }
+    oldNode.parentElement.replaceChild(newNode, oldNode)
+    //console.log("Replaced " + debug(oldElement) + " with " + debug(newElement) + " wasMounted=" + wasMounted)
+    replacedByController(controller, [oldNode], [newNode])
+    if (wasMounted) {
+        callOnMounts(newNode)
+    }
+}
+
+function replaceMany(controller: NodeController | null, oldContent: HarmajaOutput, newContent: HarmajaOutput) {
     const oldNodes = toDOMElements(oldContent)
     const newNodes = toDOMElements(newContent)
     if (oldNodes.length === 0) throw new Error("Cannot replace zero nodes");
@@ -453,6 +515,7 @@ function replaceMany(oldContent: HarmajaOutput, newContent: HarmajaOutput) {
     for (let i = 1; i < newNodes.length; i++) {
         newNodes[i - 1].after(newNodes[i])
     }
+    replacedByController(controller, oldNodes, newNodes)
     for (let node of newNodes) {
         callOnMounts(node)
     }
@@ -469,12 +532,15 @@ function toDOMElements(elements: HarmajaOutput): DOMNode[] {
     return [elements]
 }
 
-function removeElement(oldElement: HarmajaOutput) {    
-    if (oldElement instanceof Array) {
-        oldElement.forEach(removeElement)
+function removeNode(controller: NodeController | null, oldNode: HarmajaOutput) {    
+    if (oldNode instanceof Array) {
+        for (const node of oldNode) {
+            removeNode(controller, node)
+        }
     } else {
-        callOnUnmounts(oldElement)
-        oldElement.remove()
+        callOnUnmounts(oldNode)
+        oldNode.remove()
+        replacedByController(controller, [oldNode], [])
         //console.log("Removed " + debug(oldElement))
     }
 }  
@@ -492,7 +558,7 @@ export function debug(element: HarmajaOutput | Node): string {
     } else if (element instanceof Element) {
         return element.outerHTML;
     } else {
-        return element.textContent || "<empty text node>"
+        return element.textContent || ((element as any)._h_id != undefined ? `<placeholder ${(element as any)._h_id}>` : "<empty text node>")
     }
 }
 
@@ -505,7 +571,7 @@ export const LowLevelApi = {
     attachController,
     detachController,
     appendElement,
-    removeElement,
+    removeElement: removeNode,
     addAfterElement,
     replaceElement,
     replaceMany,
