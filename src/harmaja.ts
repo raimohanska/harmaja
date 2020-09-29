@@ -106,13 +106,14 @@ function renderChild(child: HarmajaChild): HarmajaOutput {
         attachController(controller.currentElements, controller, () => observable.skipDuplicates().forEach((nextChildren: HarmajaChildOrChildren) => {
             replaced = true
             let oldElements = controller.currentElements    
-            controller.currentElements = flattenChildren(nextChildren).flatMap(renderChild).flatMap(toDOMNodes)                
-            if (controller.currentElements.length === 0) {
-                controller.currentElements = [createPlaceholder()]
+            let newNodes = flattenChildren(nextChildren).flatMap(renderChild).flatMap(toDOMNodes)                
+            if (newNodes.length === 0) {
+                newNodes = [createPlaceholder()]
             }
             //console.log("New values", debug(controller.currentElements))
             //console.log(`${debug(oldElements)} replaced by ${debug(controller.currentElements)} in observable`)
-            replaceMany(controller, oldElements, controller.currentElements)
+            
+            replaceMany(controller, oldElements, newNodes)
         }))        
         //console.log(`Created ${debug(controller.currentElements)}, replaced=${replaced}`)
         return controller.currentElements
@@ -218,7 +219,7 @@ export function mount(harmajaElement: HarmajaOutput, root: Element) {
  *  - `onUnmountEvent` will be triggered
  */
 export function unmount(harmajaElement: HarmajaOutput) {
-    removeNode(null, harmajaElement)
+    removeNode(null, 0, harmajaElement)
 }
 
 /**
@@ -480,11 +481,11 @@ function arrayEq<A>(xs: A[], ys: A[]) {
     return true
 }
 
-function replaceNode(controller: NodeController | null, oldNode: ChildNode, newNode: DOMNode) {
-    if (controller) {
-        detachController([oldNode], controller)
-        attachController([newNode], controller)
-    }
+function replaceNode(controller: NodeController, index: number, newNode: DOMNode) {
+    const oldNode = controller.currentElements[index]    
+    controller.currentElements[index] = newNode           
+    detachController([oldNode], controller)
+    attachController([newNode], controller)    
 
     let wasMounted = maybeGetNodeState(oldNode)?.mounted
     
@@ -507,6 +508,7 @@ function replaceMany(controller: NodeController | null, oldContent: HarmajaOutpu
     const oldNodes = toDOMNodes(oldContent)
     const newNodes = toDOMNodes(newContent)
     if (controller) {
+        controller.currentElements = newNodes
         detachController(oldNodes, controller)
         attachController(newNodes, controller)
     }
@@ -529,11 +531,9 @@ function replaceMany(controller: NodeController | null, oldContent: HarmajaOutpu
     //console.log("Replaced " + debug(oldContent) + " with " + debug(newContent))
 }
 
-function addAfterNode(controller: NodeController | null, current: ChildNode, next: ChildNode) {
-    if (controller) {
-        attachController([next], controller)
-    }
-
+function addAfterNode(controller: NodeController, current: ChildNode, next: ChildNode) {
+    controller.currentElements.push(next)
+    attachController([next], controller)
     current.after(next)
     callOnMounts(next)
 }
@@ -543,13 +543,15 @@ function toDOMNodes(elements: HarmajaOutput): DOMNode[] {
     return [elements]
 }
 
-function removeNode(controller: NodeController | null, oldNode: HarmajaOutput) {    
+function removeNode(controller: NodeController | null, index: number, oldNode: HarmajaOutput) {    
     if (oldNode instanceof Array) {
+        if (controller) throw Error("Only single node supported with controller option")
         for (const node of oldNode) {
-            removeNode(controller, node)
+            removeNode(controller, index, node)
         }
     } else {
         if (controller) {
+            controller.currentElements.splice(index, 1)
             detachController([oldNode], controller)
         }    
         callOnUnmounts(oldNode)

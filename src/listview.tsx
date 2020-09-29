@@ -28,7 +28,7 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
             if (nextValues.length) {
                 const oldElements = controller.currentElements
                 let nextElements = nextValues.map((x, i) => renderItem(key(x), nextValues, i)).flatMap(H.toDOMNodes)            
-                controller.currentElements = nextElements
+                
                 H.replaceMany(controller, oldElements, nextElements)
             }
         } else {
@@ -39,7 +39,7 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
             if (nextValues.length === 0) {
                 let nextElements = [H.createPlaceholder()]
                 const oldElements = controller.currentElements
-                controller.currentElements = nextElements
+                
                 H.replaceMany(controller, oldElements, nextElements)
             } else if (currentValues.length === 0) {
                 let prevElement = controller.currentElements[0] // i.e. the placeholder element
@@ -47,11 +47,9 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
                     const nextItemKey = key(nextValues[i])
                     const newElement = renderItem(nextItemKey, nextValues, i)
                     if (i == 0) {
-                        H.replaceNode(controller, prevElement, newElement)
-                        controller.currentElements[i] = newElement           
+                        H.replaceNode(controller, i, newElement)        
                     } else {
-                        H.addAfterNode(controller, prevElement, newElement)
-                        controller.currentElements.push(newElement)
+                        H.addAfterNode(controller, prevElement, newElement)                        
                     }                        
                     prevElement = newElement
                 }
@@ -63,8 +61,7 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
                     if (nextItemKey !== key(currentValues[i])) {
                         //console.log("Replace element for", nextValues[i])
                         const nextElement = renderItem(nextItemKey, nextValues, i)
-                        H.replaceNode(controller, controller.currentElements[i], nextElement)
-                        controller.currentElements[i] = nextElement           
+                        H.replaceNode(controller, i, nextElement)                        
                     } else {
                         // Key match => no need to replace
                     }
@@ -76,14 +73,12 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
                         const nextItemKey = key(nextValues[i])
                         const newElement = renderItem(nextItemKey, nextValues, i)
                         H.addAfterNode(controller, prevElement, newElement)
-                        prevElement = newElement
-                        controller.currentElements.push(newElement)
+                        prevElement = newElement                        
                     }
                 } else if (nextValues.length < currentValues.length) {
                     for (let i = nextValues.length; i < currentValues.length; i++) {
-                        H.removeNode(controller, controller.currentElements[i])
-                    }
-                    controller.currentElements.splice(nextValues.length)
+                        H.removeNode(controller, i, controller.currentElements[i])
+                    }                    
                 }
             }
         } 
