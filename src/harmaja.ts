@@ -473,6 +473,29 @@ function replacedByController(controller: NodeController | null, oldNodes: DOMNo
     }
 }
 
+function appendedByController(controller: NodeController, cursorNode: ChildNode, newNode: ChildNode) {
+    if (!controller) return
+    // Controllers are in leaf-to-root order (because leaf controllers are added first)
+    const controllers = getNodeState(cursorNode).controllers 
+    if (!controllers) throw new Error("Assertion failed: Controllers not found for " + debug(cursorNode))
+    const index = controllers.indexOf(controller)    
+    if (index < 0) {
+        throw new Error(`Controller ${controller} not found in ${debug(cursorNode)}`)
+    }
+    //console.log(`${debug(newNode)} added after ${debug(cursorNode)} by controller ${index} of ${controllers.length}`)
+    const parentControllers = controllers.slice(index + 1)
+    // We need to replace the upper controllers
+    for (let parentController of parentControllers) {   
+
+        const indexForCursor = parentController.currentElements.indexOf(cursorNode)
+        if (indexForCursor < 0) {
+            throw new Error(`Element ${debug(cursorNode)} not found in node list of Controller ${parentController} not found in `)
+        }
+        parentController.currentElements.splice(indexForCursor + 1, 0, newNode)
+        attachController([newNode], parentController)
+    }    
+}
+
 function arrayEq<A>(xs: A[], ys: A[]) {
     if (xs.length !== ys.length) return false
     for (let i = 0; i < xs.length; i++) {
@@ -535,6 +558,9 @@ function addAfterNode(controller: NodeController, current: ChildNode, next: Chil
     controller.currentElements.push(next)
     attachController([next], controller)
     current.after(next)
+
+    appendedByController(controller, current, next)
+
     callOnMounts(next)
 }
 

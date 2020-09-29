@@ -161,7 +161,7 @@ describe("Harmaja", () => {
                 outer.set([0, 2])
                 expect(htmlOf(c)).toEqual("<div>02</div>") 
             })
-            it ("Replacing partial list", () => {
+            it ("Removing some elements", () => {
                 const items = H.atom([1,2,3])
                 const inner = <ListView observable={items} renderItem={i => <span>{i}</span>}/>
                 const outer = H.atom([0, inner, 2])
@@ -172,6 +172,31 @@ describe("Harmaja", () => {
                 outer.set([0, 2])
                 expect(htmlOf(c)).toEqual("<div>02</div>") 
             })
+            it ("Adding some elements", () => {
+                const items = H.atom([1])
+                const inner = <ListView observable={items} renderItem={i => <span>{i}</span>}/>
+                const outer = H.atom([0, inner, 2])
+                const c = <div>{outer}</div>
+                expect(htmlOf(c)).toEqual("<div>0<span>1</span>2</div>") 
+                items.set([1, 2])
+                expect(htmlOf(c)).toEqual("<div>0<span>1</span><span>2</span>2</div>") 
+                outer.set([0, 2])
+                expect(htmlOf(c)).toEqual("<div>02</div>") 
+            })
+            it ("Empty->Non-empty->Empty", () => {
+                const items = H.atom([] as number[])
+                const inner = <ListView observable={items} renderItem={i => <span>{i}</span>}/>
+                const outer = H.atom([0, inner, 2])
+                const c = <div>{outer}</div>
+                expect(htmlOf(c)).toEqual("<div>02</div>") 
+                items.set([4,5,6])
+                expect(htmlOf(c)).toEqual("<div>0<span>4</span><span>5</span><span>6</span>2</div>") 
+                items.set([])
+                expect(htmlOf(c)).toEqual("<div>02</div>") 
+                outer.set([0, 2])
+                expect(htmlOf(c)).toEqual("<div>02</div>") 
+            })
+
         })
         
 
