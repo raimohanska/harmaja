@@ -3,10 +3,12 @@ export function ListView(props) {
     var observable = ("atom" in props) ? props.atom : props.observable;
     var _a = props.getKey, key = _a === void 0 ? (function (x) { return x; }) : _a;
     var currentValues = null;
-    var controller = {
-        currentElements: [H.createPlaceholder()]
+    var options = {
+        onReplace: function (oldNodes, newNodes) {
+            getSingleNodeOrFail(newNodes); // Verify that a child node is replaced by exactly one child node.
+        }
     };
-    H.attachController(controller.currentElements, controller, function () { return observable.forEach(function (nextValues) {
+    return H.createController([H.createPlaceholder()], function (controller) { return observable.forEach(function (nextValues) {
         if (!currentValues) {
             if (nextValues.length) {
                 var oldElements = controller.currentElements;
@@ -69,14 +71,22 @@ export function ListView(props) {
             }
         }
         currentValues = nextValues;
-    }); });
-    return controller.currentElements;
+    }); }, options);
+    function getSingleNodeOrFail(rendered) {
+        if (rendered instanceof Array) {
+            if (rendered.length == 1) {
+                rendered = rendered[0];
+            }
+            else {
+                throw Error("Only single-element results supported in ListView. Got " + rendered);
+            }
+        }
+        return rendered;
+    }
     function renderItem(key, values, index) {
         var result = renderItemRaw(key, values, index);
-        if (!(result instanceof Node)) {
-            throw Error("Unexpected result from renderItem: " + result);
-        }
-        return result;
+        var rendered = H.render(result);
+        return getSingleNodeOrFail(rendered);
     }
     function renderItemRaw(key, values, index) {
         if ("renderAtom" in props) {

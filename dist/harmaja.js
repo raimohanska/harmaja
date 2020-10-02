@@ -46,55 +46,55 @@ var transientStateStack = [];
  *  Element constructor used by JSX.
  */
 export function createElement(type, props) {
-    var e_1, _a, e_2, _b;
     var children = [];
     for (var _i = 2; _i < arguments.length; _i++) {
         children[_i - 2] = arguments[_i];
     }
     var flattenedChildren = children.flatMap(flattenChildren);
-    if (props && props.children) {
+    if (!props) {
+        props = {};
+    }
+    else if (props.children) {
         delete props.children; // TODO: ugly hack, occurred in todoapp example
     }
     if (typeof type == "function") {
         var constructor = type;
         transientStateStack.push({});
-        var elements = constructor(__assign(__assign({}, props), { children: flattenedChildren }));
-        var element = elements instanceof Array ? elements[0] : elements;
-        if (!isDOMElement(element)) {
-            if (elements instanceof Array && elements.length == 0) {
-                throw new Error("Empty array is not a valid output");
-            }
-            // Components must return a DOM element. Otherwise we cannot attach mount/unmounts callbacks.
-            throw new Error("Expecting an HTML Element or Text node, got " + element);
-        }
-        var transientState = transientStateStack.pop();
-        try {
-            for (var _c = __values(transientState.unmountCallbacks || []), _d = _c.next(); !_d.done; _d = _c.next()) {
-                var callback = _d.value;
-                attachOnUnmount(element, callback);
-            }
-        }
-        catch (e_1_1) { e_1 = { error: e_1_1 }; }
-        finally {
+        var dynamicElement = constructor(__assign(__assign({}, props), { children: flattenedChildren }));
+        var elements = render(dynamicElement);
+        var transientState_1 = transientStateStack.pop();
+        return createController(toDOMNodes(elements), function (controller) {
+            var e_1, _a;
             try {
-                if (_d && !_d.done && (_a = _c.return)) _a.call(_c);
+                for (var _b = __values(transientState_1.mountCallbacks || []), _c = _b.next(); !_c.done; _c = _b.next()) {
+                    var callback = _c.value;
+                    callback();
+                }
             }
-            finally { if (e_1) throw e_1.error; }
-        }
-        try {
-            for (var _e = __values(transientState.mountCallbacks || []), _f = _e.next(); !_f.done; _f = _e.next()) {
-                var callback = _f.value;
-                attachOnMount(element, callback);
+            catch (e_1_1) { e_1 = { error: e_1_1 }; }
+            finally {
+                try {
+                    if (_c && !_c.done && (_a = _b.return)) _a.call(_b);
+                }
+                finally { if (e_1) throw e_1.error; }
             }
-        }
-        catch (e_2_1) { e_2 = { error: e_2_1 }; }
-        finally {
-            try {
-                if (_f && !_f.done && (_b = _e.return)) _b.call(_e);
-            }
-            finally { if (e_2) throw e_2.error; }
-        }
-        return elements;
+            return function () {
+                var e_2, _a;
+                try {
+                    for (var _b = __values(transientState_1.unmountCallbacks || []), _c = _b.next(); !_c.done; _c = _b.next()) {
+                        var callback = _c.value;
+                        callback();
+                    }
+                }
+                catch (e_2_1) { e_2 = { error: e_2_1 }; }
+                finally {
+                    try {
+                        if (_c && !_c.done && (_a = _b.return)) _a.call(_b);
+                    }
+                    finally { if (e_2) throw e_2.error; }
+                }
+            };
+        });
     }
     else if (typeof type == "string") {
         return renderElement(type, props, flattenedChildren);
@@ -139,7 +139,7 @@ function renderElement(type, props, children) {
         }
         finally { if (e_3) throw e_3.error; }
     }
-    (children || []).map(renderChild).flatMap(toDOMNodes).forEach(function (childElement) { return el.appendChild(childElement); });
+    (children || []).map(render).flatMap(toDOMNodes).forEach(function (childElement) { return el.appendChild(childElement); });
     return el;
 }
 function createPlaceholder() {
@@ -148,7 +148,10 @@ function createPlaceholder() {
     return placeholder;
 }
 var counter = 1;
-function renderChild(child) {
+function render(child) {
+    if (child instanceof Array) {
+        return child.flatMap(render);
+    }
     if (typeof child === "string" || typeof child === "number") {
         return document.createTextNode(child.toString());
     }
@@ -156,25 +159,19 @@ function renderChild(child) {
         return createPlaceholder();
     }
     if (child instanceof Bacon.Property) {
-        var myId = counter++;
-        var controller_1 = {
-            currentElements: [createPlaceholder()]
-        };
         var observable_2 = child;
         var replaced_1 = false;
-        attachController(controller_1.currentElements, controller_1, function () { return observable_2.skipDuplicates().forEach(function (nextChildren) {
+        return createController([createPlaceholder()], function (controller) { return observable_2.skipDuplicates().forEach(function (nextChildren) {
             replaced_1 = true;
-            var oldElements = controller_1.currentElements;
-            var newNodes = flattenChildren(nextChildren).flatMap(renderChild).flatMap(toDOMNodes);
+            var oldElements = controller.currentElements;
+            var newNodes = flattenChildren(nextChildren).flatMap(render).flatMap(toDOMNodes);
             if (newNodes.length === 0) {
                 newNodes = [createPlaceholder()];
             }
             //console.log("New values", debug(controller.currentElements))
             //console.log(`${debug(oldElements)} replaced by ${debug(controller.currentElements)} in observable`)
-            replaceMany(controller_1, oldElements, newNodes);
+            replaceMany(controller, oldElements, newNodes);
         }); });
-        //console.log(`Created ${debug(controller.currentElements)}, replaced=${replaced}`)
-        return controller_1.currentElements;
     }
     if (isDOMElement(child)) {
         return child;
@@ -250,7 +247,9 @@ function getNodeState(node) {
  *  - `onMountEvent` will be triggered
  */
 export function mount(harmajaElement, root) {
-    replaceMany(null, [root], harmajaElement);
+    var rendered = render(harmajaElement);
+    replaceMany(null, [root], rendered);
+    return rendered;
 }
 /**
  *  Unmounts the given element, removing it from the DOM.
@@ -316,7 +315,7 @@ export function unmountEvent() {
 }
 export function callOnMounts(element) {
     var e_4, _a, e_5, _b;
-    //console.log("onMounts in " + debug(element) + " mounted=" + getNodeState(element).mounted)
+    //console.log("callOnMounts in " + debug(element) + " mounted=" + getNodeState(element).mounted)
     var state = getNodeState(element);
     if (state.mounted) {
         return;
@@ -356,6 +355,7 @@ export function callOnMounts(element) {
 }
 function callOnUnmounts(element) {
     var e_6, _a, e_7, _b;
+    //console.log("callOnUnmounts " + debug(element))
     var state = getNodeState(element);
     if (!state.mounted) {
         return;
@@ -429,16 +429,6 @@ function detachOnUnmount(element, onUnmount) {
         }
     }
 }
-function detachOnUnmounts(element) {
-    var state = maybeGetNodeState(element);
-    if (state === undefined || !state.onUnmounts) {
-        return [];
-    }
-    var unmounts = state.onUnmounts;
-    //console.log("Detaching " + state.onUnmounts.length + " unmounts")
-    delete state.onUnmounts;
-    return unmounts;
-}
 function detachController(oldElements, controller) {
     var e_8, _a;
     var _b;
@@ -465,6 +455,11 @@ function detachController(oldElements, controller) {
     if (controller.unsub)
         detachOnUnmount(oldElements[0], controller.unsub);
 }
+function createController(elements, bootstrap, options) {
+    var controller = __assign(__assign({}, options), { currentElements: elements });
+    attachController(elements, controller, bootstrap);
+    return elements;
+}
 function attachController(elements, controller, bootstrap) {
     var _loop_2 = function (i) {
         var el = elements[i];
@@ -489,7 +484,7 @@ function attachController(elements, controller, bootstrap) {
                 }
                 else {
                     attachOnMount(el, function () {
-                        var unsub = bootstrap();
+                        var unsub = bootstrap(controller);
                         controller.unsub = unsub;
                         el = controller.currentElements[0]; // may have changed in bootstrap!                        
                         attachOnUnmount(el, controller.unsub);
@@ -538,6 +533,9 @@ function replacedExternally(controller, oldNodes, newNodes) {
     }
     if (firstIndex < 0 || lastIndex < 0)
         throw Error("Assertion failed");
+    if (controller.onReplace) {
+        controller.onReplace(oldNodes, newNodes);
+    }
     detachController(oldNodes, controller);
     controller.currentElements = __spread(controller.currentElements.slice(0, firstIndex), newNodes, controller.currentElements.slice(lastIndex + 1));
     attachController(controller.currentElements, controller);
@@ -757,14 +755,12 @@ export var LowLevelApi = {
     createPlaceholder: createPlaceholder,
     attachOnMount: attachOnMount,
     attachOnUnmount: attachOnUnmount,
-    detachOnUnmount: detachOnUnmount,
-    detachOnUnmounts: detachOnUnmounts,
-    attachController: attachController,
-    detachController: detachController,
+    createController: createController,
     appendNode: appendNode,
     removeNode: removeNode,
     addAfterNode: addAfterNode,
     replaceNode: replaceNode,
     replaceMany: replaceMany,
-    toDOMNodes: toDOMNodes
+    toDOMNodes: toDOMNodes,
+    render: render
 };
