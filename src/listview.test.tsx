@@ -21,6 +21,14 @@ describe("Listview", () => {
         return el
     }))
 
+    it("Allows only single-node items", () => {
+        const el = <ul><ListView
+            observable={B.constant([1])}
+            renderItem={item => [<li>{item}</li>, <li/>]}
+        /></ul>
+        expect(() => htmlOf(el)).toThrow("Only single-element results supported in ListView. Got [object HTMLLIElement],[object HTMLLIElement]")
+    })
+
     describe("With renderObservable", () => {
         it("Non-empty -> empty -> Non-empty", () => testRender(testItems, (value, set) => {
             const el = <ul><ListView
@@ -59,6 +67,28 @@ describe("Listview", () => {
             expect(renderedIds).toEqual([1, 2, 2]) // re-using existing component "first", rendering "second" again, because it was not present on previous rendering round.
             return el
         }))
+    })
+
+    describe("Observable-in-ListView", () => {
+        it("Works", () => testRender(1, (value, set) => {
+            const listView = <ul><ListView 
+                observable = { B.constant([1, 2, 3]) }
+                renderItem = { item => B.constant(<li>{value.map(v => v * item)}</li>) }
+            /></ul>
+            expect(htmlOf(listView)).toEqual("<ul><li>1</li><li>2</li><li>3</li></ul>")
+            set(2)
+            expect(htmlOf(listView)).toEqual("<ul><li>2</li><li>4</li><li>6</li></ul>")
+            return listView
+        }))
+
+        it.only("Allows only single-node items", () => {
+            const listView = <ul><ListView 
+                observable = { B.constant([1]) }
+                renderItem = { item => B.constant([<div/>, <div/>]) }
+            /></ul>
+
+            expect(() => htmlOf(listView)).toThrow("Only single-element results supported in ListView. Got [object HTMLDivElement],[object HTMLDivElement]")
+        })
     })
 
     describe("Listview-in-Observable", () => {
@@ -117,18 +147,6 @@ describe("Listview", () => {
             expect(htmlOf(c)).toEqual("<div>02</div>") 
             outer.set([0, 2])
             expect(htmlOf(c)).toEqual("<div>02</div>") 
-        })
-    })
-
-    describe.skip("Forbidden combos", () => {
-        it ("Observable-in-ListView", () => {
-            // Prevented on the compliler level: the following doesn't compile
-            /*
-            const outer = <ListView 
-                observable = { B.constant([1, 2, 3]) }
-                renderItem = { item => B.constant(item) }
-            />
-            */
         })
     })
 })

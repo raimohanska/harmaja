@@ -1,5 +1,5 @@
 import * as Bacon from "baconjs"
-import { LowLevelApi as H, HarmajaOutput, DOMNode, NodeController, debug } from "./harmaja"
+import { LowLevelApi as H, HarmajaOutput, DOMNode, NodeController, debug, HarmajaStaticOutput } from "./harmaja"
 import { Atom } from "./atom"
 
 export type ListViewProps<A, K = A> = {
@@ -19,6 +19,11 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
     const observable: Bacon.Property<A[]> = ("atom" in props) ? props.atom : props.observable
     const { getKey: key = ((x: A): K => x as any) } = props    
     let currentValues: A[] | null = null
+    const options = { 
+        onReplace: (oldNodes: DOMNode[], newNodes: DOMNode[]) => {
+            getSingleNodeOrFail(newNodes) // Verify that a child node is replaced by exactly one child node.
+        }
+    }
 
     return H.createController([H.createPlaceholder()], (controller) => observable.forEach((nextValues: A[]) => {
         if (!currentValues) {
@@ -80,14 +85,22 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
             }
         } 
         currentValues = nextValues        
-    }))
+    }), options)
     
-    function renderItem(key: K, values: A[], index: number) {
-        const result = renderItemRaw(key, values, index)
-        if (!(result instanceof Node)) {
-            throw Error("Unexpected result from renderItem: " + result)
+    function getSingleNodeOrFail(rendered: HarmajaStaticOutput) {
+        if (rendered instanceof Array) {
+            if (rendered.length == 1) {
+                rendered = rendered[0]
+            } else {
+                throw Error(`Only single-element results supported in ListView. Got ${rendered}`)
+            }
         }
-        return result
+        return rendered
+    }
+    function renderItem(key: K, values: A[], index: number): ChildNode {
+        const result = renderItemRaw(key, values, index)
+        let rendered = H.render(result)        
+        return getSingleNodeOrFail(rendered)
     }
     function renderItemRaw(key: K, values: A[], index: number) {
         if ("renderAtom" in props) {

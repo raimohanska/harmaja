@@ -1,15 +1,17 @@
 import * as Bacon from "baconjs"
 import { isAtom } from "./atom"
 
-export type HarmajaComponent = (props: HarmajaProps) => DOMNode
+export type HarmajaComponent = (props: HarmajaProps) => HarmajaOutput
 export type JSXElementType = string | HarmajaComponent
 
 export type HarmajaProps = Record<string, any>
 export type HarmajaChild = HarmajaObservableChild | DOMNode | string | number | null
 export type HarmajaChildren = (HarmajaChild | HarmajaChildren)[]
 export type HarmajaChildOrChildren = HarmajaChild | HarmajaChildren
+// TODO: naming sucks
 export type HarmajaObservableChild = Bacon.Property<HarmajaChildOrChildren>
-export type HarmajaOutput = DOMNode | HarmajaOutput[] // Can be one or more, but an empty array is not allowed
+export type HarmajaStaticOutput = DOMNode | DOMNode[] // Can be one or more, but an empty array is not allowed
+export type HarmajaOutput = DOMNode | Bacon.Property<HarmajaOutput> | HarmajaOutput[]
 export type DOMNode = ChildNode
 
 let transientStateStack: TransientState[] = []
@@ -23,31 +25,30 @@ type TransientState = {
 /**
  *  Element constructor used by JSX.
  */
-export function createElement(type: JSXElementType, props: HarmajaProps, ...children: HarmajaChildren): HarmajaOutput {
+export function createElement(type: JSXElementType, props?: HarmajaProps, ...children: HarmajaChildren): HarmajaOutput {
     const flattenedChildren = children.flatMap(flattenChildren)
-    if (props && props.children) {
+    if (!props) {
+        props = {}
+    } else if (props.children) {
         delete props.children // TODO: ugly hack, occurred in todoapp example
     }
     if (typeof type == "function") {        
         const constructor = type as HarmajaComponent
         transientStateStack.push({})
-        const elements = constructor({...props, children: flattenedChildren})
-        const element: DOMNode = elements instanceof Array ? elements[0] : elements
-        if (!isDOMElement(element)) {
-            if (elements instanceof Array && elements.length == 0) {
-                throw new Error("Empty array is not a valid output")
-            }
-            // Components must return a DOM element. Otherwise we cannot attach mount/unmounts callbacks.
-            throw new Error("Expecting an HTML Element or Text node, got " + element)
-        }
+        const dynamicElement = constructor({...props, children: flattenedChildren})
+        const elements = render(dynamicElement)
         const transientState = transientStateStack.pop()!
-        for (const callback of transientState.unmountCallbacks || []) {
-            attachOnUnmount(element, callback)
-        }
-        for (const callback of transientState.mountCallbacks || []) {
-            attachOnMount(element, callback)
-        }
-        return elements
+
+        return createController(toDOMNodes(elements), (controller) => {
+            for (const callback of transientState.mountCallbacks || []) {
+                callback()                
+            }
+            return () => {
+                for (const callback of transientState.unmountCallbacks || []) {
+                    callback()
+                }
+            }                
+        })
     } else if (typeof type == "string") {
         return renderElement(type, props, flattenedChildren)
     } else {
@@ -77,7 +78,7 @@ function renderElement(type: string, props: HarmajaProps, children: HarmajaChild
         }
     }
     
-    (children || []).map(renderChild).flatMap(toDOMNodes).forEach(childElement => el.appendChild(childElement))
+    (children || []).map(render).flatMap(toDOMNodes).forEach(childElement => el.appendChild(childElement))
     return el
 }
 
@@ -89,7 +90,10 @@ function createPlaceholder() {
 
 let counter = 1
 
-function renderChild(child: HarmajaChild): HarmajaOutput {
+function render(child: HarmajaChild | HarmajaOutput): HarmajaStaticOutput {
+    if (child instanceof Array) {
+        return child.flatMap(render)
+    }
     if (typeof child === "string" || typeof child === "number") {
         return document.createTextNode(child.toString())
     }
@@ -102,7 +106,7 @@ function renderChild(child: HarmajaChild): HarmajaOutput {
         return createController([createPlaceholder()], (controller) => observable.skipDuplicates().forEach((nextChildren: HarmajaChildOrChildren) => {
             replaced = true
             let oldElements = controller.currentElements    
-            let newNodes = flattenChildren(nextChildren).flatMap(renderChild).flatMap(toDOMNodes)                
+            let newNodes = flattenChildren(nextChildren).flatMap(render).flatMap(toDOMNodes)                
             if (newNodes.length === 0) {
                 newNodes = [createPlaceholder()]
             }
@@ -178,6 +182,10 @@ type NodeState = {
 export type NodeController = {
     unsub?: Callback,
     currentElements: DOMNode[]
+} & NodeControllerOptions
+
+type NodeControllerOptions = {
+    onReplace?: (oldNodes: DOMNode[], newNodes: DOMNode[]) => void
 }
 
 function maybeGetNodeState(node: Node): NodeState | undefined {
@@ -201,9 +209,12 @@ function getNodeState(node: Node): NodeState {
  *  - `onMount` callbacks will be called
  *  - `onMountEvent` will be triggered
  */
-export function mount(harmajaElement: HarmajaOutput, root: Element) {
-    replaceMany(null, [root], harmajaElement)
+export function mount(harmajaElement: HarmajaOutput, root: Element): HarmajaStaticOutput {    
+    const rendered = render(harmajaElement)
+    replaceMany(null, [root], rendered)
+    return rendered
 }
+
 
 /**
  *  Unmounts the given element, removing it from the DOM.
@@ -212,7 +223,7 @@ export function mount(harmajaElement: HarmajaOutput, root: Element) {
  *  - `onUnmount` callbacks will be called
  *  - `onUnmountEvent` will be triggered
  */
-export function unmount(harmajaElement: HarmajaOutput) {
+export function unmount(harmajaElement: HarmajaStaticOutput) {
     removeNode(null, 0, harmajaElement)
 }
 
@@ -271,7 +282,7 @@ export function unmountEvent(): Bacon.EventStream<void> {
 }
 
 export function callOnMounts(element: Node) {    
-    //console.log("onMounts in " + debug(element) + " mounted=" + getNodeState(element).mounted)
+    //console.log("callOnMounts in " + debug(element) + " mounted=" + getNodeState(element).mounted)
     let state = getNodeState(element)
     if (state.mounted) {
         return
@@ -294,6 +305,7 @@ export function callOnMounts(element: Node) {
 
 
 function callOnUnmounts(element: Node) {
+    //console.log("callOnUnmounts " + debug(element))
     let state = getNodeState(element)
     if (!state.mounted) {        
         return
@@ -352,17 +364,6 @@ function detachOnUnmount(element: DOMNode, onUnmount: Callback) {
     }
 }
 
-function detachOnUnmounts(element: DOMNode): Callback[] {
-    let state = maybeGetNodeState(element)
-    if (state === undefined || !state.onUnmounts) {
-        return []
-    }
-    let unmounts = state.onUnmounts
-    //console.log("Detaching " + state.onUnmounts.length + " unmounts")
-    delete state.onUnmounts
-    return unmounts
-}
-
 function detachController(oldElements: ChildNode[], controller: NodeController) {
     for (const el of oldElements) {
         const state = getNodeState(el)
@@ -377,8 +378,9 @@ function detachController(oldElements: ChildNode[], controller: NodeController) 
     if (controller.unsub) detachOnUnmount(oldElements[0], controller.unsub)
 }
 
-function createController(elements: ChildNode[], bootstrap: (controller: NodeController) => Callback) {
+function createController(elements: ChildNode[], bootstrap: (controller: NodeController) => Callback, options?: NodeControllerOptions) {
     const controller: NodeController = {
+        ...options,
         currentElements: elements
     }
     attachController(elements, controller, bootstrap)
@@ -440,6 +442,9 @@ function replacedExternally(controller: NodeController, oldNodes: DOMNode[], new
         lastIndex = index
     }
     if (firstIndex < 0 || lastIndex < 0) throw Error("Assertion failed")
+    if (controller.onReplace) {
+        controller.onReplace(oldNodes, newNodes)
+    }
     detachController(oldNodes, controller)
     controller.currentElements = [
         ...controller.currentElements.slice(0, firstIndex), 
@@ -529,7 +534,7 @@ function replaceNode(controller: NodeController, index: number, newNode: DOMNode
     }
 }
 
-function replaceMany(controller: NodeController | null, oldContent: HarmajaOutput, newContent: HarmajaOutput) {
+function replaceMany(controller: NodeController | null, oldContent: HarmajaStaticOutput, newContent: HarmajaStaticOutput) {
     const oldNodes = toDOMNodes(oldContent)
     const newNodes = toDOMNodes(newContent)
     if (controller) {
@@ -566,12 +571,12 @@ function addAfterNode(controller: NodeController, current: ChildNode, next: Chil
     callOnMounts(next)
 }
 
-function toDOMNodes(elements: HarmajaOutput): DOMNode[] {
+function toDOMNodes(elements: HarmajaStaticOutput): DOMNode[] {
     if (elements instanceof Array) return elements.flatMap(toDOMNodes)
     return [elements]
 }
 
-function removeNode(controller: NodeController | null, index: number, oldNode: HarmajaOutput) {    
+function removeNode(controller: NodeController | null, index: number, oldNode: HarmajaStaticOutput) {    
     if (oldNode instanceof Array) {
         if (controller) throw Error("Only single node supported with controller option")
         for (const node of oldNode) {
@@ -596,7 +601,7 @@ function appendNode(rootElement: DOMNode, child: DOMNode) {
     }
 }
 
-export function debug(element: HarmajaOutput | Node): string {
+export function debug(element: HarmajaStaticOutput | Node): string {
     if (element instanceof Array) {
         return element.map(debug).join(",")
     } else if (element instanceof Element) {
@@ -610,13 +615,12 @@ export const LowLevelApi = {
     createPlaceholder,
     attachOnMount,
     attachOnUnmount,
-    detachOnUnmount,
-    detachOnUnmounts,
     createController,
     appendNode,
     removeNode,
     addAfterNode,
     replaceNode,
     replaceMany,
-    toDOMNodes
+    toDOMNodes,
+    render
 }
