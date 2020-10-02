@@ -19,11 +19,8 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
     const observable: Bacon.Property<A[]> = ("atom" in props) ? props.atom : props.observable
     const { getKey: key = ((x: A): K => x as any) } = props    
     let currentValues: A[] | null = null
-    const controller: NodeController = {
-        currentElements: [H.createPlaceholder()] as ChildNode[]
-    }
 
-    H.attachController(controller.currentElements, controller, () => observable.forEach((nextValues: A[]) => {
+    return H.createController([H.createPlaceholder()], (controller) => observable.forEach((nextValues: A[]) => {
         if (!currentValues) {
             if (nextValues.length) {
                 const oldElements = controller.currentElements
@@ -82,12 +79,9 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
                 }
             }
         } 
-        currentValues = nextValues
-        
+        currentValues = nextValues        
     }))
     
-    return controller.currentElements
-
     function renderItem(key: K, values: A[], index: number) {
         const result = renderItemRaw(key, values, index)
         if (!(result instanceof Node)) {

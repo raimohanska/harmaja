@@ -97,13 +97,9 @@ function renderChild(child: HarmajaChild): HarmajaOutput {
         return createPlaceholder()
     }
     if (child instanceof Bacon.Property) {
-        let myId = counter++
-        const controller: NodeController = {
-            currentElements: [createPlaceholder()] as DOMNode[]
-        }
         const observable = child as HarmajaObservableChild        
         let replaced = false
-        attachController(controller.currentElements, controller, () => observable.skipDuplicates().forEach((nextChildren: HarmajaChildOrChildren) => {
+        return createController([createPlaceholder()], (controller) => observable.skipDuplicates().forEach((nextChildren: HarmajaChildOrChildren) => {
             replaced = true
             let oldElements = controller.currentElements    
             let newNodes = flattenChildren(nextChildren).flatMap(renderChild).flatMap(toDOMNodes)                
@@ -114,9 +110,7 @@ function renderChild(child: HarmajaChild): HarmajaOutput {
             //console.log(`${debug(oldElements)} replaced by ${debug(controller.currentElements)} in observable`)
             
             replaceMany(controller, oldElements, newNodes)
-        }))        
-        //console.log(`Created ${debug(controller.currentElements)}, replaced=${replaced}`)
-        return controller.currentElements
+        }))
     }    
     if (isDOMElement(child)) {
         return child
@@ -383,7 +377,15 @@ function detachController(oldElements: ChildNode[], controller: NodeController) 
     if (controller.unsub) detachOnUnmount(oldElements[0], controller.unsub)
 }
 
-function attachController(elements: ChildNode[], controller: NodeController, bootstrap?: () => Callback) {
+function createController(elements: ChildNode[], bootstrap: (controller: NodeController) => Callback) {
+    const controller: NodeController = {
+        currentElements: elements
+    }
+    attachController(elements, controller, bootstrap)
+    return elements
+}
+
+function attachController(elements: ChildNode[], controller: NodeController, bootstrap?: (controller: NodeController) => Callback) {
     for (let i = 0; i < elements.length; i++) {
         let el = elements[i]
         const state = getNodeState(el)    
@@ -404,7 +406,7 @@ function attachController(elements: ChildNode[], controller: NodeController, boo
                     throw Error("Unexpected: Component already mounted")
                 } else {
                     attachOnMount(el, () => {
-                        const unsub = bootstrap()                        
+                        const unsub = bootstrap(controller)                        
                         controller.unsub = unsub
                         el = controller.currentElements[0] // may have changed in bootstrap!                        
                         attachOnUnmount(el, controller.unsub)
@@ -610,8 +612,7 @@ export const LowLevelApi = {
     attachOnUnmount,
     detachOnUnmount,
     detachOnUnmounts,
-    attachController,
-    detachController,
+    createController,
     appendNode,
     removeNode,
     addAfterNode,
