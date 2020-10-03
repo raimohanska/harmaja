@@ -45,3 +45,4 @@ export function item(index) {
             ? __spread(nums.slice(0, index), nums.slice(index + 1)) : __spread(nums.slice(0, index), [newValue], nums.slice(index + 1)); }
     };
 }
+//# sourceMappingURL=lens.js.map

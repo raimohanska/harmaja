@@ -101,3 +101,4 @@ function lensedAtom(root, lens) {
     };
     return mkAtom(theAtom, get, modify, set);
 }
+//# sourceMappingURL=atom.js.map

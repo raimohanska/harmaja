@@ -63,6 +63,7 @@ export function createElement(type, props) {
         var dynamicElement = constructor(__assign(__assign({}, props), { children: flattenedChildren }));
         var elements = render(dynamicElement);
         var transientState_1 = transientStateStack.pop();
+        // TODO: optimize by doing this only if there are on(un)mount callbacks
         return createController(toDOMNodes(elements), function (controller) {
             var e_1, _a;
             try {
@@ -103,6 +104,10 @@ export function createElement(type, props) {
         console.error("Unexpected createElement call with arguments", arguments);
         throw Error("Unknown type " + type);
     }
+}
+export function Fragment(_a) {
+    var children = _a.children;
+    return children.flatMap(flattenChildren).flatMap(render);
 }
 function flattenChildren(child) {
     if (child instanceof Array)
@@ -764,3 +769,4 @@ export var LowLevelApi = {
     toDOMNodes: toDOMNodes,
     render: render
 };
+//# sourceMappingURL=harmaja.js.map

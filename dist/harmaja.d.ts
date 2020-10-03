@@ -13,6 +13,9 @@ export declare type DOMNode = ChildNode;
  *  Element constructor used by JSX.
  */
 export declare function createElement(type: JSXElementType, props?: HarmajaProps, ...children: HarmajaChildren): HarmajaOutput;
+export declare function Fragment({ children }: {
+    children: HarmajaChildren;
+}): HarmajaOutput;
 declare function createPlaceholder(): Text;
 declare function render(child: HarmajaChild | HarmajaOutput): HarmajaStaticOutput;
 export declare type Callback = () => void;

@@ -21,7 +21,8 @@
     "allowJs": false,
     "downlevelIteration": true,
     "outDir": "dist",
-    "declaration": true
+    "declaration": true,
+    "sourceMap": true
   },
   "include": [
     "src/index.ts"
