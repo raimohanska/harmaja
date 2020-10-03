@@ -81,7 +81,7 @@ describe("Listview", () => {
             return listView
         }))
 
-        it.only("Allows only single-node items", () => {
+        it("Allows only single-node items", () => {
             const listView = <ul><ListView 
                 observable = { B.constant([1]) }
                 renderItem = { item => B.constant([<div/>, <div/>]) }
