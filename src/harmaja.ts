@@ -1,5 +1,6 @@
 import * as Bacon from "baconjs"
 import { isAtom } from "./atom"
+import { getCurrentValue } from "./utilities"
 
 export type HarmajaComponent = (props: HarmajaProps) => HarmajaOutput
 export type JSXElementType = string | HarmajaComponent
@@ -35,28 +36,43 @@ export function createElement(type: JSXElementType, props?: HarmajaProps, ...chi
     if (typeof type == "function") {        
         const constructor = type as HarmajaComponent
         transientStateStack.push({})
-        const dynamicElement = constructor({...props, children: flattenedChildren})
-        const elements = render(dynamicElement)
+        const result = constructor({...props, children: flattenedChildren})
         const transientState = transientStateStack.pop()!
-        if (transientState.mountCallbacks || transientState.unmountCallbacks) {
-            return createController(toDOMNodes(elements), (controller) => {
-                for (const callback of transientState.mountCallbacks || []) {
-                    callback()                
-                }
-                return () => {
-                    for (const callback of transientState.unmountCallbacks || []) {
-                        callback()
-                    }
-                }                
-            })
+        if (result instanceof Bacon.Property) {
+            return createController([createPlaceholder()], composeControllers(handleMounts(transientState), startUpdatingNodes(result as HarmajaObservableChild)))
+        } else if (transientState.unmountCallbacks || transientState.mountCallbacks) {
+            return createController(toDOMNodes(render(result)), handleMounts(transientState))
+        } else {
+            return result
         }
-        return elements
     } else if (typeof type == "string") {
         return renderElement(type, props, flattenedChildren)
     } else {
         console.error("Unexpected createElement call with arguments", arguments)
         throw Error(`Unknown type ${type}`)
     }
+}
+
+function composeControllers(c1: NodeControllerFn, c2: NodeControllerFn): NodeControllerFn {
+    return controller => {
+        const unsub1 = c1(controller)
+        const unsub2 = c2(controller)
+        return () => {
+            unsub2()
+            unsub1()
+        }
+    }
+}
+
+const handleMounts = (transientState: TransientState) => (controller: NodeController) => {
+    if (transientState.mountCallbacks) for (const callback of transientState.mountCallbacks) {
+        callback()                
+    }
+    return () => {
+        if (transientState.unmountCallbacks) for (const callback of transientState.unmountCallbacks) {
+            callback()
+        }
+    }                   
 }
 
 export function Fragment({ children }: { children: HarmajaChildren }): HarmajaOutput {
@@ -107,20 +123,7 @@ function render(child: HarmajaChild | HarmajaOutput): HarmajaStaticOutput {
         return createPlaceholder()
     }
     if (child instanceof Bacon.Property) {
-        const observable = child as HarmajaObservableChild        
-        let replaced = false
-        return createController([createPlaceholder()], (controller) => observable.skipDuplicates().forEach((nextChildren: HarmajaChildOrChildren) => {
-            replaced = true
-            let oldElements = controller.currentElements    
-            let newNodes = flattenChildren(nextChildren).flatMap(render).flatMap(toDOMNodes)                
-            if (newNodes.length === 0) {
-                newNodes = [createPlaceholder()]
-            }
-            //console.log("New values", debug(controller.currentElements))
-            //console.log(`${debug(oldElements)} replaced by ${debug(controller.currentElements)} in observable`)
-            
-            replaceMany(controller, oldElements, newNodes)
-        }))
+        return createController([createPlaceholder()], startUpdatingNodes(child as HarmajaObservableChild))
     }    
     if (isDOMElement(child)) {
         return child
@@ -128,7 +131,19 @@ function render(child: HarmajaChild | HarmajaOutput): HarmajaStaticOutput {
     throw Error(child + " is not a valid element")
 }
 
-
+const startUpdatingNodes = (observable: HarmajaObservableChild) => (controller: NodeController): Callback => {
+    return observable.skipDuplicates().forEach((nextChildren: HarmajaChildOrChildren) => {
+        let oldElements = controller.currentElements    
+        let newNodes = flattenChildren(nextChildren).flatMap(render).flatMap(toDOMNodes)                
+        if (newNodes.length === 0) {
+            newNodes = [createPlaceholder()]
+        }
+        //console.log("New values", debug(controller.currentElements))
+        //console.log(`${debug(oldElements)} replaced by ${debug(controller.currentElements)} in observable`)
+        
+        replaceMany(controller, oldElements, newNodes)
+    })
+}
 
 function isDOMElement(child: any): child is DOMNode {
     return child instanceof Element || child instanceof Text
@@ -194,6 +209,8 @@ type NodeControllerOptions = {
     onReplace?: (oldNodes: DOMNode[], newNodes: DOMNode[]) => void
 }
 
+type NodeControllerFn = (controller: NodeController) => Callback
+
 function maybeGetNodeState(node: Node): NodeState | undefined {
     let nodeAny = node as any
     return nodeAny.__h
@@ -229,8 +246,18 @@ export function mount(harmajaElement: HarmajaOutput, root: Element): HarmajaStat
  *  - `onUnmount` callbacks will be called
  *  - `onUnmountEvent` will be triggered
  */
-export function unmount(harmajaElement: HarmajaStaticOutput) {
-    removeNode(null, 0, harmajaElement)
+export function unmount(harmajaElement: HarmajaOutput) {
+    if (harmajaElement instanceof Bacon.Property) {
+        // A dynamic component, let's try to find the current mounted nodes
+        //console.log("Unmounting dynamic", harmajaElement)
+        unmount(getCurrentValue(harmajaElement))
+    } else if (harmajaElement instanceof Array) {
+        //console.log("Unmounting array")
+        harmajaElement.forEach(unmount)
+    } else {
+        //console.log("Unmounting node", debug(harmajaElement))
+        removeNode(null, 0, harmajaElement)
+    }
 }
 
 /**
@@ -384,7 +411,7 @@ function detachController(oldElements: ChildNode[], controller: NodeController) 
     if (controller.unsub) detachOnUnmount(oldElements[0], controller.unsub)
 }
 
-function createController(elements: ChildNode[], bootstrap: (controller: NodeController) => Callback, options?: NodeControllerOptions) {
+function createController(elements: ChildNode[], bootstrap: NodeControllerFn, options?: NodeControllerOptions) {
     const controller: NodeController = {
         ...options,
         currentElements: elements

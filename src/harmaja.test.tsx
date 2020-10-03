@@ -1,6 +1,6 @@
 import { h, Fragment, mount, mountEvent, onMount, onUnmount, unmount, unmountEvent } from "./index"
 import * as H from "./index"
-import { htmlOf, testRender } from "./test-utils"
+import { renderAsString, getHtml, mounted, testRender } from "./test-utils"
 import { HarmajaOutput } from "./harmaja"
 import * as B from "baconjs"
 
@@ -13,7 +13,7 @@ function body() {
 describe("Harmaja", () => {
     it("Creating elements without JSX", () => {
         const el = H.createElement("h1", {}, "yes")
-        expect(htmlOf(el)).toEqual("<h1>yes</h1>")
+        expect(renderAsString(el)).toEqual("<h1>yes</h1>")
     })
 
     it("Supports refs", () => {
@@ -28,51 +28,51 @@ describe("Harmaja", () => {
 
     it("Creating elements with JSX", () => {
         const el = <h1>yes</h1>
-        expect(htmlOf(el)).toEqual("<h1>yes</h1>")
+        expect(renderAsString(el)).toEqual("<h1>yes</h1>")
     })
 
     it("JSX Fragments", () => {
         const fragment = <><span>Hello</span><span>World</span></>
-        expect(htmlOf(fragment)).toEqual("<span>Hello</span><span>World</span>")
+        expect(renderAsString(fragment)).toEqual("<span>Hello</span><span>World</span>")
     })
 
     it("Rendering observable string as child", () => testRender("yes", (value, set) => {
-        const el = <h1>{value}</h1>
-        expect(htmlOf(el)).toEqual("<h1>yes</h1>")
+        const el = mounted(<h1>{value}</h1>)
+        expect(getHtml(el)).toEqual("<h1>yes</h1>")
         set("no")
-        expect(htmlOf(el)).toEqual("<h1>no</h1>")
+        expect(getHtml(el)).toEqual("<h1>no</h1>")
         set("definitely")
-        expect(htmlOf(el)).toEqual("<h1>definitely</h1>")
+        expect(getHtml(el)).toEqual("<h1>definitely</h1>")
         return el
     }))
 
     it("renders observable HTMLElement as child", () => testRender(<input type="text"/> as HarmajaOutput | null, (value, set) => {
-        const el = <h1>{value}</h1>
+        const el = mounted(<h1>{value}</h1>)
         //console.log((el as any).outerHTML)
-        expect(htmlOf(el)).toEqual(`<h1><input type="text"></h1>`)
+        expect(getHtml(el)).toEqual(`<h1><input type="text"></h1>`)
         set(null)
-        expect(htmlOf(el)).toEqual(`<h1></h1>`)
+        expect(getHtml(el)).toEqual(`<h1></h1>`)
         set(<input type="checkbox"/>)
-        expect(htmlOf(el)).toEqual(`<h1><input type="checkbox"></h1>`)
+        expect(getHtml(el)).toEqual(`<h1><input type="checkbox"></h1>`)
         return el
     }))
 
     it("renders observable as prop", () => testRender("big", (value, set) => {
-        const el = <h1 className={value}></h1>
-        expect(htmlOf(el)).toEqual(`<h1 class="big"></h1>`)
+        const el = mounted(<h1 className={value}></h1>)
+        expect(getHtml(el)).toEqual(`<h1 class="big"></h1>`)
         set("small")
-        expect(htmlOf(el)).toEqual(`<h1 class="small"></h1>`)
+        expect(getHtml(el)).toEqual(`<h1 class="small"></h1>`)
         set("yuuuge")
-        expect(htmlOf(el)).toEqual(`<h1 class="yuuuge"></h1>`)
+        expect(getHtml(el)).toEqual(`<h1 class="yuuuge"></h1>`)
         return el
     }))
 
     it("Accepted and rejected child types", () => {
-        expect(htmlOf(<h1>{"asdf"}</h1>)).toEqual(`<h1>asdf</h1>`)
-        expect(htmlOf(<h1>{42}</h1>)).toEqual(`<h1>42</h1>`)
-        expect(htmlOf(<h1>{null}</h1>)).toEqual(`<h1></h1>`)
-        expect(htmlOf(<h1>{["hell", "yeah"]}</h1>)).toEqual(`<h1>hellyeah</h1>`)
-        expect(htmlOf(<h1>{["hell", <br/>]}</h1>)).toEqual(`<h1>hell<br></h1>`)
+        expect(renderAsString(<h1>{"asdf"}</h1>)).toEqual(`<h1>asdf</h1>`)
+        expect(renderAsString(<h1>{42}</h1>)).toEqual(`<h1>42</h1>`)
+        expect(renderAsString(<h1>{null}</h1>)).toEqual(`<h1></h1>`)
+        expect(renderAsString(<h1>{["hell", "yeah"]}</h1>)).toEqual(`<h1>hellyeah</h1>`)
+        expect(renderAsString(<h1>{["hell", <br/>]}</h1>)).toEqual(`<h1>hell<br></h1>`)
         expect(() => (<h1>{undefined}</h1>)).toThrow("undefined is not a valid element")
         /*
         // The following do not event compile
@@ -85,65 +85,86 @@ describe("Harmaja", () => {
     describe("Components", () => {
         it("Renders component children", () => {
             const C1 = ({children}:{children?:any}) => <div>{children}</div>
-            expect(htmlOf(<C1/>)).toEqual("<div></div>")
-            expect(htmlOf(<C1>hello</C1>)).toEqual("<div>hello</div>")
-            expect(htmlOf(<C1><a>wat</a>BOOM</C1>)).toEqual("<div><a>wat</a>BOOM</div>")
+            expect(renderAsString(<C1/>)).toEqual("<div></div>")
+            expect(renderAsString(<C1>hello</C1>)).toEqual("<div>hello</div>")
+            expect(renderAsString(<C1><a>wat</a>BOOM</C1>)).toEqual("<div><a>wat</a>BOOM</div>")
         })
 
         it("Deals with multiple elements from component function", () => {
             const Component = ({ things }: { things: string[] }) => things.map(t => <ul>{t}</ul>)
-            expect(htmlOf(<Component things={["a", "b", "c"]}/>)).toEqual("<ul>a</ul><ul>b</ul><ul>c</ul>")
+            expect(renderAsString(<Component things={["a", "b", "c"]}/>)).toEqual("<ul>a</ul><ul>b</ul><ul>c</ul>")
         })
     
         it("Replaces multiple elements correctly", () => {
             const Component = ({ things }: { things: H.Atom<string[]> }) => <ul>{things.map(ts => ts.map(t => <li>{t}</li>))}</ul>
             const things = H.atom(["a"])
-            expect(htmlOf(<Component things={things}/>)).toEqual("<ul><li>a</li></ul>")
+            expect(renderAsString(<Component things={things}/>)).toEqual("<ul><li>a</li></ul>")
             things.set([])
-            expect(htmlOf(<Component things={things}/>)).toEqual("<ul></ul>")
+            expect(renderAsString(<Component things={things}/>)).toEqual("<ul></ul>")
             things.set(["b", "d"])
-            expect(htmlOf(<Component things={things}/>)).toEqual("<ul><li>b</li><li>d</li></ul>")
+            expect(renderAsString(<Component things={things}/>)).toEqual("<ul><li>b</li><li>d</li></ul>")
             things.set(["x"])
-            expect(htmlOf(<Component things={things}/>)).toEqual("<ul><li>x</li></ul>")
+            expect(renderAsString(<Component things={things}/>)).toEqual("<ul><li>x</li></ul>")
         })
 
         describe("Observable as component output", () => {
             it("Rendering", () => testRender(<span>1</span>, (value, set) => {
                 const Component = () => value
-                const el = <div><Component/></div>
+                const el = mounted(<div><Component/></div>)
                 //console.log((el as any).outerHTML)
-                expect(htmlOf(el)).toEqual(`<div><span>1</span></div>`)
+                expect(getHtml(el)).toEqual(`<div><span>1</span></div>`)
                 set(<span>2</span>)
-                expect(htmlOf(el)).toEqual(`<div><span>2</span></div>`)
+                expect(getHtml(el)).toEqual(`<div><span>2</span></div>`)
                 return el
-            })) 
+            }))
+
+            it("Observable-in-observable", () => {
+                const initial = ["init"]
+                const inner = H.atom(["a","b"])
+                const Component = () => inner.map(xs => xs.map(x => <span>{x}</span>))
+                const outer = H.atom([1, initial as any])
+                const c = mounted(<div>{outer}</div>)
+                expect(getHtml(c)).toEqual("<div>1init</div>")
+                outer.set([1, <Component/>])
+                expect(getHtml(c)).toEqual("<div>1<span>a</span><span>b</span></div>")
+                inner.set(["c", "d"])
+                expect(getHtml(c)).toEqual("<div>1<span>c</span><span>d</span></div>")
+                outer.set([1, 2])            
+                expect(getHtml(c)).toEqual("<div>12</div>")
+            })
             
             it("Lifecycle hooks", () => {
                 let unmountCalled = 0    
                 let mountCalled = 0
-                const a = H.atom(<div>Teh component</div>)
-                const Component = () => {
+                
+                
+                const initial = ["init"]
+                const inner = H.atom(["a","b"])
+                const Component = () => { 
                     onUnmount(() => unmountCalled++)
                     onMount(() => mountCalled++)
                     unmountEvent().forEach(() => unmountCalled++)
                     mountEvent().forEach(() => mountCalled++)
-                    return a
+                    return inner.map(xs => xs.map(x => <span>{x}</span>)) 
                 }
-                const el = <Component/>
+                const outer = H.atom([1, initial as any])
+                const c = mounted(<div>{outer}</div>)
+                expect(getHtml(c)).toEqual("<div>1init</div>")
                 expect(unmountCalled).toEqual(0)
                 expect(mountCalled).toEqual(0)
-                const mounted = mount(el, body())
+    
+                outer.set([1, <Component/>])
+                expect(getHtml(c)).toEqual("<div>1<span>a</span><span>b</span></div>")
                 expect(unmountCalled).toEqual(0)
                 expect(mountCalled).toEqual(2) // 2 because both callback and eventstream
-                unmount(mounted) // TODO: unmounts still fail, FIXME
-                /*
+    
+                inner.set(["c", "d"])
+                expect(getHtml(c)).toEqual("<div>1<span>c</span><span>d</span></div>")
+                
+                outer.set([1, 2])            
+                expect(getHtml(c)).toEqual("<div>12</div>")
                 expect(unmountCalled).toEqual(2)
-                expect(mountCalled).toEqual(2)
-        
-                expect(() => mount(el, body())).toThrow("Component re-mount not supported")
-        
-                expect(() => unmountEvent()).toThrow("Illegal unmountEvent call outside component constructor call")
-                */
+                expect(mountCalled).toEqual(2)    
             })            
         })
     
@@ -161,10 +182,10 @@ describe("Harmaja", () => {
             const el = <Component/>
             expect(unmountCalled).toEqual(0)
             expect(mountCalled).toEqual(0)
-            const mounted = mount(el, body())
+            mounted(<body>{el}</body>)
             expect(unmountCalled).toEqual(0)
             expect(mountCalled).toEqual(2) // 2 because both callback and eventstream
-            unmount(mounted)
+            unmount(el)
             expect(unmountCalled).toEqual(2)
             expect(mountCalled).toEqual(2)
     
@@ -177,17 +198,17 @@ describe("Harmaja", () => {
 
     describe("Nested controllers", () => {
         it("Observable-in-observable", () => {
+            const initial = ["init"]
             const inner = H.atom(["a","b"])
-            const outer = H.atom([1, inner])
-            const c = <div>{outer}</div>
-            htmlOf(c)
-            // Here's what should happen in case we added nested controller support!
-            expect(htmlOf(c)).toEqual("<div>1ab</div>")
+            const outer = H.atom([1, initial as any])
+            const c = mounted(<div>{outer}</div>)
+            expect(getHtml(c)).toEqual("<div>1init</div>")
+            outer.set([1, inner])
+            expect(getHtml(c)).toEqual("<div>1ab</div>")
             inner.set(["c", "d"])
-            expect(htmlOf(c)).toEqual("<div>1cd</div>")
-            outer.set([1, 2])
-            // Here it fails, as outer fails to replace c and d of which doesn't know about
-            expect(htmlOf(c)).toEqual("<div>12</div>")    
+            expect(getHtml(c)).toEqual("<div>1cd</div>")
+            outer.set([1, 2])            
+            expect(getHtml(c)).toEqual("<div>12</div>")
         })
     })
 })
