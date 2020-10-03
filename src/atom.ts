@@ -124,7 +124,7 @@ function mkAtom<A>(observable: B.Property<A>, get: () => A, modify: ( (fn: (a : 
 }
 
 function lensedAtom<A, B>(root: Atom<A>, lens: L.Lens<A, B>): Atom<B> {
-    const theAtom = root.map(value => lens.get(value)) as any
+    const theAtom = root.map(value => lens.get(value)).skipDuplicates() as any
     const get = () => lens.get(root.get())
     const modify = (fn: (b: B) => B) => {
         root.modify((currentRootValue: A) => {
