@@ -41,6 +41,7 @@ var __spread = (this && this.__spread) || function () {
     return ar;
 };
 import * as Bacon from "baconjs";
+import { getCurrentValue } from "./utilities";
 var transientStateStack = [];
 /**
  *  Element constructor used by JSX.
@@ -60,42 +61,17 @@ export function createElement(type, props) {
     if (typeof type == "function") {
         var constructor = type;
         transientStateStack.push({});
-        var dynamicElement = constructor(__assign(__assign({}, props), { children: flattenedChildren }));
-        var elements = render(dynamicElement);
-        var transientState_1 = transientStateStack.pop();
-        // TODO: optimize by doing this only if there are on(un)mount callbacks
-        return createController(toDOMNodes(elements), function (controller) {
-            var e_1, _a;
-            try {
-                for (var _b = __values(transientState_1.mountCallbacks || []), _c = _b.next(); !_c.done; _c = _b.next()) {
-                    var callback = _c.value;
-                    callback();
-                }
-            }
-            catch (e_1_1) { e_1 = { error: e_1_1 }; }
-            finally {
-                try {
-                    if (_c && !_c.done && (_a = _b.return)) _a.call(_b);
-                }
-                finally { if (e_1) throw e_1.error; }
-            }
-            return function () {
-                var e_2, _a;
-                try {
-                    for (var _b = __values(transientState_1.unmountCallbacks || []), _c = _b.next(); !_c.done; _c = _b.next()) {
-                        var callback = _c.value;
-                        callback();
-                    }
-                }
-                catch (e_2_1) { e_2 = { error: e_2_1 }; }
-                finally {
-                    try {
-                        if (_c && !_c.done && (_a = _b.return)) _a.call(_b);
-                    }
-                    finally { if (e_2) throw e_2.error; }
-                }
-            };
-        });
+        var result = constructor(__assign(__assign({}, props), { children: flattenedChildren }));
+        var transientState = transientStateStack.pop();
+        if (result instanceof Bacon.Property) {
+            return createController([createPlaceholder()], composeControllers(handleMounts(transientState), startUpdatingNodes(result)));
+        }
+        else if (transientState.unmountCallbacks || transientState.mountCallbacks) {
+            return createController(toDOMNodes(render(result)), handleMounts(transientState));
+        }
+        else {
+            return result;
+        }
     }
     else if (typeof type == "string") {
         return renderElement(type, props, flattenedChildren);
@@ -105,6 +81,50 @@ export function createElement(type, props) {
         throw Error("Unknown type " + type);
     }
 }
+function composeControllers(c1, c2) {
+    return function (controller) {
+        var unsub1 = c1(controller);
+        var unsub2 = c2(controller);
+        return function () {
+            unsub2();
+            unsub1();
+        };
+    };
+}
+var handleMounts = function (transientState) { return function (controller) {
+    var e_1, _a;
+    if (transientState.mountCallbacks)
+        try {
+            for (var _b = __values(transientState.mountCallbacks), _c = _b.next(); !_c.done; _c = _b.next()) {
+                var callback = _c.value;
+                callback();
+            }
+        }
+        catch (e_1_1) { e_1 = { error: e_1_1 }; }
+        finally {
+            try {
+                if (_c && !_c.done && (_a = _b.return)) _a.call(_b);
+            }
+            finally { if (e_1) throw e_1.error; }
+        }
+    return function () {
+        var e_2, _a;
+        if (transientState.unmountCallbacks)
+            try {
+                for (var _b = __values(transientState.unmountCallbacks), _c = _b.next(); !_c.done; _c = _b.next()) {
+                    var callback = _c.value;
+                    callback();
+                }
+            }
+            catch (e_2_1) { e_2 = { error: e_2_1 }; }
+            finally {
+                try {
+                    if (_c && !_c.done && (_a = _b.return)) _a.call(_b);
+                }
+                finally { if (e_2) throw e_2.error; }
+            }
+    };
+}; };
 export function Fragment(_a) {
     var children = _a.children;
     return children.flatMap(flattenChildren).flatMap(render);
@@ -164,25 +184,25 @@ function render(child) {
         return createPlaceholder();
     }
     if (child instanceof Bacon.Property) {
-        var observable_2 = child;
-        var replaced_1 = false;
-        return createController([createPlaceholder()], function (controller) { return observable_2.skipDuplicates().forEach(function (nextChildren) {
-            replaced_1 = true;
-            var oldElements = controller.currentElements;
-            var newNodes = flattenChildren(nextChildren).flatMap(render).flatMap(toDOMNodes);
-            if (newNodes.length === 0) {
-                newNodes = [createPlaceholder()];
-            }
-            //console.log("New values", debug(controller.currentElements))
-            //console.log(`${debug(oldElements)} replaced by ${debug(controller.currentElements)} in observable`)
-            replaceMany(controller, oldElements, newNodes);
-        }); });
+        return createController([createPlaceholder()], startUpdatingNodes(child));
     }
     if (isDOMElement(child)) {
         return child;
     }
     throw Error(child + " is not a valid element");
 }
+var startUpdatingNodes = function (observable) { return function (controller) {
+    return observable.skipDuplicates().forEach(function (nextChildren) {
+        var oldElements = controller.currentElements;
+        var newNodes = flattenChildren(nextChildren).flatMap(render).flatMap(toDOMNodes);
+        if (newNodes.length === 0) {
+            newNodes = [createPlaceholder()];
+        }
+        //console.log("New values", debug(controller.currentElements))
+        //console.log(`${debug(oldElements)} replaced by ${debug(controller.currentElements)} in observable`)
+        replaceMany(controller, oldElements, newNodes);
+    });
+}; };
 function isDOMElement(child) {
     return child instanceof Element || child instanceof Text;
 }
@@ -264,7 +284,19 @@ export function mount(harmajaElement, root) {
  *  - `onUnmountEvent` will be triggered
  */
 export function unmount(harmajaElement) {
-    removeNode(null, 0, harmajaElement);
+    if (harmajaElement instanceof Bacon.Property) {
+        // A dynamic component, let's try to find the current mounted nodes
+        //console.log("Unmounting dynamic", harmajaElement)
+        unmount(getCurrentValue(harmajaElement));
+    }
+    else if (harmajaElement instanceof Array) {
+        //console.log("Unmounting array")
+        harmajaElement.forEach(unmount);
+    }
+    else {
+        //console.log("Unmounting node", debug(harmajaElement))
+        removeNode(null, 0, harmajaElement);
+    }
 }
 /**
  *  Add onMount callback. Called once after the component has been mounted on the document.

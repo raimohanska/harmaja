@@ -26,6 +26,7 @@ export declare type NodeController = {
 declare type NodeControllerOptions = {
     onReplace?: (oldNodes: DOMNode[], newNodes: DOMNode[]) => void;
 };
+declare type NodeControllerFn = (controller: NodeController) => Callback;
 /**
  *  Mounts the given element to the document, replacing the given root element.
  *
@@ -41,7 +42,7 @@ export declare function mount(harmajaElement: HarmajaOutput, root: Element): Har
  *  - `onUnmount` callbacks will be called
  *  - `onUnmountEvent` will be triggered
  */
-export declare function unmount(harmajaElement: HarmajaStaticOutput): void;
+export declare function unmount(harmajaElement: HarmajaOutput): void;
 /**
  *  Add onMount callback. Called once after the component has been mounted on the document.
  *  NOTE: Call only in component constructors. Otherwise will not do anything useful.
@@ -65,7 +66,7 @@ export declare function unmountEvent(): Bacon.EventStream<void>;
 export declare function callOnMounts(element: Node): void;
 declare function attachOnMount(element: DOMNode, onMount: Callback): void;
 declare function attachOnUnmount(element: DOMNode, onUnmount: Callback): void;
-declare function createController(elements: ChildNode[], bootstrap: (controller: NodeController) => Callback, options?: NodeControllerOptions): ChildNode[];
+declare function createController(elements: ChildNode[], bootstrap: NodeControllerFn, options?: NodeControllerOptions): ChildNode[];
 declare function replaceNode(controller: NodeController, index: number, newNode: DOMNode): void;
 declare function replaceMany(controller: NodeController | null, oldContent: HarmajaStaticOutput, newContent: HarmajaStaticOutput): void;
 declare function addAfterNode(controller: NodeController, current: ChildNode, next: ChildNode): void;

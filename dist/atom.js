@@ -82,7 +82,7 @@ function mkAtom(observable, get, modify, set) {
     return theAtom;
 }
 function lensedAtom(root, lens) {
-    var theAtom = root.map(function (value) { return lens.get(value); });
+    var theAtom = root.map(function (value) { return lens.get(value); }).skipDuplicates();
     var get = function () { return lens.get(root.get()); };
     var modify = function (fn) {
         root.modify(function (currentRootValue) {
