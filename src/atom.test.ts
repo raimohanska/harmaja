@@ -53,7 +53,7 @@ describe("Atom", () => {
     
         it("Can be frozen on unwanted values (when not getting in between sets)", () => {
             const atom = A.atom<string | null>("hello").freezeUnless(a => a !== null)    
-            atom.subscribe() // TODO: currently needs this. Should not!
+            
             atom.set("world")        
             atom.set(null)
             expect(atom.get()).toEqual("world")        

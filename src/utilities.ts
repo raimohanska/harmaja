@@ -7,7 +7,7 @@ export function getCurrentValue<A>(observable: B.Property<A>): A {
     let currentV: any = valueMissing;
     if ((observable as any).get) {
       currentV = (observable as any).get(); // For Atoms
-    } else {        
+    } else {   
       const unsub = observable.subscribeInternal(e => {
           if (B.hasValue(e)) {
               currentV = e.value;

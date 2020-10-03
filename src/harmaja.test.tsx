@@ -211,4 +211,11 @@ describe("Harmaja", () => {
             expect(getHtml(c)).toEqual("<div>12</div>")
         })
     })
+
+    it("Special - nested dependent atom", () => testRender(1, (value, set) => {
+        const p = H.atom(value, updated => console.log(updated))
+        const el = mounted(<div>{p.map(() => <div>{p}</div>)}</div>)
+        expect(getHtml(el)).toEqual("<div><div>1</div></div>")
+        return el as any
+    }))
 })

@@ -12,6 +12,7 @@ export interface Atom<A> extends B.Property<A> {
     // to prevent crashing when an element is removed and should no longer be rendered
     freezeUnless<E extends A>(fn: (a: A) => a is E): Atom<E>
     freezeUnless(fn: (a: A) => boolean): Atom<A>
+    eager: boolean
 }
 
 /**
@@ -59,14 +60,13 @@ export function atom<A>(x: any, y?: any): Atom<A> {
         const set = (a: A) => {
             bus.push(() => a)
             return theAtom
-        }
-
-        theAtom.subscribe(() => {})
+        }        
             
-        return mkAtom<A>(theAtom, get, modify, set)
+        return mkAtom<A>(theAtom, get, modify, set, true)
     } else {
         // Create a dependent Atom
         const property = x as B.Property<A>
+        const eager = (property as any).eager
         const onChange: (updatedValue: A) => void = y
         const theAtom = property.map(x => x).skipDuplicates((a, b) => a === b)
         const get = () => getCurrentValue(property)
@@ -77,8 +77,8 @@ export function atom<A>(x: any, y?: any): Atom<A> {
         const modify = (f: (a: A) => A) => {
             set(f(get()))
             return theAtom as Atom<A>
-        }        
-        return mkAtom(theAtom, get, modify, set) 
+        }       
+        return mkAtom(theAtom, get, modify, set, eager) 
     }
 }
 
@@ -87,7 +87,7 @@ export function isAtom<A>(x: any): x is Atom<A> {
 }
 
 // Note: actually mutates the given observable into an Atom!
-function mkAtom<A>(observable: B.Property<A>, get: () => A, modify: ( (fn: (a : A) => A) => Atom<A>), set: (a: A) => Atom<A>): Atom<A> {
+function mkAtom<A>(observable: B.Property<A>, get: () => A, modify: ( (fn: (a : A) => A) => Atom<A>), set: (a: A) => Atom<A>, eager: boolean): Atom<A> {
     const theAtom = observable as Atom<A>
     theAtom.set = set
     theAtom.modify = modify    
@@ -98,6 +98,7 @@ function mkAtom<A>(observable: B.Property<A>, get: () => A, modify: ( (fn: (a : 
             throw Error("Cannot create frozen atom with initial value not passing the given filter function")
         }
         let freezingProperty = theAtom.filter(freezeUnlessFn).doAction(v => {previousValue = v})
+        freezingProperty.eager = true
         let onChange = (newValue: A) => theAtom.set(newValue)
         let fa = atom(freezingProperty, onChange)
         fa.get = () => {
@@ -120,6 +121,8 @@ function mkAtom<A>(observable: B.Property<A>, get: () => A, modify: ( (fn: (a : 
             return lensedAtom(theAtom, lens)
         }        
     }
+    theAtom.eager = eager
+    if (eager) theAtom.subscribe(() => {})
     return theAtom
 }
 
@@ -141,5 +144,5 @@ function lensedAtom<A, B>(root: Atom<A>, lens: L.Lens<A, B>): Atom<B> {
         root.set(newRootValue)
         return theAtom
     }
-    return mkAtom(theAtom, get, modify, set)
+    return mkAtom(theAtom, get, modify, set, root.eager)
 }
