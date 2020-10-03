@@ -38,17 +38,19 @@ export function createElement(type: JSXElementType, props?: HarmajaProps, ...chi
         const dynamicElement = constructor({...props, children: flattenedChildren})
         const elements = render(dynamicElement)
         const transientState = transientStateStack.pop()!
-        // TODO: optimize by doing this only if there are on(un)mount callbacks
-        return createController(toDOMNodes(elements), (controller) => {
-            for (const callback of transientState.mountCallbacks || []) {
-                callback()                
-            }
-            return () => {
-                for (const callback of transientState.unmountCallbacks || []) {
-                    callback()
+        if (transientState.mountCallbacks || transientState.unmountCallbacks) {
+            return createController(toDOMNodes(elements), (controller) => {
+                for (const callback of transientState.mountCallbacks || []) {
+                    callback()                
                 }
-            }                
-        })
+                return () => {
+                    for (const callback of transientState.unmountCallbacks || []) {
+                        callback()
+                    }
+                }                
+            })
+        }
+        return elements
     } else if (typeof type == "string") {
         return renderElement(type, props, flattenedChildren)
     } else {
