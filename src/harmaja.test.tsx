@@ -1,4 +1,4 @@
-import { h, mount, mountEvent, onMount, onUnmount, unmount, unmountEvent } from "./index"
+import { h, Fragment, mount, mountEvent, onMount, onUnmount, unmount, unmountEvent } from "./index"
 import * as H from "./index"
 import { htmlOf, testRender } from "./test-utils"
 import { HarmajaOutput } from "./harmaja"
@@ -29,6 +29,11 @@ describe("Harmaja", () => {
     it("Creating elements with JSX", () => {
         const el = <h1>yes</h1>
         expect(htmlOf(el)).toEqual("<h1>yes</h1>")
+    })
+
+    it("JSX Fragments", () => {
+        const fragment = <><span>Hello</span><span>World</span></>
+        expect(htmlOf(fragment)).toEqual("<span>Hello</span><span>World</span>")
     })
 
     it("Rendering observable string as child", () => testRender("yes", (value, set) => {

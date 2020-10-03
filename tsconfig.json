@@ -17,6 +17,7 @@
     "isolatedModules": true,
     "jsx": "react",
     "jsxFactory": "h",
+    "jsxFragmentFactory": "Fragment",
     "allowJs": false,
     "downlevelIteration": true,
     "outDir": "dist",

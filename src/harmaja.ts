@@ -38,7 +38,7 @@ export function createElement(type: JSXElementType, props?: HarmajaProps, ...chi
         const dynamicElement = constructor({...props, children: flattenedChildren})
         const elements = render(dynamicElement)
         const transientState = transientStateStack.pop()!
-
+        // TODO: optimize by doing this only if there are on(un)mount callbacks
         return createController(toDOMNodes(elements), (controller) => {
             for (const callback of transientState.mountCallbacks || []) {
                 callback()                
@@ -55,6 +55,10 @@ export function createElement(type: JSXElementType, props?: HarmajaProps, ...chi
         console.error("Unexpected createElement call with arguments", arguments)
         throw Error(`Unknown type ${type}`)
     }
+}
+
+export function Fragment({ children }: { children: HarmajaChildren }): HarmajaOutput {
+    return children.flatMap(flattenChildren).flatMap(render)
 }
 
 function flattenChildren(child: HarmajaChildOrChildren): HarmajaChild[] {

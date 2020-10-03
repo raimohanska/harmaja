@@ -20,6 +20,22 @@ I present my views on these topics openly, with the goal to paint the whole pict
 API document, but more like a research project. I'm very open to discussion and criticism so correct me if I'm wrong. On the other hand, I hope you to understand
 that many topics here are subjective and I'm presenting my own views of the day.
 
+## Key concepts
+
+[*Reactive Property*](https://baconjs.github.io/api3/classes/property.html) (also known as a signal or a behaviour) is an object that encapsulates a changing value. Please check out the [Bacon.js intro](https://baconjs.github.io/api3/index.html) if you're not familiar with the concept. In Harmaja, reactive properties are the main way of storing and passing application state.
+
+[*EventStream*](https://baconjs.github.io/api3/classes/eventstream.html) represents a stream of events that you can observe by calling its `forEach` method. In Bacon.js a *Bus* is an EventStream that allows you to `push` events to the stream as well as observe events. In Harmaja, buses are used for conveying distinct events from the UI to state reducers.
+
+[*Bus*](https://baconjs.github.io/api3/classes/bus.html) is an EventStream that allows you to [push](https://baconjs.github.io/api3/classes/bus.html#push) new events into it. It is used in Harmaja for defining events that originate from the UI. Typically, an `onClick` or similar handler function pushes a new value into a Bus.
+
+[*Atom*](https://github.com/raimohanska/harmaja/blob/master/src/atom.ts) is a Property that also allows mutation using the `set` methods. You can create an atom simply by `atom("hello")` and then use `atom.get` and `atom.set` for viewing and mutating its value. May sound underwhelming, but the Atom is also a reactive property, meaning that it's state can be observed and *reacted*. In Harmaja particularly, you can embed atoms into your VDOM so that your DOM will automatically reflect the changes in their value! Furthermore, you can use `atom.view("attributename")` to get a new Atom that represents the state of a given attribute within the data structure wrapped by the original Atom. Currently Harmaja comes with its own Atom implementation.
+
+*State decomposition* means selecting a part or a slice of a bigger state object. This may be familiar to you from Redux, where you `mapStateToProps` or `useSelector` for making your component *react* to changes in some parts of the application state. In Harmaja, you use reactive properties or Atoms for representing state and then select parts of it for your component using [`property.map`](https://baconjs.github.io/api3/classes/property.html#map) or [`atom.view`](https://github.com/raimohanska/harmaja/blob/master/src/atom.ts#L9), the latter providing a read-write interface.
+
+*State composition* is the opposite of the above (but will co-operate nicely) and means that you can compose state from different sources. This is also a familiar concept from Redux, if you have ever composed reducers. For example, you can use [`Bacon.combineWith`](https://baconjs.github.io/api3/globals.html#combinewith) to compose two state atoms into a composite state Property.
+
+You can very well combine the above concepts so that you start with several state Atoms and EventStreams, then compose them all into a single "megablob" Property and finally decompose from there to deliver the essential parts of each of your components.
+
 ## Usage
 
 Install from NPM `npm install harmaja` or `yarn add harmaja`.
@@ -37,22 +53,18 @@ Tweak your tsconfig.json for the custom JSX factory.
 }
 ```
 
-## Key concepts
+In your component code you'll need to import the `h` function from Harmaja like this, so that the TypeScript compiler can use it for creating DOM nodes when you use JSX.
 
-[*Reactive Property*](https://baconjs.github.io/api3/classes/property.html) (also known as a signal or a behaviour) is an object that encapsulates a changing value. Please check out the [Bacon.js intro](https://baconjs.github.io/api3/index.html) if you're not familiar with the concept. In Harmaja, reactive properties are the main way of storing and passing application state.
+```typescript
+import { h } from "harmaja";
+```
 
-[*EventStream*](https://baconjs.github.io/api3/classes/eventstream.html) represents a stream of events that you can observe by calling its `forEach` method. In Bacon.js a *Bus* is an EventStream that allows you to `push` events to the stream as well as observe events. In Harmaja, buses are used for conveying distinct events from the UI to state reducers.
+Then you can start using JSX, creating your application components and mounting them to the DOM.
 
-[*Bus*](https://baconjs.github.io/api3/classes/bus.html) is an EventStream that allows you to [push](https://baconjs.github.io/api3/classes/bus.html#push) new events into it. It is used in Harmaja for defining events that originate from the UI. Typically, an `onClick` or similar handler function pushes a new value into a Bus.
-
-[*Atom*](https://github.com/raimohanska/harmaja/blob/master/src/atom.ts) is a Property that also allows mutation using the `set` methods. You can create an atom simply by `atom("hello")` and then use `atom.get` and `atom.set` for viewing and mutating its value. May sound underwhelming, but the Atom is also a reactive property, meaning that it's state can be observed and *reacted*. In Harmaja particularly, you can embed atoms into your VDOM so that your DOM will automatically reflect the changes in their value! Furthermore, you can use `atom.view("attributename")` to get a new Atom that represents the state of a given attribute within the data structure wrapped by the original Atom. Currently Harmaja comes with its own Atom implementation.
-
-*State decomposition* means selecting a part or a slice of a bigger state object. This may be familiar to you from Redux, where you `mapStateToProps` or `useSelector` for making your component *react* to changes in some parts of the application state. In Harmaja, you use reactive properties or Atoms for representing state and then select parts of it for your component using [`property.map`](https://baconjs.github.io/api3/classes/property.html#map) or [`atom.view`](https://github.com/raimohanska/harmaja/blob/master/src/atom.ts#L9), the latter providing a read-write interface.
-
-*State composition* is the opposite of the above (but will co-operate nicely) and means that you can compose state from different sources. This is also a familiar concept from Redux, if you have ever composed reducers. For example, you can use [`Bacon.combineWith`](https://baconjs.github.io/api3/globals.html#combinewith) to compose two state atoms into a composite state Property.
-
-You can very well combine the above concepts so that you start with several state Atoms and EventStreams, then compose them all into a single "megablob" Property and finally decompose from there to deliver the essential parts of each of your components.
-
+```typescript
+const App = () => <h1>yes</h1>
+mount(<App/>, document.getElementById("root")!)
+```
 
 ## API
 
@@ -79,6 +91,32 @@ For instance:
 
 <span id="x" ref={(el: HTMLSpanElement) => alert("Mounted " + el)}>Hello</span>
 ```
+
+### Fragments
+
+Harmaja supports JSX Fragments. This feature requires TypeScript 4 or higher. In your tsconfig.json:
+
+```json
+{
+  "compilerOptions": {
+    // ...
+    "jsx": "react",
+    "jsxFactory": "h",
+    "jsxFragmentFactory": "Fragment"
+  }
+  // ...
+}
+```
+
+Then in your component code:
+
+```typescript
+import { h, Fragment } from "harmaja";
+const App = () => <h1><><span>hello</span><span>world</span></></h1>
+mount(<App/>, document.getElementById("root")!)
+```
+
+There are larger examples [here](examples).
 
 ### ListView
 
