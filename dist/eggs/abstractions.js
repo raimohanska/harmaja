@@ -13,7 +13,8 @@ var __extends = (this && this.__extends) || (function () {
 })();
 // Abstract classes instead of interfaces for runtime type information and instanceof
 var Observable = /** @class */ (function () {
-    function Observable() {
+    function Observable(desc) {
+        this.desc = desc;
     }
     Observable.prototype.forEach = function (observer) {
         return this.on("value", observer);
@@ -21,29 +22,32 @@ var Observable = /** @class */ (function () {
     Observable.prototype.log = function (message) {
         this.forEach(function (v) { return message === undefined ? console.log(v) : console.log(message, v); });
     };
+    Observable.prototype.toString = function () {
+        return this.desc;
+    };
     return Observable;
 }());
 export { Observable };
 var Property = /** @class */ (function (_super) {
     __extends(Property, _super);
-    function Property() {
-        return _super.call(this) || this;
+    function Property(desc) {
+        return _super.call(this, desc) || this;
     }
     return Property;
 }(Observable));
 export { Property };
 var EventStream = /** @class */ (function (_super) {
     __extends(EventStream, _super);
-    function EventStream() {
-        return _super.call(this) || this;
+    function EventStream(desc) {
+        return _super.call(this, desc) || this;
     }
     return EventStream;
 }(Observable));
 export { EventStream };
 var Atom = /** @class */ (function (_super) {
     __extends(Atom, _super);
-    function Atom() {
-        return _super.call(this) || this;
+    function Atom(desc) {
+        return _super.call(this, desc) || this;
     }
     return Atom;
 }(Property));

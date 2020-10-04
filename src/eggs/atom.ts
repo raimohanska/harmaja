@@ -1,24 +1,25 @@
-import { Observer, PropertyEventType, Atom, Property } from "./abstractions";
+import { Observer, PropertyEventType, Atom, Property, PropertyEvents, Unsub } from "./abstractions";
 import { StatefulPropertyBase, StatefulPropertySource } from "./property";
 import { duplicateSkippingObserver } from "./util";
 import * as L from "../lens"
 import { Dispatcher } from "./dispatcher";
-import { outOfScope, OutOfScope, Scope } from "./scope";
+import { afterScope, beforeScope, checkScope, OutOfScope, Scope } from "./scope";
 
 class RootAtom<V> extends Atom<V> {    
-    private dispatcher = new Dispatcher<V, PropertyEventType>();
+    private dispatcher = new Dispatcher<PropertyEvents<V>>();
     private value: V
 
-    constructor(initialValue: V) {
-        super()
+    constructor(desc: string, initialValue: V) {
+        super(desc)
         this.value = initialValue        
     }
 
     on(event: PropertyEventType, observer: Observer<V>) {
+        const unsub = this.dispatcher.on(event, observer)
         if (event === "value") {
             observer(this.get())
         }
-        return this.dispatcher.on(event, observer)
+        return unsub
     }
 
     get(): V {
@@ -38,8 +39,8 @@ class LensedAtom<R, V> extends Atom<V> {
     private root: Atom<R>;
     private lens: L.Lens<R, V>;
 
-    constructor(root: Atom<R>, view: L.Lens<R, V>) {
-        super()
+    constructor(desc: string, root: Atom<R>, view: L.Lens<R, V>) {
+        super(desc)
         this.root = root;
         this.lens = view;
     }
@@ -57,15 +58,16 @@ class LensedAtom<R, V> extends Atom<V> {
     }
 
     on(event: PropertyEventType, observer: Observer<V>) {
+        const unsub = this.root.on("change", newRoot => {
+            statefulObserver(this.lens.get(newRoot))
+        })     
         let initial = this.get()
         const statefulObserver = duplicateSkippingObserver(initial, observer)
         
         if (event === "value") {
             observer(initial)
         }
-        return this.root.on("change", newRoot => {
-            statefulObserver(this.lens.get(newRoot))
-        })       
+        return unsub  
     }
 }
 
@@ -73,8 +75,8 @@ class DependentAtom<V> extends Atom<V> {
     private input: Property<V>;
     private onChange: (updatedValue: V) => void;
 
-    constructor(input: Property<V>, onChange: (updatedValue: V) => void) {
-        super()
+    constructor(desc: string, input: Property<V>, onChange: (updatedValue: V) => void) {
+        super(desc)
         this.input = input;
         this.onChange = onChange;
     }
@@ -97,28 +99,27 @@ class DependentAtom<V> extends Atom<V> {
 }
 
 export class StatefulDependentAtom<V> extends Atom<V> {
-    private dispatcher = new Dispatcher<V, PropertyEventType>();
+    private dispatcher = new Dispatcher<PropertyEvents<V>>();
     private onChange: (updatedValue: V) => void;
-    private value: V | OutOfScope = outOfScope
+    private value: V | OutOfScope = beforeScope
 
-    constructor(scope: Scope, source: StatefulPropertySource<V>, onChange: (updatedValue: V) => void) {
-        super()
+    constructor(desc: string, scope: Scope, source: StatefulPropertySource<V>, onChange: (updatedValue: V) => void) {
+        super(desc)
         this.onChange = onChange;
+        let unsub: Unsub | null = null
         const meAsObserver = (newValue: V) => {
             this.value = newValue
             this.dispatcher.dispatch("change", newValue)
             this.dispatcher.dispatch("value", newValue)
         }
-        scope.on("in", () => {
-            this.value = source(meAsObserver);
-        })
-        scope.on("out", () => {
-            this.value = outOfScope;
-        })
+        scope(
+            () => [this.value, unsub] = source(meAsObserver), 
+            () => { this.value = afterScope; unsub!() }, 
+            this.dispatcher
+        )
     }
     get(): V {
-        if (this.value === outOfScope) throw Error("Atom out of scope");
-        return this.value as V;
+        return checkScope(this, this.value)
     }
     set(newValue: V) {
         this.onChange(newValue)
@@ -127,10 +128,11 @@ export class StatefulDependentAtom<V> extends Atom<V> {
         this.set(fn(this.get()))
     }
     on(event: PropertyEventType, observer: Observer<V>) {
+        const unsub = this.dispatcher.on(event, observer)
         if (event === "value") {
             observer(this.get())
         }
-        return this.dispatcher.on(event, observer)
+        return unsub
     }    
 }
 
@@ -138,12 +140,12 @@ export function view<A, K extends keyof A>(a: Atom<A>, key: K): K extends number
 export function view<A, B>(a: Atom<A>, lens: L.Lens<A, B>): Atom<B>;
 export function view<A, B>(atom: Atom<A>, view: any): Atom<B> {
     if (typeof view === "string") {
-        return new LensedAtom<A, B>(atom, L.prop<any, any>(view))
+        return new LensedAtom<A, B>(atom + "." + view, atom, L.prop<any, any>(view))
     }
     else if (typeof view === "number") {                        
-        return new LensedAtom(atom, L.item(view as number) as any)
+        return new LensedAtom(atom + `[${view}]`, atom, L.item(view as number) as any)
     } else {
-        return new LensedAtom(atom, view)
+        return new LensedAtom(atom + ".view(..)", atom, view)
     }   
 }
 export function atom<A>(initial: A): Atom<A>;
@@ -164,9 +166,9 @@ export function atom<A>(input: Property<A>, onChange: (updatedValue: A) => void)
 
 export function atom<A>(x: any, y?: any): Atom<A> {
     if (arguments.length == 1) {
-        return new RootAtom<A>(x)
+        return new RootAtom<A>("RootAtom", x)
     } else {
-        return new DependentAtom(x, y)
+        return new DependentAtom(`DependentAtom(${x})`, x, y)
     }
 }
 
@@ -177,12 +179,12 @@ export function freezeUnless<A>(scope: Scope, atom: Atom<A>, freezeUnlessFn: (a:
         if (!freezeUnlessFn(initial)) {
             throw Error("Cannot create frozen atom with initial value not passing the given filter function")
         }
-        atom.on("change", newValue => {
+        const unsub = atom.on("change", newValue => {
             if (freezeUnlessFn(newValue)) {
                 observer(newValue)
             }
         })
-        return atom.get()
+        return [atom.get(), unsub] as any
     }
-    return new StatefulDependentAtom(scope, source, onChange)
+    return new StatefulDependentAtom(atom + ".freezeUnless(fn)", scope, source, onChange)
 }

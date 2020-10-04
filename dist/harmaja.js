@@ -42,29 +42,6 @@ var __spread = (this && this.__spread) || function () {
 };
 import * as B from "./eggs/eggs";
 var transientStateStack = [];
-var ComponentScope = /** @class */ (function () {
-    function ComponentScope(mountE, unmountE) {
-        this.mountE = mountE;
-        this.unmountE = unmountE;
-    }
-    ComponentScope.prototype.on = function (event, observer) {
-        if (event === "in") {
-            if (this.controller) {
-                var state = getNodeState(this.controller.currentElements[0]);
-                if (state.mounted) {
-                    observer();
-                    return function () { };
-                }
-            }
-            return this.mountE.forEach(observer);
-        }
-        if (event === "out") {
-            return this.unmountE.forEach(observer);
-        }
-        throw Error("Unknown event: " + event);
-    };
-    return ComponentScope;
-}());
 /**
  *  Element constructor used by JSX.
  */
@@ -116,7 +93,7 @@ function composeControllers(c1, c2) {
 var handleMounts = function (transientState) { return function (controller) {
     var e_1, _a;
     if (transientState.scope) {
-        transientState.scope.controller = controller;
+        transientState.mountsController = controller;
     }
     if (transientState.mountCallbacks)
         try {
@@ -378,7 +355,19 @@ export function unmountEvent() {
 export function componentScope() {
     var transientState = getTransientState("unmountEvent");
     if (!transientState.scope) {
-        transientState.scope = new ComponentScope(mountEvent(), unmountEvent());
+        var unmountE_1 = unmountEvent();
+        var mountE_1 = mountEvent();
+        transientState.scope = function (onIn, onOut, dispatcher) {
+            unmountE_1.forEach(onOut);
+            if (transientState.mountsController) {
+                var state = getNodeState(transientState.mountsController.currentElements[0]);
+                if (state.mounted) {
+                    onIn();
+                    return;
+                }
+            }
+            mountE_1.forEach(onIn);
+        };
     }
     return transientState.scope;
 }

@@ -9,7 +9,7 @@ export function bus<V>(): Bus<V> {
 // Note that we could use a Dispatcher as Bus, except for prototype inheritance of EventStream on the way
 class BusImpl<V> extends BaseEventStream<V> implements Bus<V> {
     constructor() {
-        super()
+        super("bus")
         this.push = this.push.bind(this)
     }
 

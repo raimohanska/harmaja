@@ -1,34 +1,57 @@
 import { Dispatcher } from "./dispatcher";
-export var GlobalScope = {
-    on: function (event, observer) {
-        if (event === "in") {
-            observer();
-        }
-        return function () { };
-    }
+export var GlobalScope = function (onIn, onOut, dispatcher) {
+    onIn();
 };
 export function scope() {
     var started = false;
-    var dispatcher = new Dispatcher();
+    var scopeDispatcher = new Dispatcher();
     return {
-        on: function (event, observer) {
-            if (event === "in" && started) {
-                observer();
-                return function () { };
+        apply: function (onIn, onOut, dispatcher) {
+            if (started) {
+                onIn();
             }
             else {
-                return dispatcher.on(event, observer);
+                scopeDispatcher.on("in", onIn);
             }
+            scopeDispatcher.on("out", onOut);
         },
         start: function () {
             started = true;
-            dispatcher.dispatch("in");
+            scopeDispatcher.dispatch("in", undefined);
         },
         end: function () {
             started = false;
-            dispatcher.dispatch("out");
+            scopeDispatcher.dispatch("out", undefined);
         }
     };
 }
-export var outOfScope = {};
+/**
+ *  Subscribe to source when there are observers. Use with care!
+ **/
+export var autoScope = function (onIn, onOut, dispatcher) {
+    if (dispatcher.hasObservers()) {
+        onIn();
+    }
+    var ended = false;
+    dispatcher.onObserverCount(function (count) {
+        if (count > 0) {
+            if (ended)
+                throw new Error("autoScope reactivation attempted");
+            onIn();
+        }
+        else {
+            ended = true;
+            onOut();
+        }
+    });
+};
+export var beforeScope = {};
+export var afterScope = {};
+export function checkScope(thing, value) {
+    if (value === beforeScope)
+        throw Error(thing + " not yet in scope");
+    if (value === afterScope)
+        throw Error(thing + " not yet in scope");
+    return value;
+}
 //# sourceMappingURL=scope.js.map

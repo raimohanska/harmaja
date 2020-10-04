@@ -1,46 +1,68 @@
-import { Observer, Unsub } from "./abstractions"
+import { Callback } from "../harmaja"
 import { Dispatcher } from "./dispatcher"
 
-export interface Scope {
-    on(event: "in" | "out", observer: Observer<void>): Unsub    
-}
+export type Scope = (onIn: Callback, onOut: Callback, dispatcher: Dispatcher<any>) => void
 
-export interface MutableScope extends Scope {
+export interface MutableScope {
+    apply: Scope;
     start(): void;
     end(): void;
 }
 
-export const GlobalScope: Scope = {
-    on(event: "in" | "out", observer: Observer<void>) {
-        if (event === "in") {
-            observer()
-        }
-        return () => {}
-    }
+export const GlobalScope: Scope = (onIn: Callback, onOut: Callback, dispatcher: Dispatcher<any>) => {
+    onIn()
 }
+
+type ScopeEvents = { "in": void, "out": void }
 
 export function scope(): MutableScope {
     let started = false
-    const dispatcher = new Dispatcher<void, "in" | "out">();
+    const scopeDispatcher = new Dispatcher<ScopeEvents>();
     return {
-        on(event: "in" | "out", observer: Observer<void>) {
-            if (event === "in" && started) {
-                observer()
-                return () => {}
+        apply(onIn: Callback, onOut: Callback, dispatcher: Dispatcher<any>) {
+            if (started) {
+                onIn()
             } else {
-                return dispatcher.on(event, observer)
+                scopeDispatcher.on("in", onIn)
             }
-        },
+            scopeDispatcher.on("out", onOut)
+        },        
         start() {
             started = true
-            dispatcher.dispatch("in")
+            scopeDispatcher.dispatch("in", undefined)
         },
         end() {
             started = false
-            dispatcher.dispatch("out")
+            scopeDispatcher.dispatch("out", undefined)
         }
     }
 }
 
-export const outOfScope = {}
-export type OutOfScope = typeof outOfScope
+/**
+ *  Subscribe to source when there are observers. Use with care! 
+ **/
+export const autoScope: Scope = (onIn: Callback, onOut: Callback, dispatcher: Dispatcher<any>) => {
+    if (dispatcher.hasObservers()) {
+        onIn()
+    }
+    let ended = false
+    dispatcher.onObserverCount(count => {
+        if (count > 0) {
+            if (ended) throw new Error("autoScope reactivation attempted")
+            onIn()
+        } else {
+            ended = true
+            onOut()
+        }
+    })
+}
+
+export const beforeScope = {}
+export const afterScope = {}
+export type OutOfScope = (typeof beforeScope) | (typeof afterScope)
+
+export function checkScope<V>(thing: any, value: V | OutOfScope): V {
+    if (value === beforeScope) throw Error(`${thing} not yet in scope`);
+    if (value === afterScope) throw Error(`${thing} not yet in scope`);
+    return value as V
+}

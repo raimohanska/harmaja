@@ -1,5 +1,6 @@
-import { LowLevelApi as H, componentScope } from "./harmaja";
+import { LowLevelApi as H } from "./harmaja";
 import * as B from "./eggs/eggs";
+import { autoScope } from "./eggs/eggs";
 export function ListView(props) {
     var observable = ("atom" in props) ? props.atom : props.observable;
     var _a = props.getKey, key = _a === void 0 ? (function (x) { return x; }) : _a;
@@ -9,7 +10,7 @@ export function ListView(props) {
             getSingleNodeOrFail(newNodes); // Verify that a child node is replaced by exactly one child node.
         }
     };
-    var scope = componentScope();
+    var scope = autoScope;
     return H.createController([H.createPlaceholder()], function (controller) { return observable.forEach(function (nextValues) {
         if (!currentValues) {
             if (nextValues.length) {
@@ -100,7 +101,9 @@ export function ListView(props) {
         if ("renderObservable" in props) {
             // TODO: is filter necessary
             // TODO: use pipe
-            return props.renderObservable(key, B.filter(scope, B.map(observable, function (items) { return items[index]; }), function (item) { return item !== undefined; }));
+            var mapped = B.map(observable, function (items) { return items[index]; });
+            var filtered = B.filter(scope, mapped, function (item) { return item !== undefined; });
+            return props.renderObservable(key, filtered);
         }
         return props.renderItem(values[index]);
     }

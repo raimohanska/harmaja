@@ -6,11 +6,11 @@ export declare class StatefulDependentAtom<V> extends Atom<V> {
     private dispatcher;
     private onChange;
     private value;
-    constructor(scope: Scope, source: StatefulPropertySource<V>, onChange: (updatedValue: V) => void);
+    constructor(desc: string, scope: Scope, source: StatefulPropertySource<V>, onChange: (updatedValue: V) => void);
     get(): V;
     set(newValue: V): void;
     modify(fn: (old: V) => V): void;
-    on(event: PropertyEventType, observer: Observer<V>): import("./abstractions").Unsub;
+    on(event: PropertyEventType, observer: Observer<V>): import("..").Callback;
 }
 export declare function view<A, K extends keyof A>(a: Atom<A>, key: K): K extends number ? Atom<A[K] | undefined> : Atom<A[K]>;
 export declare function view<A, B>(a: Atom<A>, lens: L.Lens<A, B>): Atom<B>;

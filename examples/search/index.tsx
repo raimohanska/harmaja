@@ -1,4 +1,4 @@
-import * as B from "baconjs"
+import * as B from "../../src/eggs/eggs"
 import { h, mount, ListView, atom, Atom } from "../../src/index"
 import { search } from "./search-engine"
 

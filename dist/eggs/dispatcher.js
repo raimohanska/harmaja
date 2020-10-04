@@ -9,15 +9,17 @@ var __values = (this && this.__values) || function(o) {
     };
     throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
 };
+var meta = "__meta";
 var Dispatcher = /** @class */ (function () {
     function Dispatcher() {
-        this.subscribers = {};
+        this.observers = {};
+        this.count = 0;
     }
     Dispatcher.prototype.dispatch = function (key, value) {
         var e_1, _a;
-        if (this.subscribers[key])
+        if (this.observers[key])
             try {
-                for (var _b = __values(this.subscribers[key]), _c = _b.next(); !_c.done; _c = _b.next()) {
+                for (var _b = __values(this.observers[key]), _c = _b.next(); !_c.done; _c = _b.next()) {
                     var s = _c.value;
                     s(value);
                 }
@@ -32,21 +34,44 @@ var Dispatcher = /** @class */ (function () {
     };
     Dispatcher.prototype.on = function (key, subscriber) {
         var _this = this;
-        if (!this.subscribers[key])
-            this.subscribers[key] = [];
-        this.subscribers[key].push(subscriber);
+        var _a;
+        if (!this.observers[key])
+            this.observers[key] = [];
+        if ((_a = this.observers[key]) === null || _a === void 0 ? void 0 : _a.includes(subscriber)) {
+            console.warn("Already subscribed");
+        }
+        this.observers[key].push(subscriber);
+        if (key !== meta) {
+            this.count++;
+            if (this.count == 1) {
+                this.dispatch(meta, 1);
+            }
+        }
         return function () { return _this.off(key, subscriber); };
     };
     Dispatcher.prototype.off = function (key, subscriber) {
-        if (!this.subscribers[key])
+        var _a;
+        if (!this.observers[key])
             return;
-        var index = this.subscribers[key].indexOf(subscriber);
+        var index = this.observers[key].indexOf(subscriber);
         if (index >= 0) {
-            this.subscribers[key].splice(index, 1);
+            this.observers[key].splice(index, 1);
+            if (((_a = this.observers.key) === null || _a === void 0 ? void 0 : _a.length) === 0) {
+                delete this.observers[key];
+            }
+            if (key !== meta) {
+                this.count--;
+                if (this.count == 0) {
+                    this.dispatch(meta, 0);
+                }
+            }
         }
     };
-    Dispatcher.prototype.hasObservers = function (key) {
-        return this.subscribers[key] !== undefined && this.subscribers[key].length > 0;
+    Dispatcher.prototype.onObserverCount = function (subscriber) {
+        return this.on(meta, subscriber);
+    };
+    Dispatcher.prototype.hasObservers = function () {
+        return this.count > 0;
     };
     return Dispatcher;
 }());

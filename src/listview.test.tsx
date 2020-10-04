@@ -19,6 +19,8 @@ describe("Listview", () => {
         expect(getHtml(el)).toEqual("<ul></ul>")
         set(testItems)
         expect(getHtml(el)).toEqual("<ul><li>first</li></ul>")
+        set(testItems2)
+        expect(getHtml(el)).toEqual("<ul><li>first</li><li>second</li></ul>")
         return el
     }))
 
@@ -33,9 +35,14 @@ describe("Listview", () => {
         it("Non-empty -> empty -> Non-empty", () => testRender(testItems, (value, set) => {
             const el = mounted(<ul><ListView
                 observable={value}
-                renderObservable={(key, item) => <li>{map(item, i => i.name)}</li>}
+                renderObservable={(key, item) => { 
+                    return <li>{map(item, i => i.name)}</li>}}
                 getKey={item => item.id}
             /></ul>)
+            expect(getHtml(el)).toEqual("<ul><li>first</li></ul>")
+            set(testItems2)
+            expect(getHtml(el)).toEqual("<ul><li>first</li><li>second</li></ul>")
+            set(testItems)
             expect(getHtml(el)).toEqual("<ul><li>first</li></ul>")
             set([])
             expect(getHtml(el)).toEqual("<ul></ul>")
@@ -67,6 +74,8 @@ describe("Listview", () => {
             return el
         }))
     })
+
+    // TODO renderAtom test
 
     describe("Observable-in-ListView", () => {
         it("Works", () => testRender(1, (value, set) => {

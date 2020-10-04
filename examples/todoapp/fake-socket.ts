@@ -1,4 +1,4 @@
-import * as B from "baconjs";
+import * as B from "../../src/eggs/eggs";
 
 // Fake server implementation
 

@@ -8,13 +8,12 @@ export function testRender<T>(init: T, test: (property: B.Property<T>, set: (v: 
     const bus = B.bus<T>()
     const testScope = scope() 
     testScope.start()
-    const property = toProperty(testScope, bus, init)
+    const property = toProperty(testScope.apply, bus, init)
     const element = test(property, bus.push)
     unmount(element as HarmajaStaticOutput)
     // Verify that all subscribers are removed on unmount
-    expect((property as any).dispatcher.hasObservers("value")).toEqual(false)
-    expect((property as any).dispatcher.hasObservers("change")).toEqual(false)
     testScope.end()
+    expect((property as any).dispatcher.hasObservers()).toEqual(false)
 }
 
 export function mounted(element: H.HarmajaOutput) {    

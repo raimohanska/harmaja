@@ -1,6 +1,6 @@
 import { Dispatcher } from "./eggs/dispatcher"
 import * as B from "./eggs/eggs"
-import { Observer } from "./eggs/eggs"
+import { Observer, Scope } from "./eggs/eggs"
 
 export type HarmajaComponent = (props: HarmajaProps) => HarmajaOutput
 export type JSXElementType = string | HarmajaComponent
@@ -21,33 +21,8 @@ type TransientState = {
     mountE?: B.EventStream<void>,
     unmountCallbacks?: Callback[], 
     unmountE?: B.EventStream<void>,
-    scope?: ComponentScope
-}
-
-class ComponentScope implements B.Scope {
-    controller?: NodeController
-    mountE: B.EventStream<void>; 
-    unmountE: B.EventStream<void>;
-    constructor(mountE: B.EventStream<void>, unmountE: B.EventStream<void>) {
-        this.mountE = mountE;
-        this.unmountE = unmountE;
-    }
-    on(event: "in" | "out", observer: Observer<void>) {
-        if (event === "in") {
-            if (this.controller) {
-                const state = getNodeState(this.controller.currentElements[0])
-                if (state.mounted) {
-                    observer()
-                    return () => {}
-                }
-            }
-            return this.mountE.forEach(observer)
-        }
-        if (event === "out") {
-            return this.unmountE.forEach(observer)
-        }
-        throw Error("Unknown event: " + event)
-    }
+    scope?: Scope,
+    mountsController?: NodeController
 }
 
 /**
@@ -93,7 +68,7 @@ function composeControllers(c1: NodeControllerFn, c2: NodeControllerFn): NodeCon
 
 const handleMounts = (transientState: TransientState) => (controller: NodeController) => {
     if (transientState.scope) {
-        transientState.scope.controller = controller
+        transientState.mountsController = controller
     }
     if (transientState.mountCallbacks) for (const callback of transientState.mountCallbacks) {
         callback()                
@@ -347,7 +322,19 @@ export function unmountEvent(): B.EventStream<void> {
 export function componentScope(): B.Scope {
     const transientState = getTransientState("unmountEvent")
     if (!transientState.scope) {
-        transientState.scope = new ComponentScope(mountEvent(), unmountEvent())
+        const unmountE = unmountEvent()
+        const mountE = mountEvent()
+        transientState.scope = (onIn: Callback, onOut: Callback, dispatcher: Dispatcher<any>) => {
+            unmountE.forEach(onOut)
+            if (transientState.mountsController) {
+                const state = getNodeState(transientState.mountsController.currentElements[0])
+                if (state.mounted) {
+                    onIn()
+                    return
+                }
+            }
+            mountE.forEach(onIn)
+        }
     }
     return transientState.scope
 }

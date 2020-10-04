@@ -1,16 +1,16 @@
-import { Observer, PropertyEventType, Property, EventStream } from "./abstractions";
+import { Observer, PropertyEventType, Property, EventStream, PropertyEvents, Unsub } from "./abstractions";
 import { Dispatcher } from "./dispatcher";
 import { Scope } from "./scope";
 export declare abstract class StatefulPropertyBase<V> extends Property<V> {
-    protected dispatcher: Dispatcher<V, PropertyEventType>;
+    protected dispatcher: Dispatcher<PropertyEvents<V>>;
     abstract get(): V;
-    constructor();
-    on(event: PropertyEventType, observer: Observer<V>): import("./abstractions").Unsub;
+    constructor(desc: string);
+    on(event: PropertyEventType, observer: Observer<V>): import("..").Callback;
 }
 export declare class DerivedProperty<V> extends Property<V> {
     private sources;
     private combinator;
-    constructor(sources: Property<any>[], combinator: (...inputs: any[]) => V);
+    constructor(desc: string, sources: Property<any>[], combinator: (...inputs: any[]) => V);
     get(): V;
     private getCurrentArray;
     on(event: PropertyEventType, observer: Observer<V>): () => void;
@@ -19,10 +19,10 @@ export declare class DerivedProperty<V> extends Property<V> {
  *  Input source for a StatefulProperty. Returns initial value and supplies changes to observer.
  *  Must skip duplicates!
  **/
-export declare type StatefulPropertySource<V> = (propertyAsChangeObserver: Observer<V>) => V;
+export declare type StatefulPropertySource<V> = (propertyAsChangeObserver: Observer<V>) => [V, Unsub];
 export declare class StatefulProperty<V> extends StatefulPropertyBase<V> {
     private value;
-    constructor(scope: Scope, source: StatefulPropertySource<V>);
+    constructor(desc: string, scope: Scope, source: StatefulPropertySource<V>);
     get(): V;
 }
 export declare function map<A, B>(prop: Property<A>, fn: (value: A) => B): Property<B>;

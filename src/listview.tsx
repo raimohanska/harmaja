@@ -1,5 +1,6 @@
 import { LowLevelApi as H, HarmajaOutput, DOMNode, NodeController, debug, HarmajaStaticOutput, componentScope } from "./harmaja"
 import * as B from "./eggs/eggs"
+import { autoScope } from "./eggs/eggs"
 
 export type ListViewProps<A, K = A> = {
     observable: B.Property<A[]>, 
@@ -23,7 +24,7 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
             getSingleNodeOrFail(newNodes) // Verify that a child node is replaced by exactly one child node.
         }
     }
-    const scope = componentScope()
+    const scope = autoScope
 
     return H.createController([H.createPlaceholder()], (controller) => observable.forEach((nextValues: A[]) => {
         if (!currentValues) {
@@ -112,7 +113,9 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
         if ("renderObservable" in props) {
             // TODO: is filter necessary
             // TODO: use pipe
-            return props.renderObservable(key, B.filter(scope, B.map(observable, items => items[index]), item => item !== undefined))                   
+            const mapped = B.map(observable, items => items[index])
+            const filtered = B.filter(scope, mapped, item => item !== undefined)
+            return props.renderObservable(key, filtered)                   
         }
         return props.renderItem(values[index])            
     }

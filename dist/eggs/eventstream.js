@@ -16,8 +16,8 @@ import { Dispatcher } from "./dispatcher";
 // Note that we could use a Dispatcher as Bus, except for prototype inheritance of EventStream on the way
 var BaseEventStream = /** @class */ (function (_super) {
     __extends(BaseEventStream, _super);
-    function BaseEventStream() {
-        var _this = _super.call(this) || this;
+    function BaseEventStream(desc) {
+        var _this = _super.call(this, desc) || this;
         _this.dispatcher = new Dispatcher();
         return _this;
     }
@@ -28,7 +28,7 @@ var BaseEventStream = /** @class */ (function (_super) {
 }(EventStream));
 export { BaseEventStream };
 export function never() {
-    return new BaseEventStream();
+    return new BaseEventStream("never");
 }
 export function interval(scope, delay, value) {
     return new Interval(scope, delay, value);
@@ -36,14 +36,9 @@ export function interval(scope, delay, value) {
 var Interval = /** @class */ (function (_super) {
     __extends(Interval, _super);
     function Interval(scope, delay, value) {
-        var _this = _super.call(this) || this;
+        var _this = _super.call(this, "interval(" + delay + ", fn)") || this;
         var interval;
-        scope.on("in", function () {
-            interval = setInterval(function () { return _this.dispatcher.dispatch("value", value); }, delay);
-        });
-        scope.on("out", function () {
-            clearInterval(interval);
-        });
+        scope(function () { return interval = setInterval(function () { return _this.dispatcher.dispatch("value", value); }, delay); }, function () { return clearInterval(interval); }, _this.dispatcher);
         return _this;
     }
     return Interval;

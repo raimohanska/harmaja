@@ -1,4 +1,4 @@
-import * as B from "baconjs"
+import * as B from "../../src/eggs/eggs"
 
 import { h, mount, ListView, Atom, atom } from "../../src/index"
 import itemAddedFromSocketE from "./fake-socket";
@@ -21,9 +21,9 @@ function todoItem(name: string, id: number = idCounter++, completed: boolean = f
 const initialItems = ["learn typescript", "fix handbrake"].map(s => todoItem(s));
 
 // Events/actions
-const addItemBus = new B.Bus<string>();
-const removeItemBus = new B.Bus<Id>();
-const updateItemBus = new B.Bus<TodoItem>();
+const addItemBus = B.bus<string>();
+const removeItemBus = B.bus<Id>();
+const updateItemBus =  B.bus<TodoItem>();
 // New items event stream is merged from use events and events from "server"
 // Merging two streams of strings and finally mapping them into TodoItem objects
 const newItemE = itemAddedFromSocketE.merge(addItemBus).map(todoItem)
@@ -74,8 +74,8 @@ const ItemView = ({ id, item }: { id: number, item: B.Property<TodoItem> }) => 
   
   return (
     <span>
-      <span className="name"><TextInput value={itemAtom.view("name")} /></span>
-      <Checkbox checked={itemAtom.view("completed")}/>
+      <span className="name"><TextInput value={B.view(itemAtom, "name")} /></span>
+      <Checkbox checked={B.view(itemAtom, "completed")}/>
       <a className="removeItem" onClick={() => removeItemBus.push(id)}>
         remove
       </a>
@@ -117,7 +117,7 @@ const Checkbox = (props: { checked: Atom<boolean> } & any) => {
   };
 
 const JsonView = ({ json }: { json: B.Property<any>}) => {
-  return <pre>{json.map(st => JSON.stringify(st, null, 2))}</pre>;
+  return <pre>{B.map(json, st => JSON.stringify(st, null, 2))}</pre>;
 };
 
 mount(<App/>, document.getElementById("root")!)

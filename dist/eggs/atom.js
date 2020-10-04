@@ -11,24 +11,41 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
+var __read = (this && this.__read) || function (o, n) {
+    var m = typeof Symbol === "function" && o[Symbol.iterator];
+    if (!m) return o;
+    var i = m.call(o), r, ar = [], e;
+    try {
+        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
+    }
+    catch (error) { e = { error: error }; }
+    finally {
+        try {
+            if (r && !r.done && (m = i["return"])) m.call(i);
+        }
+        finally { if (e) throw e.error; }
+    }
+    return ar;
+};
 import { Atom } from "./abstractions";
 import { duplicateSkippingObserver } from "./util";
 import * as L from "../lens";
 import { Dispatcher } from "./dispatcher";
-import { outOfScope } from "./scope";
+import { afterScope, beforeScope, checkScope } from "./scope";
 var RootAtom = /** @class */ (function (_super) {
     __extends(RootAtom, _super);
-    function RootAtom(initialValue) {
-        var _this = _super.call(this) || this;
+    function RootAtom(desc, initialValue) {
+        var _this = _super.call(this, desc) || this;
         _this.dispatcher = new Dispatcher();
         _this.value = initialValue;
         return _this;
     }
     RootAtom.prototype.on = function (event, observer) {
+        var unsub = this.dispatcher.on(event, observer);
         if (event === "value") {
             observer(this.get());
         }
-        return this.dispatcher.on(event, observer);
+        return unsub;
     };
     RootAtom.prototype.get = function () {
         return this.value;
@@ -45,8 +62,8 @@ var RootAtom = /** @class */ (function (_super) {
 }(Atom));
 var LensedAtom = /** @class */ (function (_super) {
     __extends(LensedAtom, _super);
-    function LensedAtom(root, view) {
-        var _this = _super.call(this) || this;
+    function LensedAtom(desc, root, view) {
+        var _this = _super.call(this, desc) || this;
         _this.root = root;
         _this.lens = view;
         return _this;
@@ -63,21 +80,22 @@ var LensedAtom = /** @class */ (function (_super) {
     };
     LensedAtom.prototype.on = function (event, observer) {
         var _this = this;
+        var unsub = this.root.on("change", function (newRoot) {
+            statefulObserver(_this.lens.get(newRoot));
+        });
         var initial = this.get();
         var statefulObserver = duplicateSkippingObserver(initial, observer);
         if (event === "value") {
             observer(initial);
         }
-        return this.root.on("change", function (newRoot) {
-            statefulObserver(_this.lens.get(newRoot));
-        });
+        return unsub;
     };
     return LensedAtom;
 }(Atom));
 var DependentAtom = /** @class */ (function (_super) {
     __extends(DependentAtom, _super);
-    function DependentAtom(input, onChange) {
-        var _this = _super.call(this) || this;
+    function DependentAtom(desc, input, onChange) {
+        var _this = _super.call(this, desc) || this;
         _this.input = input;
         _this.onChange = onChange;
         return _this;
@@ -98,28 +116,25 @@ var DependentAtom = /** @class */ (function (_super) {
 }(Atom));
 var StatefulDependentAtom = /** @class */ (function (_super) {
     __extends(StatefulDependentAtom, _super);
-    function StatefulDependentAtom(scope, source, onChange) {
-        var _this = _super.call(this) || this;
+    function StatefulDependentAtom(desc, scope, source, onChange) {
+        var _this = _super.call(this, desc) || this;
         _this.dispatcher = new Dispatcher();
-        _this.value = outOfScope;
+        _this.value = beforeScope;
         _this.onChange = onChange;
+        var unsub = null;
         var meAsObserver = function (newValue) {
             _this.value = newValue;
             _this.dispatcher.dispatch("change", newValue);
             _this.dispatcher.dispatch("value", newValue);
         };
-        scope.on("in", function () {
-            _this.value = source(meAsObserver);
-        });
-        scope.on("out", function () {
-            _this.value = outOfScope;
-        });
+        scope(function () {
+            var _a, _b;
+            return _a = source(meAsObserver), _b = __read(_a, 2), _this.value = _b[0], unsub = _b[1], _a;
+        }, function () { _this.value = afterScope; unsub(); }, _this.dispatcher);
         return _this;
     }
     StatefulDependentAtom.prototype.get = function () {
-        if (this.value === outOfScope)
-            throw Error("Atom out of scope");
-        return this.value;
+        return checkScope(this, this.value);
     };
     StatefulDependentAtom.prototype.set = function (newValue) {
         this.onChange(newValue);
@@ -128,31 +143,32 @@ var StatefulDependentAtom = /** @class */ (function (_super) {
         this.set(fn(this.get()));
     };
     StatefulDependentAtom.prototype.on = function (event, observer) {
+        var unsub = this.dispatcher.on(event, observer);
         if (event === "value") {
             observer(this.get());
         }
-        return this.dispatcher.on(event, observer);
+        return unsub;
     };
     return StatefulDependentAtom;
 }(Atom));
 export { StatefulDependentAtom };
 export function view(atom, view) {
     if (typeof view === "string") {
-        return new LensedAtom(atom, L.prop(view));
+        return new LensedAtom(atom + "." + view, atom, L.prop(view));
     }
     else if (typeof view === "number") {
-        return new LensedAtom(atom, L.item(view));
+        return new LensedAtom(atom + ("[" + view + "]"), atom, L.item(view));
     }
     else {
-        return new LensedAtom(atom, view);
+        return new LensedAtom(atom + ".view(..)", atom, view);
     }
 }
 export function atom(x, y) {
     if (arguments.length == 1) {
-        return new RootAtom(x);
+        return new RootAtom("RootAtom", x);
     }
     else {
-        return new DependentAtom(x, y);
+        return new DependentAtom("DependentAtom(" + x + ")", x, y);
     }
 }
 export function freezeUnless(scope, atom, freezeUnlessFn) {
@@ -162,13 +178,13 @@ export function freezeUnless(scope, atom, freezeUnlessFn) {
         if (!freezeUnlessFn(initial)) {
             throw Error("Cannot create frozen atom with initial value not passing the given filter function");
         }
-        atom.on("change", function (newValue) {
+        var unsub = atom.on("change", function (newValue) {
             if (freezeUnlessFn(newValue)) {
                 observer(newValue);
             }
         });
-        return atom.get();
+        return [atom.get(), unsub];
     };
-    return new StatefulDependentAtom(scope, source, onChange);
+    return new StatefulDependentAtom(atom + ".freezeUnless(fn)", scope, source, onChange);
 }
 //# sourceMappingURL=atom.js.map

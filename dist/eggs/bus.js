@@ -19,7 +19,7 @@ export function bus() {
 var BusImpl = /** @class */ (function (_super) {
     __extends(BusImpl, _super);
     function BusImpl() {
-        var _this = _super.call(this) || this;
+        var _this = _super.call(this, "bus") || this;
         _this.push = _this.push.bind(_this);
         return _this;
     }
