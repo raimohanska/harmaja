@@ -32,6 +32,7 @@
     "build": "tsc",
     "build:watch": "tsc --watch",
     "test": "jest",
-    "test:watch": "jest --watchAll"
+    "test:watch": "jest --watchAll",
+    "release": "scripts/release"
   }
 }
