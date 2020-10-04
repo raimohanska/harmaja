@@ -34,7 +34,7 @@ var __spread = (this && this.__spread) || function () {
 import { Property } from "./abstractions";
 import { Dispatcher } from "./dispatcher";
 import { never } from "./eventstream";
-import { afterScope, beforeScope, checkScope, GlobalScope } from "./scope";
+import { afterScope, beforeScope, checkScope, globalScope } from "./scope";
 import { duplicateSkippingObserver } from "./util";
 var StatefulPropertyBase = /** @class */ (function (_super) {
     __extends(StatefulPropertyBase, _super);
@@ -152,6 +152,6 @@ export function scan(scope, stream, initial, fn) {
     return new StatefulProperty(stream + ".scan(fn)", scope, source);
 }
 export function constant(value) {
-    return toProperty(GlobalScope, never(), value);
+    return toProperty(globalScope, never(), value);
 }
 //# sourceMappingURL=property.js.map

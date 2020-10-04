@@ -1,6 +1,6 @@
 import * as B from "./eggs"
 import * as A from "./atom"
-import { GlobalScope, toProperty } from "./eggs"
+import { globalScope, toProperty } from "./eggs"
 
 describe("Property", () => {
     describe("Basics", () => {
@@ -12,7 +12,7 @@ describe("Property", () => {
 
     it("scan", () => {
         const b = B.bus<number>()
-        const prop = B.scan(B.GlobalScope, b, 0, (a, b) => a + b)
+        const prop = B.scan(B.globalScope, b, 0, (a, b) => a + b)
         const values: number[] = []
         const valuesChange: number[] = []
         prop.forEach(v => values.push(v))

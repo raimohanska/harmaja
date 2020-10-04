@@ -1,5 +1,5 @@
 import { Dispatcher } from "./dispatcher";
-export var GlobalScope = function (onIn, onOut, dispatcher) {
+export var globalScope = function (onIn, onOut, dispatcher) {
     onIn();
 };
 export function scope() {

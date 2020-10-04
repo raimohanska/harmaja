@@ -3,11 +3,11 @@ import { h, mount, ListView } from "../../src/index"
 
 const numbers = B.bus<number>()
 
-const multiplier = B.scan(B.GlobalScope, numbers, 1, (a, b) => a + b)
+const multiplier = B.scan(B.globalScope, numbers, 1, (a, b) => a + b)
 
-const interval = B.interval(B.GlobalScope, 3000, 1)
+const interval = B.interval(B.globalScope, 3000, 1)
 interval.log("INTERVAL")
-const ticker = B.scan(B.GlobalScope, interval, 1, (a, b) => a + b)
+const ticker = B.scan(B.globalScope, interval, 1, (a, b) => a + b)
 
 ticker.log("TICK")
 

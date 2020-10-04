@@ -1,7 +1,7 @@
 import { Observer, PropertyEventType, Observable, Property, EventStream, PropertyEvents, Unsub } from "./abstractions";
 import { Dispatcher } from "./dispatcher";
 import { never } from "./eventstream";
-import { afterScope, beforeScope, checkScope, GlobalScope, OutOfScope, Scope } from "./scope";
+import { afterScope, beforeScope, checkScope, globalScope, OutOfScope, Scope } from "./scope";
 import { duplicateSkippingObserver } from "./util";
 
 export abstract class StatefulPropertyBase<V> extends Property<V> {
@@ -134,5 +134,5 @@ export function scan<A, B>(scope: Scope, stream: EventStream<A>, initial: B, fn:
 }
 
 export function constant<A>(value: A): Property<A> {
-    return toProperty(GlobalScope, never(), value)
+    return toProperty(globalScope, never(), value)
 }

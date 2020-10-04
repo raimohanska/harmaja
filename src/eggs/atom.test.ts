@@ -1,6 +1,6 @@
 import * as B from "./eggs"
 import * as A from "./atom"
-import { GlobalScope } from "./eggs"
+import { globalScope } from "./eggs"
 
 describe("Atom", () => {
     describe("Basics", () => {
@@ -44,7 +44,7 @@ describe("Atom", () => {
 
     describe("Freezing", () => {
         it("Can be frozen on unwanted values", () => {
-            const a = A.freezeUnless(GlobalScope, A.atom<string | null>("hello"), a => a !== null)
+            const a = A.freezeUnless(globalScope, A.atom<string | null>("hello"), a => a !== null)
             
             a.set("world")
             expect(a.get()).toEqual("world")
@@ -53,7 +53,7 @@ describe("Atom", () => {
         })
     
         it("Can be frozen on unwanted values (when not getting in between sets)", () => {
-            const atom = A.freezeUnless(GlobalScope, A.atom<string | null>("hello"), a => a !== null)    
+            const atom = A.freezeUnless(globalScope, A.atom<string | null>("hello"), a => a !== null)    
             
             atom.set("world")        
             atom.set(null)
@@ -66,7 +66,7 @@ describe("Atom", () => {
 describe("Dependent Atom", () => {
     it("Works", () => {
         var b = B.bus()
-        var prop = B.toProperty(GlobalScope, b, "1")
+        var prop = B.toProperty(globalScope, b, "1")
         var atom = A.atom(prop, newValue => b.push(newValue))        
         expect(atom.get()).toEqual("1")
         atom.set("2")
@@ -76,9 +76,9 @@ describe("Dependent Atom", () => {
     describe("Freezing", () => {
         it("Can be frozen on unwanted values", () => {
             var b = B.bus()
-            var prop = B.toProperty(GlobalScope, b, "1")
+            var prop = B.toProperty(globalScope, b, "1")
             const root = A.atom(prop, newValue => b.push(newValue))
-            var atom = A.freezeUnless(GlobalScope, root, a => a !== null)
+            var atom = A.freezeUnless(globalScope, root, a => a !== null)
     
             atom.set("world")
             expect(atom.get()).toEqual("world")
@@ -88,9 +88,9 @@ describe("Dependent Atom", () => {
     
         it("Can be frozen on unwanted values (subscriber case)", () => {
             var b = B.bus()
-            var prop = B.toProperty(GlobalScope, b, "1")
+            var prop = B.toProperty(globalScope, b, "1")
             const root = A.atom(prop, newValue => b.push(newValue))
-            var atom = A.freezeUnless(GlobalScope, root, a => a !== null)
+            var atom = A.freezeUnless(globalScope, root, a => a !== null)
     
             atom.set("world")        
             atom.set(null)

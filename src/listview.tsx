@@ -24,7 +24,6 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
             getSingleNodeOrFail(newNodes) // Verify that a child node is replaced by exactly one child node.
         }
     }
-    const scope = autoScope
 
     return H.createController([H.createPlaceholder()], (controller) => observable.forEach((nextValues: A[]) => {
         if (!currentValues) {
@@ -106,7 +105,7 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
     function renderItemRaw(key: K, values: A[], index: number) {
         if ("renderAtom" in props) {
             const nullableAtom = B.view(props.atom, index)
-            const nonNullableAtom = B.freezeUnless(scope, nullableAtom, a => a !== undefined) as B.Atom<A>
+            const nonNullableAtom = B.freezeUnless(autoScope, nullableAtom, a => a !== undefined) as B.Atom<A>
             const removeItem = () => nullableAtom.set(undefined)
             return props.renderAtom(key, nonNullableAtom, removeItem)
         }
@@ -114,7 +113,7 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
             // TODO: is filter necessary
             // TODO: use pipe
             const mapped = B.map(observable, items => items[index])
-            const filtered = B.filter(scope, mapped, item => item !== undefined)
+            const filtered = B.filter(autoScope, mapped, item => item !== undefined)
             return props.renderObservable(key, filtered)                   
         }
         return props.renderItem(values[index])            

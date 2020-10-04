@@ -1,6 +1,12 @@
 import { Callback } from "../harmaja"
 import { Dispatcher } from "./dispatcher"
 
+/**
+ *  Defines the active lifetime of an Observable. You can use 
+ *  - globalScope: the observable will stay active forever, connected to its underlying data sources
+ *  - autoScope: the observable will be active as long as it has observers (will throw if trying to re-activate)
+ *  - custom scopes for, e.g. component lifetimes (between mount/unmount)
+ **/ 
 export type Scope = (onIn: Callback, onOut: Callback, dispatcher: Dispatcher<any>) => void
 
 export interface MutableScope {
@@ -9,7 +15,7 @@ export interface MutableScope {
     end(): void;
 }
 
-export const GlobalScope: Scope = (onIn: Callback, onOut: Callback, dispatcher: Dispatcher<any>) => {
+export const globalScope: Scope = (onIn: Callback, onOut: Callback, dispatcher: Dispatcher<any>) => {
     onIn()
 }
 
