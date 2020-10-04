@@ -1,3 +1,13 @@
+# Experimental branch!
+
+Replacing Bacon.js with an thing called [eggs](src/eggs), to see if I can come with a lib that's better suited for the purpose than Bacon.js.
+TODO:
+
+- Examples: only the first one converted and working
+- Listview test fails, apparently because ComponentScope doesn't work correctly, i.e. goes out of scope when replacing all elements
+- Try in a real-life project
+- Eggs has a very limited set of operators at the moment.
+
 # Harmaja
 
 An experimental web frontend framework named after a lighthouse. It maybe easiest to describe it in contrast to React. 
