@@ -21,12 +21,12 @@ export function atom(x, y) {
             bus_1.push(function () { return a; });
             return theAtom_1;
         };
-        theAtom_1.subscribe(function () { });
-        return mkAtom(theAtom_1, get, modify, set);
+        return mkAtom(theAtom_1, get, modify, set, true);
     }
     else {
         // Create a dependent Atom
         var property_1 = x;
+        var eager = property_1.eager;
         var onChange_1 = y;
         var theAtom_2 = property_1.map(function (x) { return x; }).skipDuplicates(function (a, b) { return a === b; });
         var get_1 = function () { return getCurrentValue(property_1); };
@@ -38,14 +38,14 @@ export function atom(x, y) {
             set_1(f(get_1()));
             return theAtom_2;
         };
-        return mkAtom(theAtom_2, get_1, modify, set_1);
+        return mkAtom(theAtom_2, get_1, modify, set_1, eager);
     }
 }
 export function isAtom(x) {
     return !!((x instanceof B.Property) && x.get && (x.freezeUnless));
 }
 // Note: actually mutates the given observable into an Atom!
-function mkAtom(observable, get, modify, set) {
+function mkAtom(observable, get, modify, set, eager) {
     var theAtom = observable;
     theAtom.set = set;
     theAtom.modify = modify;
@@ -56,6 +56,7 @@ function mkAtom(observable, get, modify, set) {
             throw Error("Cannot create frozen atom with initial value not passing the given filter function");
         }
         var freezingProperty = theAtom.filter(freezeUnlessFn).doAction(function (v) { previousValue = v; });
+        freezingProperty.eager = true;
         var onChange = function (newValue) { return theAtom.set(newValue); };
         var fa = atom(freezingProperty, onChange);
         fa.get = function () {
@@ -79,6 +80,9 @@ function mkAtom(observable, get, modify, set) {
             return lensedAtom(theAtom, lens);
         }
     };
+    theAtom.eager = eager;
+    if (eager)
+        theAtom.subscribe(function () { });
     return theAtom;
 }
 function lensedAtom(root, lens) {
@@ -99,6 +103,6 @@ function lensedAtom(root, lens) {
         root.set(newRootValue);
         return theAtom;
     };
-    return mkAtom(theAtom, get, modify, set);
+    return mkAtom(theAtom, get, modify, set, root.eager);
 }
 //# sourceMappingURL=atom.js.map

@@ -1,4 +1,3 @@
-import * as B from "baconjs";
 export var valueMissing = {};
 export function getCurrentValue(observable) {
     var currentV = valueMissing;
@@ -6,12 +5,8 @@ export function getCurrentValue(observable) {
         currentV = observable.get(); // For Atoms
     }
     else {
-        var unsub = observable.subscribeInternal(function (e) {
-            if (B.hasValue(e)) {
-                currentV = e.value;
-            }
-        });
-        unsub();
+        observable.subscribe()(); // force temporary subscription
+        return observable.dispatcher.current.get().value;
     }
     if (currentV === valueMissing) {
         console.log("Current value not found!", observable);

@@ -8,6 +8,7 @@ export interface Atom<A> extends B.Property<A> {
     view<B>(lens: L.Lens<A, B>): Atom<B>;
     freezeUnless<E extends A>(fn: (a: A) => a is E): Atom<E>;
     freezeUnless(fn: (a: A) => boolean): Atom<A>;
+    eager: boolean;
 }
 /**
  * Create an independent atom, with given initial atom
