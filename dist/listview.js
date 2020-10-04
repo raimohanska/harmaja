@@ -1,4 +1,5 @@
-import { LowLevelApi as H } from "./harmaja";
+import { LowLevelApi as H, componentScope } from "./harmaja";
+import * as B from "./eggs/eggs";
 export function ListView(props) {
     var observable = ("atom" in props) ? props.atom : props.observable;
     var _a = props.getKey, key = _a === void 0 ? (function (x) { return x; }) : _a;
@@ -8,6 +9,7 @@ export function ListView(props) {
             getSingleNodeOrFail(newNodes); // Verify that a child node is replaced by exactly one child node.
         }
     };
+    var scope = componentScope();
     return H.createController([H.createPlaceholder()], function (controller) { return observable.forEach(function (nextValues) {
         if (!currentValues) {
             if (nextValues.length) {
@@ -90,13 +92,15 @@ export function ListView(props) {
     }
     function renderItemRaw(key, values, index) {
         if ("renderAtom" in props) {
-            var nullableAtom_1 = props.atom.view(index);
-            var nonNullableAtom = nullableAtom_1.freezeUnless(function (a) { return a !== undefined; });
+            var nullableAtom_1 = B.view(props.atom, index);
+            var nonNullableAtom = B.freezeUnless(scope, nullableAtom_1, function (a) { return a !== undefined; });
             var removeItem = function () { return nullableAtom_1.set(undefined); };
             return props.renderAtom(key, nonNullableAtom, removeItem);
         }
         if ("renderObservable" in props) {
-            return props.renderObservable(key, observable.map(function (items) { return items[index]; }).filter(function (item) { return item !== undefined; }).skipDuplicates());
+            // TODO: is filter necessary
+            // TODO: use pipe
+            return props.renderObservable(key, B.filter(scope, B.map(observable, function (items) { return items[index]; }), function (item) { return item !== undefined; }));
         }
         return props.renderItem(values[index]);
     }

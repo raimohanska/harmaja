@@ -1,4 +1,4 @@
-import * as B from "baconjs";
+import * as B from "./eggs/eggs";
 import * as CSS from 'csstype';
 import * as H from "./harmaja";
 declare type ChildrenType = H.HarmajaChildren | H.HarmajaChild;

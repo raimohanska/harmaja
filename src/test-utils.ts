@@ -1,15 +1,20 @@
 import { h } from "./index"
 import * as H from "./index"
-import * as B from "baconjs"
+import * as B from "./eggs/eggs"
 import { DOMNode, unmount, callOnMounts, HarmajaOutput, HarmajaStaticOutput } from "./harmaja"
+import { scope, toProperty } from "./eggs/eggs"
 
 export function testRender<T>(init: T, test: (property: B.Property<T>, set: (v: T) => any) => HarmajaOutput) {
-    const bus = new B.Bus<T>()
-    const property = bus.toProperty(init)
+    const bus = B.bus<T>()
+    const testScope = scope() 
+    testScope.start()
+    const property = toProperty(testScope, bus, init)
     const element = test(property, bus.push)
     unmount(element as HarmajaStaticOutput)
     // Verify that all subscribers are removed on unmount
-    expect((property as any).dispatcher.subscriptions.length).toEqual(0)
+    expect((property as any).dispatcher.hasObservers("value")).toEqual(false)
+    expect((property as any).dispatcher.hasObservers("change")).toEqual(false)
+    testScope.end()
 }
 
 export function mounted(element: H.HarmajaOutput) {    

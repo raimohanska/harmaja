@@ -1,13 +1,15 @@
-import { Observer, PropertyEventType, Observable, Property } from "./abstractions";
+import { Observer, PropertyEventType, Observable, Property, EventStream } from "./abstractions";
 import { Dispatcher } from "./dispatcher";
-import { outOfScope, OutOfScope, Scope } from "./scope";
+import { never } from "./eventstream";
+import { GlobalScope, outOfScope, OutOfScope, Scope } from "./scope";
 import { duplicateSkippingObserver } from "./util";
 
-export abstract class StatefulPropertyBase<V> implements Observable<V, PropertyEventType> {
+export abstract class StatefulPropertyBase<V> extends Property<V> {
     protected dispatcher: Dispatcher<V, PropertyEventType>;
     abstract get(): V
 
     constructor() {
+        super()
         this.dispatcher = new Dispatcher<V, PropertyEventType>();
     }
 
@@ -15,21 +17,22 @@ export abstract class StatefulPropertyBase<V> implements Observable<V, PropertyE
         if (event === "value") {
             observer(this.get())
         }
-        this.dispatcher.on(event, observer)
+        return this.dispatcher.on(event, observer)
     }
 }
 
-export class DerivedProperty<V> implements Property<V> {
+export class DerivedProperty<V> extends Property<V> {
     private sources: Property<any>[];
-    private combinator: (inputs: any[]) => V;
+    private combinator: (...inputs: any[]) => V;
     
-    constructor(sources: Property<any>[], combinator: (inputs: any[]) => V) {
+    constructor(sources: Property<any>[], combinator: (...inputs: any[]) => V) {
+        super()
         this.sources = sources;
         this.combinator = combinator;
     }
 
     get(): V {
-        return this.combinator(this.getCurrentArray())
+        return this.combinator(...this.getCurrentArray())
     }
 
     private getCurrentArray(): any[] {
@@ -38,18 +41,21 @@ export class DerivedProperty<V> implements Property<V> {
 
     on(event: PropertyEventType, observer: Observer<V>) {
         let currentArray = this.getCurrentArray()
-        let initial = this.combinator(currentArray)
+        let initial = this.combinator(...currentArray)
         const statefulObserver = duplicateSkippingObserver(initial, observer)
 
         if (event === "value") {
             observer(initial)
         }
-        this.sources.forEach((src, i) => {
-            src.on("change", newValue => {
+        const unsubs = this.sources.map((src, i) => {
+            return src.on("change", newValue => {
                 currentArray[i] = newValue
-                statefulObserver(this.combinator(currentArray))
+                statefulObserver(this.combinator(...currentArray))
             })
         })        
+        return () => {
+            unsubs.forEach(f => f())
+        }
     }
 }
 
@@ -64,8 +70,11 @@ export class StatefulProperty<V> extends StatefulPropertyBase<V> {
     constructor(scope: Scope, source: StatefulPropertySource<V>) {
         super()
         const meAsObserver = (newValue: V) => {
-            this.value = newValue
-            this.dispatcher.dispatch("change", newValue)
+            if (newValue !== this.value) {
+                this.value = newValue
+                this.dispatcher.dispatch("change", newValue)
+                this.dispatcher.dispatch("value", newValue)
+            }
         }
         scope.on("in", () => {
             this.value = source(meAsObserver);
@@ -78,4 +87,49 @@ export class StatefulProperty<V> extends StatefulPropertyBase<V> {
         if (this.value === outOfScope) throw Error("Property out of scope");
         return this.value as V;
     }
+}
+
+export function map<A, B>(prop: Property<A>, fn: (value: A) => B): Property<B> {
+    return new DerivedProperty([prop], fn)
+}
+
+export function filter<A>(scope: Scope, prop: Property<A>, predicate: (value: A) => boolean): Property<A> {
+    const source = (propertyAsChangeObserver: Observer<A>) => {
+        prop.on("change", newValue => {
+            if (predicate(newValue)) {
+                propertyAsChangeObserver(newValue)
+            }
+        })
+        const initialValue = prop.get()
+        if (!predicate(initialValue)) {
+            throw Error("Initial value not matching filter")
+        }
+        return initialValue
+    }
+
+    return new StatefulProperty<A>(scope, source);
+}
+
+export function toProperty<A>(scope: Scope, stream: EventStream<A>, initial: A) {
+    const source = (propertyAsChangeObserver: Observer<A>) => {
+        stream.on("value", propertyAsChangeObserver)
+        return initial
+    }    
+    return new StatefulProperty<A>(scope, source);
+}
+
+export function scan<A, B>(scope: Scope, stream: EventStream<A>, initial: B, fn: (state: B, next: A) => B) {
+    const source = (propertyAsChangeObserver: Observer<B>) => {
+        let current = initial
+        stream.on("value", newValue => {
+            current = fn(current, newValue)
+            propertyAsChangeObserver(current)
+        })
+        return initial
+    }    
+    return new StatefulProperty<B>(scope, source);
+}
+
+export function constant<A>(value: A): Property<A> {
+    return toProperty(GlobalScope, never(), value)
 }

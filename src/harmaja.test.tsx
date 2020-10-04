@@ -2,7 +2,8 @@ import { h, Fragment, mount, mountEvent, onMount, onUnmount, unmount, unmountEve
 import * as H from "./index"
 import { renderAsString, getHtml, mounted, testRender } from "./test-utils"
 import { HarmajaOutput } from "./harmaja"
-import * as B from "baconjs"
+import * as B from "./eggs/eggs"
+import { map } from "./eggs/eggs"
 
 function body() {
     let body = <body/>
@@ -96,7 +97,7 @@ describe("Harmaja", () => {
         })
     
         it("Replaces multiple elements correctly", () => {
-            const Component = ({ things }: { things: H.Atom<string[]> }) => <ul>{things.map(ts => ts.map(t => <li>{t}</li>))}</ul>
+            const Component = ({ things }: { things: H.Atom<string[]> }) => <ul>{map(things, ts => ts.map(t => <li>{t}</li>))}</ul>
             const things = H.atom(["a"])
             expect(renderAsString(<Component things={things}/>)).toEqual("<ul><li>a</li></ul>")
             things.set([])
@@ -121,7 +122,7 @@ describe("Harmaja", () => {
             it("Observable-in-observable", () => {
                 const initial = ["init"]
                 const inner = H.atom(["a","b"])
-                const Component = () => inner.map(xs => xs.map(x => <span>{x}</span>))
+                const Component = () => map(inner, xs => xs.map(x => <span>{x}</span>))
                 const outer = H.atom([1, initial as any])
                 const c = mounted(<div>{outer}</div>)
                 expect(getHtml(c)).toEqual("<div>1init</div>")
@@ -145,7 +146,7 @@ describe("Harmaja", () => {
                     onMount(() => mountCalled++)
                     unmountEvent().forEach(() => unmountCalled++)
                     mountEvent().forEach(() => mountCalled++)
-                    return inner.map(xs => xs.map(x => <span>{x}</span>)) 
+                    return map(inner, xs => xs.map(x => <span>{x}</span>)) 
                 }
                 const outer = H.atom([1, initial as any])
                 const c = mounted(<div>{outer}</div>)
@@ -212,9 +213,9 @@ describe("Harmaja", () => {
         })
     })
 
-    it("Special - nested dependent atom", () => testRender(1, (value, set) => {
-        const p = H.atom(value, updated => console.log(updated))
-        const el = mounted(<div>{p.map(() => <div>{p}</div>)}</div>)
+    it("Special - nested dependent", () => testRender(1, (value, set) => {
+        const p = H.atom<number>(value, updated => console.log(updated))
+        const el = mounted(<div>{map(p, () => <div>{p}</div>)}</div>)
         expect(getHtml(el)).toEqual("<div><div>1</div></div>")
         return el as any
     }))

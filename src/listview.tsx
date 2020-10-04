@@ -1,22 +1,21 @@
-import * as Bacon from "baconjs"
-import { LowLevelApi as H, HarmajaOutput, DOMNode, NodeController, debug, HarmajaStaticOutput } from "./harmaja"
-import { Atom } from "./atom"
+import { LowLevelApi as H, HarmajaOutput, DOMNode, NodeController, debug, HarmajaStaticOutput, componentScope } from "./harmaja"
+import * as B from "./eggs/eggs"
 
 export type ListViewProps<A, K = A> = {
-    observable: Bacon.Property<A[]>, 
-    renderObservable: (key: K, x: Bacon.Property<A>) => HarmajaOutput, // Actually requires a DOMNode but JSX forces this wider type
+    observable: B.Property<A[]>, 
+    renderObservable: (key: K, x: B.Property<A>) => HarmajaOutput, // Actually requires a DOMNode but JSX forces this wider type
     getKey: (x: A) => K
 } | {
-    observable: Bacon.Property<A[]>, 
+    observable: B.Property<A[]>, 
     renderItem: (x: A) => HarmajaOutput,
     getKey?: (x: A) => K
 } | {
-    atom: Atom<A[]>, 
-    renderAtom: (key: K, x: Atom<A>, remove: () => void) => HarmajaOutput, 
+    atom: B.Atom<A[]>, 
+    renderAtom: (key: K, x: B.Atom<A>, remove: () => void) => HarmajaOutput, 
     getKey: (x: A) => K
 }
 export function ListView<A, K>(props: ListViewProps<A, K>) {
-    const observable: Bacon.Property<A[]> = ("atom" in props) ? props.atom : props.observable
+    const observable: B.Property<A[]> = ("atom" in props) ? props.atom : props.observable
     const { getKey: key = ((x: A): K => x as any) } = props    
     let currentValues: A[] | null = null
     const options = { 
@@ -24,6 +23,7 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
             getSingleNodeOrFail(newNodes) // Verify that a child node is replaced by exactly one child node.
         }
     }
+    const scope = componentScope()
 
     return H.createController([H.createPlaceholder()], (controller) => observable.forEach((nextValues: A[]) => {
         if (!currentValues) {
@@ -104,13 +104,15 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
     }
     function renderItemRaw(key: K, values: A[], index: number) {
         if ("renderAtom" in props) {
-            const nullableAtom = props.atom.view(index)
-            const nonNullableAtom = nullableAtom.freezeUnless(a => a !== undefined) as Atom<A>
+            const nullableAtom = B.view(props.atom, index)
+            const nonNullableAtom = B.freezeUnless(scope, nullableAtom, a => a !== undefined) as B.Atom<A>
             const removeItem = () => nullableAtom.set(undefined)
             return props.renderAtom(key, nonNullableAtom, removeItem)
         }
         if ("renderObservable" in props) {
-            return props.renderObservable(key, observable.map(items => items[index]).filter(item => item !== undefined).skipDuplicates())                   
+            // TODO: is filter necessary
+            // TODO: use pipe
+            return props.renderObservable(key, B.filter(scope, B.map(observable, items => items[index]), item => item !== undefined))                   
         }
         return props.renderItem(values[index])            
     }

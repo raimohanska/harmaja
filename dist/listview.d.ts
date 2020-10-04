@@ -1,17 +1,16 @@
-import * as Bacon from "baconjs";
 import { HarmajaOutput } from "./harmaja";
-import { Atom } from "./atom";
+import * as B from "./eggs/eggs";
 export declare type ListViewProps<A, K = A> = {
-    observable: Bacon.Property<A[]>;
-    renderObservable: (key: K, x: Bacon.Property<A>) => HarmajaOutput;
+    observable: B.Property<A[]>;
+    renderObservable: (key: K, x: B.Property<A>) => HarmajaOutput;
     getKey: (x: A) => K;
 } | {
-    observable: Bacon.Property<A[]>;
+    observable: B.Property<A[]>;
     renderItem: (x: A) => HarmajaOutput;
     getKey?: (x: A) => K;
 } | {
-    atom: Atom<A[]>;
-    renderAtom: (key: K, x: Atom<A>, remove: () => void) => HarmajaOutput;
+    atom: B.Atom<A[]>;
+    renderAtom: (key: K, x: B.Atom<A>, remove: () => void) => HarmajaOutput;
     getKey: (x: A) => K;
 };
 export declare function ListView<A, K>(props: ListViewProps<A, K>): ChildNode[];

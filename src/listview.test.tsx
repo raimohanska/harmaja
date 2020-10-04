@@ -1,8 +1,9 @@
 import { h } from "./index"
 import * as H from "./index"
-import * as B from "baconjs"
+import * as B from "./eggs/eggs"
 import { testRender, mounted, getHtml } from "./test-utils"
 import { ListView } from "./listview"
+import { map } from "./eggs/eggs"
 
 type Item = { id: number, name: string}
 const testItems: Item[] = [{ id: 1, name: "first" }]
@@ -32,7 +33,7 @@ describe("Listview", () => {
         it("Non-empty -> empty -> Non-empty", () => testRender(testItems, (value, set) => {
             const el = mounted(<ul><ListView
                 observable={value}
-                renderObservable={(key, item) => <li>{item.map(i => i.name)}</li>}
+                renderObservable={(key, item) => <li>{map(item, i => i.name)}</li>}
                 getKey={item => item.id}
             /></ul>)
             expect(getHtml(el)).toEqual("<ul><li>first</li></ul>")
@@ -49,7 +50,7 @@ describe("Listview", () => {
                 observable={value}
                 renderObservable={(id: number, item) => {
                     renderedIds.push(id)
-                    return <li>{item.map(i => i.name)}</li>
+                    return <li>{map(item, i => i.name)}</li>
                 }}
                 getKey={item => item.id}
             /></ul>)
@@ -71,7 +72,7 @@ describe("Listview", () => {
         it("Works", () => testRender(1, (value, set) => {
             const listView = mounted(<ul><ListView 
                 observable = { B.constant([1, 2, 3]) }
-                renderItem = { item => B.constant(<li>{value.map(v => v * item)}</li>) }
+                renderItem = { item => B.constant(<li>{map(value, v => v * item)}</li>) }
             /></ul>)
             expect(getHtml(listView)).toEqual("<ul><li>1</li><li>2</li><li>3</li></ul>")
             set(2)

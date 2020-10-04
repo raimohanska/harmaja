@@ -40,9 +40,31 @@ var __spread = (this && this.__spread) || function () {
     for (var ar = [], i = 0; i < arguments.length; i++) ar = ar.concat(__read(arguments[i]));
     return ar;
 };
-import * as Bacon from "baconjs";
-import { getCurrentValue } from "./utilities";
+import * as B from "./eggs/eggs";
 var transientStateStack = [];
+var ComponentScope = /** @class */ (function () {
+    function ComponentScope(mountE, unmountE) {
+        this.mountE = mountE;
+        this.unmountE = unmountE;
+    }
+    ComponentScope.prototype.on = function (event, observer) {
+        if (event === "in") {
+            if (this.controller) {
+                var state = getNodeState(this.controller.currentElements[0]);
+                if (state.mounted) {
+                    observer();
+                    return function () { };
+                }
+            }
+            return this.mountE.forEach(observer);
+        }
+        if (event === "out") {
+            return this.unmountE.forEach(observer);
+        }
+        throw Error("Unknown event: " + event);
+    };
+    return ComponentScope;
+}());
 /**
  *  Element constructor used by JSX.
  */
@@ -63,10 +85,10 @@ export function createElement(type, props) {
         transientStateStack.push({});
         var result = constructor(__assign(__assign({}, props), { children: flattenedChildren }));
         var transientState = transientStateStack.pop();
-        if (result instanceof Bacon.Property) {
+        if (result instanceof B.Property) {
             return createController([createPlaceholder()], composeControllers(handleMounts(transientState), startUpdatingNodes(result)));
         }
-        else if (transientState.unmountCallbacks || transientState.mountCallbacks) {
+        else if (transientState.unmountCallbacks || transientState.mountCallbacks || transientState.scope) {
             return createController(toDOMNodes(render(result)), handleMounts(transientState));
         }
         else {
@@ -93,6 +115,9 @@ function composeControllers(c1, c2) {
 }
 var handleMounts = function (transientState) { return function (controller) {
     var e_1, _a;
+    if (transientState.scope) {
+        transientState.scope.controller = controller;
+    }
     if (transientState.mountCallbacks)
         try {
             for (var _b = __values(transientState.mountCallbacks), _c = _b.next(); !_c.done; _c = _b.next()) {
@@ -138,10 +163,10 @@ function renderElement(type, props, children) {
     var e_3, _a;
     var el = document.createElement(type);
     var _loop_1 = function (key, value) {
-        if (value instanceof Bacon.Property) {
+        if (value instanceof B.Property) {
             var observable_1 = value;
             attachOnMount(el, function () {
-                var unsub = observable_1.skipDuplicates().forEach(function (nextValue) {
+                var unsub = observable_1.forEach(function (nextValue) {
                     setProp(el, key, nextValue);
                 });
                 attachOnUnmount(el, unsub);
@@ -183,7 +208,7 @@ function render(child) {
     if (child === null) {
         return createPlaceholder();
     }
-    if (child instanceof Bacon.Property) {
+    if (child instanceof B.Property) {
         return createController([createPlaceholder()], startUpdatingNodes(child));
     }
     if (isDOMElement(child)) {
@@ -192,7 +217,7 @@ function render(child) {
     throw Error(child + " is not a valid element");
 }
 var startUpdatingNodes = function (observable) { return function (controller) {
-    return observable.skipDuplicates().forEach(function (nextChildren) {
+    return observable.forEach(function (nextChildren) {
         var oldElements = controller.currentElements;
         var newNodes = flattenChildren(nextChildren).flatMap(render).flatMap(toDOMNodes);
         if (newNodes.length === 0) {
@@ -284,10 +309,10 @@ export function mount(harmajaElement, root) {
  *  - `onUnmountEvent` will be triggered
  */
 export function unmount(harmajaElement) {
-    if (harmajaElement instanceof Bacon.Property) {
+    if (harmajaElement instanceof B.Property) {
         // A dynamic component, let's try to find the current mounted nodes
         //console.log("Unmounting dynamic", harmajaElement)
-        unmount(getCurrentValue(harmajaElement));
+        unmount(harmajaElement.get());
     }
     else if (harmajaElement instanceof Array) {
         //console.log("Unmounting array")
@@ -325,10 +350,10 @@ export function onUnmount(callback) {
 export function mountEvent() {
     var transientState = getTransientState("mountEvent");
     if (!transientState.mountE) {
-        var event_1 = new Bacon.Bus();
+        var event_1 = B.bus();
         onMount(function () {
             event_1.push();
-            event_1.end();
+            //event.end() // TODO: should we support end events?
         });
         transientState.mountE = event_1;
     }
@@ -341,14 +366,21 @@ export function mountEvent() {
 export function unmountEvent() {
     var transientState = getTransientState("unmountEvent");
     if (!transientState.unmountE) {
-        var event_2 = new Bacon.Bus();
+        var event_2 = B.bus();
         onUnmount(function () {
             event_2.push();
-            event_2.end();
+            //event.end()
         });
         transientState.unmountE = event_2;
     }
     return transientState.unmountE;
+}
+export function componentScope() {
+    var transientState = getTransientState("unmountEvent");
+    if (!transientState.scope) {
+        transientState.scope = new ComponentScope(mountEvent(), unmountEvent());
+    }
+    return transientState.scope;
 }
 export function callOnMounts(element) {
     var e_4, _a, e_5, _b;

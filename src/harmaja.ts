@@ -1,6 +1,6 @@
-import * as Bacon from "baconjs"
-import { isAtom } from "./atom"
-import { getCurrentValue } from "./utilities"
+import { Dispatcher } from "./eggs/dispatcher"
+import * as B from "./eggs/eggs"
+import { Observer } from "./eggs/eggs"
 
 export type HarmajaComponent = (props: HarmajaProps) => HarmajaOutput
 export type JSXElementType = string | HarmajaComponent
@@ -10,17 +10,44 @@ export type HarmajaChild = HarmajaObservableChild | DOMNode | string | number |
 export type HarmajaChildren = (HarmajaChild | HarmajaChildren)[]
 export type HarmajaChildOrChildren = HarmajaChild | HarmajaChildren
 // TODO: naming sucks
-export type HarmajaObservableChild = Bacon.Property<HarmajaChildOrChildren>
+export type HarmajaObservableChild = B.Property<HarmajaChildOrChildren>
 export type HarmajaStaticOutput = DOMNode | DOMNode[] // Can be one or more, but an empty array is not allowed
-export type HarmajaOutput = DOMNode | Bacon.Property<HarmajaOutput> | HarmajaOutput[]
+export type HarmajaOutput = DOMNode | B.Property<HarmajaOutput> | HarmajaOutput[]
 export type DOMNode = ChildNode
 
 let transientStateStack: TransientState[] = []
 type TransientState = { 
     mountCallbacks?: Callback[], 
-    mountE?: Bacon.EventStream<void>,
+    mountE?: B.EventStream<void>,
     unmountCallbacks?: Callback[], 
-    unmountE?: Bacon.EventStream<void>,
+    unmountE?: B.EventStream<void>,
+    scope?: ComponentScope
+}
+
+class ComponentScope implements B.Scope {
+    controller?: NodeController
+    mountE: B.EventStream<void>; 
+    unmountE: B.EventStream<void>;
+    constructor(mountE: B.EventStream<void>, unmountE: B.EventStream<void>) {
+        this.mountE = mountE;
+        this.unmountE = unmountE;
+    }
+    on(event: "in" | "out", observer: Observer<void>) {
+        if (event === "in") {
+            if (this.controller) {
+                const state = getNodeState(this.controller.currentElements[0])
+                if (state.mounted) {
+                    observer()
+                    return () => {}
+                }
+            }
+            return this.mountE.forEach(observer)
+        }
+        if (event === "out") {
+            return this.unmountE.forEach(observer)
+        }
+        throw Error("Unknown event: " + event)
+    }
 }
 
 /**
@@ -38,9 +65,9 @@ export function createElement(type: JSXElementType, props?: HarmajaProps, ...chi
         transientStateStack.push({})
         const result = constructor({...props, children: flattenedChildren})
         const transientState = transientStateStack.pop()!
-        if (result instanceof Bacon.Property) {
+        if (result instanceof B.Property) {
             return createController([createPlaceholder()], composeControllers(handleMounts(transientState), startUpdatingNodes(result as HarmajaObservableChild)))
-        } else if (transientState.unmountCallbacks || transientState.mountCallbacks) {
+        } else if (transientState.unmountCallbacks || transientState.mountCallbacks || transientState.scope) {
             return createController(toDOMNodes(render(result)), handleMounts(transientState))
         } else {
             return result
@@ -65,6 +92,9 @@ function composeControllers(c1: NodeControllerFn, c2: NodeControllerFn): NodeCon
 }
 
 const handleMounts = (transientState: TransientState) => (controller: NodeController) => {
+    if (transientState.scope) {
+        transientState.scope.controller = controller
+    }
     if (transientState.mountCallbacks) for (const callback of transientState.mountCallbacks) {
         callback()                
     }
@@ -87,10 +117,10 @@ function flattenChildren(child: HarmajaChildOrChildren): HarmajaChild[] {
 function renderElement(type: string, props: HarmajaProps, children: HarmajaChild[]): DOMNode {
     const el = document.createElement(type)
     for (let [key, value] of Object.entries(props || {})) {
-        if (value instanceof Bacon.Property) {
-            const observable: Bacon.Property<string> = value            
+        if (value instanceof B.Property) {
+            const observable: B.Property<string> = value            
             attachOnMount(el, () => {
-                const unsub = observable.skipDuplicates().forEach(nextValue => {
+                const unsub = observable.forEach(nextValue => {
                     setProp(el, key, nextValue)        
                 })
                 attachOnUnmount(el, unsub)    
@@ -122,7 +152,7 @@ function render(child: HarmajaChild | HarmajaOutput): HarmajaStaticOutput {
     if (child === null) {
         return createPlaceholder()
     }
-    if (child instanceof Bacon.Property) {
+    if (child instanceof B.Property) {
         return createController([createPlaceholder()], startUpdatingNodes(child as HarmajaObservableChild))
     }    
     if (isDOMElement(child)) {
@@ -132,7 +162,7 @@ function render(child: HarmajaChild | HarmajaOutput): HarmajaStaticOutput {
 }
 
 const startUpdatingNodes = (observable: HarmajaObservableChild) => (controller: NodeController): Callback => {
-    return observable.skipDuplicates().forEach((nextChildren: HarmajaChildOrChildren) => {
+    return observable.forEach((nextChildren: HarmajaChildOrChildren) => {
         let oldElements = controller.currentElements    
         let newNodes = flattenChildren(nextChildren).flatMap(render).flatMap(toDOMNodes)                
         if (newNodes.length === 0) {
@@ -247,10 +277,10 @@ export function mount(harmajaElement: HarmajaOutput, root: Element): HarmajaStat
  *  - `onUnmountEvent` will be triggered
  */
 export function unmount(harmajaElement: HarmajaOutput) {
-    if (harmajaElement instanceof Bacon.Property) {
+    if (harmajaElement instanceof B.Property) {
         // A dynamic component, let's try to find the current mounted nodes
         //console.log("Unmounting dynamic", harmajaElement)
-        unmount(getCurrentValue(harmajaElement))
+        unmount(harmajaElement.get())
     } else if (harmajaElement instanceof Array) {
         //console.log("Unmounting array")
         harmajaElement.forEach(unmount)
@@ -284,34 +314,42 @@ export function onUnmount(callback: Callback) {
  *  The onMount event as EventStream, emitting a value after the component has been mounted to the document.
  *  NOTE: Call only in component constructors. Otherwise will not do anything useful.
  */
-export function mountEvent(): Bacon.EventStream<void> {
+export function mountEvent(): B.EventStream<void> {
     const transientState = getTransientState("mountEvent")
     if (!transientState.mountE) {
-        const event = new Bacon.Bus<void>()
+        const event = B.bus<void>()
         onMount(() => {
             event.push()
-            event.end()
+            //event.end() // TODO: should we support end events?
         })    
         transientState.mountE = event
     }
-    return transientState.mountE
+    return transientState.mountE!
 }
 
 /**
  *  The onUnmount event as EventStream, emitting a value after the component has been unmounted from the document.
  *  NOTE: Call only in component constructors. Otherwise will not do anything useful.
  */
-export function unmountEvent(): Bacon.EventStream<void> {
+export function unmountEvent(): B.EventStream<void> {
     const transientState = getTransientState("unmountEvent")
     if (!transientState.unmountE) {
-        const event = new Bacon.Bus<void>()
+        const event = B.bus<void>()
         onUnmount(() => {
             event.push()
-            event.end()
+            //event.end()
         })    
         transientState.unmountE = event
     }
-    return transientState.unmountE
+    return transientState.unmountE!
+}
+
+export function componentScope(): B.Scope {
+    const transientState = getTransientState("unmountEvent")
+    if (!transientState.scope) {
+        transientState.scope = new ComponentScope(mountEvent(), unmountEvent())
+    }
+    return transientState.scope
 }
 
 export function callOnMounts(element: Node) {    
