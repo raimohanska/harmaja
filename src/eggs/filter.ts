@@ -1,9 +1,9 @@
-import { Observer, Property } from "./abstractions";
+import { Observer, Property, PropertySeed } from "./abstractions";
 import { StatefulProperty } from "./property";
 import { Scope } from "./scope";
 
 export function filter<A>(scope: Scope, prop: Property<A>, predicate: (value: A) => boolean): Property<A> {
-    const source = (propertyAsChangeObserver: Observer<A>) => {
+    const forEach = (propertyAsChangeObserver: Observer<A>) => {
         const unsub = prop.on("change", newValue => {
             if (predicate(newValue)) {
                 propertyAsChangeObserver(newValue)
@@ -15,6 +15,6 @@ export function filter<A>(scope: Scope, prop: Property<A>, predicate: (value: A)
         }
         return [initialValue, unsub] as any
     }
-
-    return new StatefulProperty<A>(prop + `.map(fn)`, scope, source);
+    const seed = new PropertySeed(prop + `.map(fn)`, forEach)
+    return new StatefulProperty<A>(seed, scope);
 }

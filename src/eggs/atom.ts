@@ -1,5 +1,4 @@
-import { Observer, PropertyEventType, Atom, Property, PropertyEvents, Unsub } from "./abstractions";
-import { StatefulPropertyBase, StatefulPropertySource } from "./property";
+import { Observer, PropertyEventType, Atom, Property, PropertyEvents, Unsub, PropertySeed, AtomSeed } from "./abstractions";
 import { duplicateSkippingObserver } from "./util";
 import * as L from "../lens"
 import { Dispatcher } from "./dispatcher";
@@ -115,10 +114,10 @@ export class StatefulDependentAtom<V> extends Atom<V> {
     private onChange: (updatedValue: V) => void;
     private value: V | OutOfScope = beforeScope
 
-    constructor(desc: string, scope: Scope, source: StatefulPropertySource<V>, onChange: (updatedValue: V) => void) {
-        super(desc)
+    constructor(seed: AtomSeed<V>, scope: Scope) {
+        super(seed.desc)
         this._scope = scope;
-        this.onChange = onChange;
+        this.onChange = seed.onChange;
         
         const meAsObserver = (newValue: V) => {
             this.value = newValue
@@ -127,7 +126,7 @@ export class StatefulDependentAtom<V> extends Atom<V> {
         }
         scope(
             () => {
-                const [newValue, unsub] = source(meAsObserver);
+                const [newValue, unsub] = seed.forEach(meAsObserver);
                 this.value = newValue;
                 return () => {
                     this.value = afterScope; 
@@ -197,7 +196,7 @@ export function atom<A>(x: any, y?: any): Atom<A> {
 
 export function freezeUnless<A>(scope: Scope, atom: Atom<A>, freezeUnlessFn: (a: A) => boolean): Atom<A> {
     const onChange = (v: A) => atom.set(v)
-    const source = (observer: Observer<A>) => {
+    const forEach = (observer: Observer<A>) => {
         const initial = atom.get()
         if (!freezeUnlessFn(initial)) {
             throw Error("Cannot create frozen atom with initial value not passing the given filter function")
@@ -209,5 +208,6 @@ export function freezeUnless<A>(scope: Scope, atom: Atom<A>, freezeUnlessFn: (a:
         })
         return [atom.get(), unsub] as any
     }
-    return new StatefulDependentAtom(atom + ".freezeUnless(fn)", scope, source, onChange)
+    const seed = new AtomSeed(atom + ".freezeUnless(fn)", forEach, onChange)
+    return new StatefulDependentAtom(seed, scope)
 }

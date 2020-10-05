@@ -29,17 +29,3 @@ export function interval<V>(delay: number, value: V): EventStreamSeed<V> {
         return () => clearInterval(interval)
     })
 }
-
-export function applyScope<T>(stream: EventStreamSeed<T>, scope: Scope) {
-    return new SeedToStream(stream, scope)
-}
-
-class SeedToStream<V> extends BaseEventStream<V> {
-    constructor(seed: EventStreamSeed<V>, scope: Scope) { 
-        super(seed.desc, scope)                 
-        scope(
-            () => seed.forEach(v => this.dispatcher.dispatch("value", v)),
-            this.dispatcher            
-        )
-    }
-}

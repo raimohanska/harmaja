@@ -37,6 +37,20 @@ export abstract class Property<V> extends MulticastObservable<V, PropertyEventTy
     abstract get(): V
 }
 
+/**
+ *  Input source for a StatefulProperty. Returns initial value and supplies changes to observer.
+ *  Must skip duplicates!
+ **/
+export class PropertySeed<V> {
+    forEach: (observer: Observer<V>) => [V, Unsub];
+    desc: string;
+
+    constructor(desc: string, forEach: (observer: Observer<V>) => [V, Unsub]) {
+        this.forEach = forEach
+        this.desc = desc
+    }
+}
+
 export type PropertyEventType = "value" | "change"
 export type PropertyEvents<V> = { "value": V, "change": V }
 
@@ -66,6 +80,18 @@ export abstract class Atom<V> extends Property<V> {
     }
     abstract set(newValue: V): void
     abstract modify(fn: (old: V) => V): void
+}
+
+/**
+ *  Input source for a StatefulProperty. Returns initial value and supplies changes to observer.
+ *  Must skip duplicates!
+ **/
+export class AtomSeed<V> extends PropertySeed<V> {
+    onChange: (updatedValue: V) => void;
+    constructor(desc: string, forEach: (observer: Observer<V>) => [V, Unsub], onChange: (updatedValue: V) => void) {
+        super(desc, forEach)
+        this.onChange = onChange
+    }
 }
 
 export interface Bus<V> extends EventStream<V> {

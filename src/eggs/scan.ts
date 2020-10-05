@@ -1,9 +1,9 @@
-import { EventStream, Observer } from "./abstractions";
+import { EventStream, Observer, PropertySeed } from "./abstractions";
 import { StatefulProperty } from "./property";
 import { Scope } from "./scope";
 
 export function scan<A, B>(scope: Scope, stream: EventStream<A>, initial: B, fn: (state: B, next: A) => B) {
-    const source = (propertyAsChangeObserver: Observer<B>) => {
+    const forEach = (propertyAsChangeObserver: Observer<B>) => {
         let current = initial
         const unsub = stream.on("value", newValue => {
             current = fn(current, newValue)
@@ -11,5 +11,6 @@ export function scan<A, B>(scope: Scope, stream: EventStream<A>, initial: B, fn:
         })
         return [initial, unsub] as any
     }    
-    return new StatefulProperty<B>(stream + `.scan(fn)`, scope, source);
+    const seed = new PropertySeed(stream + `.scan(fn)`, forEach);
+    return new StatefulProperty<B>(seed, scope)
 }

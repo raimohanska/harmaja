@@ -1,7 +1,7 @@
-import { Observer, PropertyEventType, Observable, Property, EventStream, PropertyEvents, Unsub } from "./abstractions";
+import { EventStream, Observer, Property, PropertyEvents, PropertyEventType, PropertySeed, Unsub } from "./abstractions";
 import { Dispatcher } from "./dispatcher";
 import { never } from "./eventstream";
-import { afterScope, beforeScope, checkScope, globalScope, OutOfScope, Scope } from "./scope";
+import { beforeScope, checkScope, globalScope, OutOfScope, Scope } from "./scope";
 import { duplicateSkippingObserver } from "./util";
 
 export abstract class StatefulPropertyBase<V> extends Property<V> {
@@ -63,17 +63,11 @@ export class DerivedProperty<V> extends Property<V> {
     }
 }
 
-/**
- *  Input source for a StatefulProperty. Returns initial value and supplies changes to observer.
- *  Must skip duplicates!
- **/
-export type StatefulPropertySource<V> = (propertyAsChangeObserver: Observer<V>) => [V, Unsub]
-
 export class StatefulProperty<V> extends StatefulPropertyBase<V> {
     private _scope: Scope
     private value: V | OutOfScope  = beforeScope
-    constructor(desc: string, scope: Scope, source: StatefulPropertySource<V>) {
-        super(desc)
+    constructor(seed: PropertySeed<V>, scope: Scope) {
+        super(seed.desc)
         this._scope = scope
         
         const meAsObserver = (newValue: V) => {
@@ -85,7 +79,7 @@ export class StatefulProperty<V> extends StatefulPropertyBase<V> {
         }
         scope(
             () => {
-                const [newValue, unsub] = source(meAsObserver)
+                const [newValue, unsub] = seed.forEach(meAsObserver)
                 this.value = newValue
                 return unsub
             },
@@ -102,10 +96,11 @@ export class StatefulProperty<V> extends StatefulPropertyBase<V> {
 }
 
 export function toProperty<A>(scope: Scope, stream: EventStream<A>, initial: A) {
-    const source = (propertyAsChangeObserver: Observer<A>) => {        
+    const forEach = (propertyAsChangeObserver: Observer<A>) => {        
         return [initial, stream.on("value", propertyAsChangeObserver)] as any
     }    
-    return new StatefulProperty<A>(stream + `.toProperty(${initial})`, scope, source);
+    const seed = new PropertySeed(stream + `.toProperty(${initial})`, forEach)
+    return new StatefulProperty<A>(seed, scope);
 }
 
 export function constant<A>(value: A): Property<A> {

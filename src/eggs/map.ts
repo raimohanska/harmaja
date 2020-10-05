@@ -1,5 +1,5 @@
 import { EventStream, EventStreamSeed, Property } from "./abstractions";
-import { applyScope } from "./eventstream";
+import { applyScope } from "./applyscope";
 import { DerivedProperty } from "./property";
 
 
