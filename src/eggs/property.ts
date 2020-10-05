@@ -57,6 +57,10 @@ export class DerivedProperty<V> extends Property<V> {
             unsubs.forEach(f => f())
         }
     }
+    scope() {
+        if (this.sources.length === 0) return globalScope
+        return this.sources[0].scope()
+    }
 }
 
 /**
@@ -66,9 +70,11 @@ export class DerivedProperty<V> extends Property<V> {
 export type StatefulPropertySource<V> = (propertyAsChangeObserver: Observer<V>) => [V, Unsub]
 
 export class StatefulProperty<V> extends StatefulPropertyBase<V> {
+    private _scope: Scope
     private value: V | OutOfScope  = beforeScope
     constructor(desc: string, scope: Scope, source: StatefulPropertySource<V>) {
         super(desc)
+        this._scope = scope
         let unsub : Unsub | null = null
         const meAsObserver = (newValue: V) => {
             if (newValue !== this.value) {
@@ -90,6 +96,10 @@ export class StatefulProperty<V> extends StatefulPropertyBase<V> {
     }
     get(): V {
         return checkScope(this, this.value)
+    }
+
+    scope() {
+        return this._scope
     }
 }
 

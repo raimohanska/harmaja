@@ -3,7 +3,7 @@ import { StatefulPropertyBase, StatefulPropertySource } from "./property";
 import { duplicateSkippingObserver } from "./util";
 import * as L from "../lens"
 import { Dispatcher } from "./dispatcher";
-import { afterScope, beforeScope, checkScope, OutOfScope, Scope } from "./scope";
+import { afterScope, beforeScope, checkScope, globalScope, OutOfScope, Scope } from "./scope";
 
 class RootAtom<V> extends Atom<V> {    
     private dispatcher = new Dispatcher<PropertyEvents<V>>();
@@ -32,6 +32,9 @@ class RootAtom<V> extends Atom<V> {
     }
     modify(fn: (old: V) => V): void {
         this.set(fn(this.value))
+    }
+    scope() {
+        return globalScope
     }
 }
 
@@ -69,6 +72,10 @@ class LensedAtom<R, V> extends Atom<V> {
         }
         return unsub  
     }
+
+    scope() {
+        return this.root.scope()
+    }
 }
 
 class DependentAtom<V> extends Atom<V> {
@@ -96,15 +103,21 @@ class DependentAtom<V> extends Atom<V> {
     on(event: PropertyEventType, observer: Observer<V>) {
         return this.input.on(event, observer)    
     }
+
+    scope() {
+        return this.input.scope()
+    }
 }
 
 export class StatefulDependentAtom<V> extends Atom<V> {
+    private _scope: Scope
     private dispatcher = new Dispatcher<PropertyEvents<V>>();
     private onChange: (updatedValue: V) => void;
     private value: V | OutOfScope = beforeScope
 
     constructor(desc: string, scope: Scope, source: StatefulPropertySource<V>, onChange: (updatedValue: V) => void) {
         super(desc)
+        this._scope = scope;
         this.onChange = onChange;
         let unsub: Unsub | null = null
         const meAsObserver = (newValue: V) => {
@@ -134,6 +147,10 @@ export class StatefulDependentAtom<V> extends Atom<V> {
         }
         return unsub
     }    
+    scope() {
+        return this._scope
+    }
+
 }
 
 export function view<A, K extends keyof A>(a: Atom<A>, key: K): K extends number ? Atom<A[K] | undefined> : Atom<A[K]>;

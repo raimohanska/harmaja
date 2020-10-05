@@ -1,6 +1,7 @@
 import { Bus, EventStream, Observer, StreamEventType } from "./abstractions"
 import { BaseEventStream } from "./eventstream"
 import { Dispatcher } from "./dispatcher"
+import { globalScope } from "./scope"
 
 export function bus<V>(): Bus<V> {
     return new BusImpl<V>()
@@ -9,7 +10,7 @@ export function bus<V>(): Bus<V> {
 // Note that we could use a Dispatcher as Bus, except for prototype inheritance of EventStream on the way
 class BusImpl<V> extends BaseEventStream<V> implements Bus<V> {
     constructor() {
-        super("bus")
+        super("bus", globalScope)
         this.push = this.push.bind(this)
     }
 
