@@ -66,7 +66,7 @@ describe("Atom", () => {
 describe("Dependent Atom", () => {
     it("Works", () => {
         var b = B.bus()
-        var prop = B.toProperty(globalScope, b, "1")
+        var prop = B.toProperty(b, "1", globalScope)
         var atom = A.atom(prop, newValue => b.push(newValue))        
         expect(atom.get()).toEqual("1")
         atom.set("2")
@@ -76,7 +76,7 @@ describe("Dependent Atom", () => {
     describe("Freezing", () => {
         it("Can be frozen on unwanted values", () => {
             var b = B.bus()
-            var prop = B.toProperty(globalScope, b, "1")
+            var prop = B.toProperty(b, "1", globalScope)
             const root = A.atom(prop, newValue => b.push(newValue))
             var atom = A.freezeUnless(globalScope, root, a => a !== null)
     
@@ -88,7 +88,7 @@ describe("Dependent Atom", () => {
     
         it("Can be frozen on unwanted values (subscriber case)", () => {
             var b = B.bus()
-            var prop = B.toProperty(globalScope, b, "1")
+            var prop = B.toProperty(b, "1", globalScope)
             const root = A.atom(prop, newValue => b.push(newValue))
             var atom = A.freezeUnless(globalScope, root, a => a !== null)
     

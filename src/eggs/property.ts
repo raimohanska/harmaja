@@ -1,4 +1,4 @@
-import { EventStream, Observer, Property, PropertyEvents, PropertyEventType, PropertySeed, Unsub } from "./abstractions";
+import { EventStream, EventStreamSeed, Observer, Property, PropertyEvents, PropertyEventType, PropertySeed, Unsub } from "./abstractions";
 import { Dispatcher } from "./dispatcher";
 import { never } from "./eventstream";
 import { beforeScope, checkScope, globalScope, OutOfScope, Scope } from "./scope";
@@ -95,14 +95,17 @@ export class StatefulProperty<V> extends StatefulPropertyBase<V> {
     }
 }
 
-export function toProperty<A>(scope: Scope, stream: EventStream<A>, initial: A) {
-    const forEach = (propertyAsChangeObserver: Observer<A>) => {        
-        return [initial, stream.on("value", propertyAsChangeObserver)] as any
+export function toPropertySeed<A>(stream: EventStream<A> | EventStreamSeed<A>, initial: A) {
+    const forEach = (observer: Observer<A>): [A, Unsub] => {        
+        return [initial, stream.forEach(observer)]
     }    
-    const seed = new PropertySeed(stream + `.toProperty(${initial})`, forEach)
-    return new StatefulProperty<A>(seed, scope);
+    return new PropertySeed(stream + `.toProperty(${initial})`, forEach)
+}
+
+export function toProperty<A>(stream: EventStream<A> | EventStreamSeed<A>, initial: A, scope: Scope) {    
+    return new StatefulProperty<A>(toPropertySeed(stream, initial), scope);
 }
 
 export function constant<A>(value: A): Property<A> {
-    return toProperty(globalScope, never(), value)
+    return toProperty(never(), value, globalScope)
 }

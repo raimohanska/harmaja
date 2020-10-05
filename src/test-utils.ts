@@ -8,7 +8,7 @@ export function testRender<T>(init: T, test: (property: B.Property<T>, set: (v: 
     const bus = B.bus<T>()
     const testScope = scope() 
     testScope.start()
-    const property = toProperty(testScope.apply, bus, init)
+    const property = toProperty(bus, init, testScope.apply)
     const element = test(property, bus.push)
     unmount(element as HarmajaStaticOutput)
     // Verify that all subscribers are removed on unmount
