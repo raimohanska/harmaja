@@ -42,6 +42,7 @@ export abstract class Property<V> extends MulticastObservable<V, PropertyEventTy
  *  Must skip duplicates!
  **/
 export class PropertySeed<V> {
+    // TODO: bad name
     forEach: (observer: Observer<V>) => [V, Unsub];
     desc: string;
 
