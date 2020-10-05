@@ -905,7 +905,7 @@ Now in your component you can work with the `localState` atom freely. When you w
 globalState.set(localState.get())
 ```
 
-The topic is also covered in [examples/todoapp-backend](examples/todoapp-backend/index.jsx).
+The topic is also covered in [examples/todoapp-backend](examples/todoapp-backend/index.tsx).
 
 ## Category theory view
 
