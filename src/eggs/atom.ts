@@ -119,15 +119,21 @@ export class StatefulDependentAtom<V> extends Atom<V> {
         super(desc)
         this._scope = scope;
         this.onChange = onChange;
-        let unsub: Unsub | null = null
+        
         const meAsObserver = (newValue: V) => {
             this.value = newValue
             this.dispatcher.dispatch("change", newValue)
             this.dispatcher.dispatch("value", newValue)
         }
         scope(
-            () => [this.value, unsub] = source(meAsObserver), 
-            () => { this.value = afterScope; unsub!() }, 
+            () => {
+                const [newValue, unsub] = source(meAsObserver);
+                this.value = newValue;
+                return () => {
+                    this.value = afterScope; 
+                    unsub!()
+                }
+            }, 
             this.dispatcher
         )
     }

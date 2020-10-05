@@ -75,7 +75,7 @@ export class StatefulProperty<V> extends StatefulPropertyBase<V> {
     constructor(desc: string, scope: Scope, source: StatefulPropertySource<V>) {
         super(desc)
         this._scope = scope
-        let unsub : Unsub | null = null
+        
         const meAsObserver = (newValue: V) => {
             if (newValue !== this.value) {
                 this.value = newValue
@@ -85,11 +85,9 @@ export class StatefulProperty<V> extends StatefulPropertyBase<V> {
         }
         scope(
             () => {
-                [this.value, unsub] = source(meAsObserver)
-            },
-            () => {
-                this.value = afterScope; 
-                unsub!()
+                const [newValue, unsub] = source(meAsObserver)
+                this.value = newValue
+                return unsub
             },
             this.dispatcher
         );

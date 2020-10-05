@@ -37,10 +37,8 @@ export function applyScope<T>(stream: EventStreamSeed<T>, scope: Scope) {
 class SeedToStream<V> extends BaseEventStream<V> {
     constructor(seed: EventStreamSeed<V>, scope: Scope) { 
         super(seed.desc, scope)                 
-        let unsub: Unsub
         scope(
-            () => unsub = seed.forEach(v => this.dispatcher.dispatch("value", v)),
-            () => unsub(),
+            () => seed.forEach(v => this.dispatcher.dispatch("value", v)),
             this.dispatcher            
         )
     }
