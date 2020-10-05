@@ -1,6 +1,4 @@
 import { Callback } from "../harmaja";
-import { map } from "./property"
-
 export type Observer<V> = (value: V) => void
 export type Unsub = Callback
 

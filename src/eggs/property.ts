@@ -93,44 +93,11 @@ export class StatefulProperty<V> extends StatefulPropertyBase<V> {
     }
 }
 
-export function map<A, B>(prop: Property<A>, fn: (value: A) => B): Property<B> {
-    return new DerivedProperty(prop + `.map(fn)`, [prop], fn)
-}
-
-export function filter<A>(scope: Scope, prop: Property<A>, predicate: (value: A) => boolean): Property<A> {
-    const source = (propertyAsChangeObserver: Observer<A>) => {
-        const unsub = prop.on("change", newValue => {
-            if (predicate(newValue)) {
-                propertyAsChangeObserver(newValue)
-            }
-        })
-        const initialValue = prop.get()
-        if (!predicate(initialValue)) {
-            throw Error(`Initial value not matching filter for ${prop}`)
-        }
-        return [initialValue, unsub] as any
-    }
-
-    return new StatefulProperty<A>(prop + `.map(fn)`, scope, source);
-}
-
 export function toProperty<A>(scope: Scope, stream: EventStream<A>, initial: A) {
     const source = (propertyAsChangeObserver: Observer<A>) => {        
         return [initial, stream.on("value", propertyAsChangeObserver)] as any
     }    
     return new StatefulProperty<A>(stream + `.toProperty(${initial})`, scope, source);
-}
-
-export function scan<A, B>(scope: Scope, stream: EventStream<A>, initial: B, fn: (state: B, next: A) => B) {
-    const source = (propertyAsChangeObserver: Observer<B>) => {
-        let current = initial
-        const unsub = stream.on("value", newValue => {
-            current = fn(current, newValue)
-            propertyAsChangeObserver(current)
-        })
-        return [initial, unsub] as any
-    }    
-    return new StatefulProperty<B>(stream + `.scan(fn)`, scope, source);
 }
 
 export function constant<A>(value: A): Property<A> {
