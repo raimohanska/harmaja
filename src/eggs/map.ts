@@ -3,9 +3,9 @@ import { applyScope } from "./eventstream";
 import { DerivedProperty } from "./property";
 
 
+export function map<A, B>(prop: Property<A>, fn: (value: A) => B): Property<B>;
 export function map<A, B>(s: EventStream<A>, fn: (a: A) => B): EventStream<B>;
 export function map<A, B>(s: EventStreamSeed<A>, fn: (a: A) => B): EventStreamSeed<B>;
-export function map<A, B>(prop: Property<A>, fn: (value: A) => B): Property<B>;
 
 export function map<A, B>(o: any, fn: (value: A) => B): any {
     if (o instanceof EventStream) {

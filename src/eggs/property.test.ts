@@ -26,4 +26,10 @@ describe("Property", () => {
         expect(values).toEqual([0, 1, 2])
         expect(valuesChange).toEqual([1, 2])
     })
+
+    it("map", () => {
+        const b = B.constant(1)
+        const b2 = B.map(b, x => x * 2)
+        expect(b2.get()).toEqual(2)
+    })
 })
