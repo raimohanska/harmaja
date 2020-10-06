@@ -35,6 +35,12 @@ export abstract class Property<V> extends MulticastObservable<V, PropertyEventTy
     }
 
     abstract get(): V
+
+
+    subscribe(observer: Observer<V>): [V, Unsub] {
+        const unsub = this.on("change", observer)
+        return [this.get(), unsub]
+    }    
 }
 
 /**
