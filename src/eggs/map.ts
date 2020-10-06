@@ -1,4 +1,4 @@
-import { EventStream, EventStreamSeed, Property } from "./abstractions";
+import { EventStream, EventStreamSeed, Property, PropertySeed } from "./abstractions";
 import { applyScope } from "./applyscope";
 import { DerivedProperty } from "./property";
 
@@ -14,6 +14,8 @@ export function map<A, B>(o: any, fn: (value: A) => B): any {
         return mapESS(o, fn)
     } else if (o instanceof Property) {
         return mapP(o, fn)
+    } else if (o instanceof PropertySeed) {
+        return mapPS(o, fn)
     }
     throw Error("Unknown observable")
 }
@@ -26,4 +28,10 @@ function mapESS<A, B>(s: EventStreamSeed<A>, fn: (a: A) => B): EventStreamSeed<B
 }
 function mapP<A, B>(prop: Property<A>, fn: (value: A) => B): Property<B> {
     return new DerivedProperty(prop + `.map(fn)`, [prop], fn)
+}
+function mapPS<A, B>(seed: PropertySeed<A>, fn: (value: A) => B): PropertySeed<B> {
+    return new PropertySeed(seed + `.map(fn)`, observer => {
+        const [value, unsub] = seed.subscribe(value => observer(fn(value)))        
+        return [fn(value), unsub]
+    })    
 }

@@ -5,9 +5,9 @@ import { h, mount, ListView } from "../../src/index"
 const numbers = B.bus<number>()
 
 // TODO: API ergonomics
-const multiplier = applyScope(B.globalScope, B.scan(numbers, 1, (a, b) => a + b))
-const interval = applyScope(B.globalScope,  B.interval(3000, 1))
-const ticker = applyScope(B.globalScope, B.scan(interval, 1, (a, b) => a + b))
+const multiplier = B.scan(numbers, 1, (a, b) => a + b, B.globalScope)
+const interval = B.interval(3000, 1)
+const ticker = B.scan(interval, 1, (a, b) => a + b, B.globalScope)
 
 ticker.log("TICK")
 

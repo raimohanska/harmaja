@@ -3,6 +3,7 @@ import { StatefulProperty } from "./property";
 import { Scope } from "./scope";
 
 // TODO: apply to seeds and observables (freezeUnless is actually filter for Atoms!)
+// Use transform!
 
 export function filter<A>(scope: Scope, prop: Property<A>, predicate: (value: A) => boolean): Property<A> {
     const forEach = (propertyAsChangeObserver: Observer<A>) => {

@@ -4,8 +4,6 @@ import { BaseEventStream } from "./eventstream";
 import { StatefulDependentAtom } from "./atom";
 import { StatefulProperty } from "./property";
 
-// TODO: pipe, curry
-
 export function applyScope<T>(scope: Scope, stream: EventStreamSeed<T>): EventStream<T>;
 export function applyScope<T>(scope: Scope, stream: AtomSeed<T>): Atom<T>;
 export function applyScope<T>(scope: Scope, stream: PropertySeed<T>): Property<T>;
