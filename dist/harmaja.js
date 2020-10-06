@@ -357,12 +357,14 @@ export function componentScope() {
     if (!transientState.scope) {
         var unmountE_1 = unmountEvent();
         var mountE_1 = mountEvent();
-        transientState.scope = function (onIn, onOut, dispatcher) {
-            unmountE_1.forEach(onOut);
+        transientState.scope = function (onIn, dispatcher) {
+            var unsub = null;
+            unmountE_1.forEach(function () { if (unsub)
+                unsub(); });
             if (transientState.mountsController) {
                 var state = getNodeState(transientState.mountsController.currentElements[0]);
                 if (state.mounted) {
-                    onIn();
+                    unsub = onIn();
                     return;
                 }
             }

@@ -1,13 +1,13 @@
+import { applyScope } from "../../src/eggs/applyscope"
 import * as B from "../../src/index"
 import { h, mount, ListView } from "../../src/index"
 
 const numbers = B.bus<number>()
 
-const multiplier = B.scan(B.globalScope, numbers, 1, (a, b) => a + b)
-
-const interval = B.interval(B.globalScope, 3000, 1)
-interval.log("INTERVAL")
-const ticker = B.scan(B.globalScope, interval, 1, (a, b) => a + b)
+// TODO: API ergonomics
+const multiplier = applyScope(B.globalScope, B.scan(numbers, 1, (a, b) => a + b))
+const interval = applyScope(B.globalScope,  B.interval(3000, 1))
+const ticker = applyScope(B.globalScope, B.scan(interval, 1, (a, b) => a + b))
 
 ticker.log("TICK")
 

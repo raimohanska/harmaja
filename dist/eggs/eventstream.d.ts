@@ -1,14 +1,12 @@
-import { EventStream, Observer, StreamEvents } from "./abstractions";
+import { EventStream, Observer, StreamEvents, EventStreamSeed } from "./abstractions";
 import { Dispatcher } from "./dispatcher";
 import { Scope } from "./scope";
 export declare class BaseEventStream<V> extends EventStream<V> {
     protected dispatcher: Dispatcher<StreamEvents<V>>;
-    constructor(desc: string);
+    private _scope;
+    constructor(desc: string, scope: Scope);
     on(event: "value", observer: Observer<V>): import("..").Callback;
+    scope(): Scope;
 }
 export declare function never<A>(): EventStream<A>;
-export declare function interval<V>(scope: Scope, delay: number, value: V): Interval<V>;
-declare class Interval<V> extends BaseEventStream<V> {
-    constructor(scope: Scope, delay: number, value: V);
-}
-export {};
+export declare function interval<V>(delay: number, value: V): EventStreamSeed<V>;

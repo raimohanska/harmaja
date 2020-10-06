@@ -1,16 +1,17 @@
-import { Observer, PropertyEventType, Atom, Property } from "./abstractions";
-import { StatefulPropertySource } from "./property";
 import * as L from "../lens";
+import { Atom, AtomSeed, Observer, Property, PropertyEventType } from "./abstractions";
 import { Scope } from "./scope";
 export declare class StatefulDependentAtom<V> extends Atom<V> {
+    private _scope;
     private dispatcher;
     private onChange;
     private value;
-    constructor(desc: string, scope: Scope, source: StatefulPropertySource<V>, onChange: (updatedValue: V) => void);
+    constructor(seed: AtomSeed<V>, scope: Scope);
     get(): V;
     set(newValue: V): void;
     modify(fn: (old: V) => V): void;
     on(event: PropertyEventType, observer: Observer<V>): import("..").Callback;
+    scope(): Scope;
 }
 export declare function view<A, K extends keyof A>(a: Atom<A>, key: K): K extends number ? Atom<A[K] | undefined> : Atom<A[K]>;
 export declare function view<A, B>(a: Atom<A>, lens: L.Lens<A, B>): Atom<B>;

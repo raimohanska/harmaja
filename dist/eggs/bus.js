@@ -12,6 +12,7 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 import { BaseEventStream } from "./eventstream";
+import { globalScope } from "./scope";
 export function bus() {
     return new BusImpl();
 }
@@ -19,7 +20,7 @@ export function bus() {
 var BusImpl = /** @class */ (function (_super) {
     __extends(BusImpl, _super);
     function BusImpl() {
-        var _this = _super.call(this, "bus") || this;
+        var _this = _super.call(this, "bus", globalScope) || this;
         _this.push = _this.push.bind(_this);
         return _this;
     }

@@ -27,11 +27,11 @@ var __read = (this && this.__read) || function (o, n) {
     }
     return ar;
 };
-import { Atom } from "./abstractions";
-import { duplicateSkippingObserver } from "./util";
 import * as L from "../lens";
+import { Atom, AtomSeed } from "./abstractions";
 import { Dispatcher } from "./dispatcher";
-import { afterScope, beforeScope, checkScope } from "./scope";
+import { afterScope, beforeScope, checkScope, globalScope } from "./scope";
+import { duplicateSkippingObserver } from "./util";
 var RootAtom = /** @class */ (function (_super) {
     __extends(RootAtom, _super);
     function RootAtom(desc, initialValue) {
@@ -57,6 +57,9 @@ var RootAtom = /** @class */ (function (_super) {
     };
     RootAtom.prototype.modify = function (fn) {
         this.set(fn(this.value));
+    };
+    RootAtom.prototype.scope = function () {
+        return globalScope;
     };
     return RootAtom;
 }(Atom));
@@ -90,6 +93,9 @@ var LensedAtom = /** @class */ (function (_super) {
         }
         return unsub;
     };
+    LensedAtom.prototype.scope = function () {
+        return this.root.scope();
+    };
     return LensedAtom;
 }(Atom));
 var DependentAtom = /** @class */ (function (_super) {
@@ -112,25 +118,32 @@ var DependentAtom = /** @class */ (function (_super) {
     DependentAtom.prototype.on = function (event, observer) {
         return this.input.on(event, observer);
     };
+    DependentAtom.prototype.scope = function () {
+        return this.input.scope();
+    };
     return DependentAtom;
 }(Atom));
 var StatefulDependentAtom = /** @class */ (function (_super) {
     __extends(StatefulDependentAtom, _super);
-    function StatefulDependentAtom(desc, scope, source, onChange) {
-        var _this = _super.call(this, desc) || this;
+    function StatefulDependentAtom(seed, scope) {
+        var _this = _super.call(this, seed.desc) || this;
         _this.dispatcher = new Dispatcher();
         _this.value = beforeScope;
-        _this.onChange = onChange;
-        var unsub = null;
+        _this._scope = scope;
+        _this.onChange = seed.onChange;
         var meAsObserver = function (newValue) {
             _this.value = newValue;
             _this.dispatcher.dispatch("change", newValue);
             _this.dispatcher.dispatch("value", newValue);
         };
         scope(function () {
-            var _a, _b;
-            return _a = source(meAsObserver), _b = __read(_a, 2), _this.value = _b[0], unsub = _b[1], _a;
-        }, function () { _this.value = afterScope; unsub(); }, _this.dispatcher);
+            var _a = __read(seed.subscribe(meAsObserver), 2), newValue = _a[0], unsub = _a[1];
+            _this.value = newValue;
+            return function () {
+                _this.value = afterScope;
+                unsub();
+            };
+        }, _this.dispatcher);
         return _this;
     }
     StatefulDependentAtom.prototype.get = function () {
@@ -148,6 +161,9 @@ var StatefulDependentAtom = /** @class */ (function (_super) {
             observer(this.get());
         }
         return unsub;
+    };
+    StatefulDependentAtom.prototype.scope = function () {
+        return this._scope;
     };
     return StatefulDependentAtom;
 }(Atom));
@@ -173,7 +189,7 @@ export function atom(x, y) {
 }
 export function freezeUnless(scope, atom, freezeUnlessFn) {
     var onChange = function (v) { return atom.set(v); };
-    var source = function (observer) {
+    var forEach = function (observer) {
         var initial = atom.get();
         if (!freezeUnlessFn(initial)) {
             throw Error("Cannot create frozen atom with initial value not passing the given filter function");
@@ -185,6 +201,7 @@ export function freezeUnless(scope, atom, freezeUnlessFn) {
         });
         return [atom.get(), unsub];
     };
-    return new StatefulDependentAtom(atom + ".freezeUnless(fn)", scope, source, onChange);
+    var seed = new AtomSeed(atom + ".freezeUnless(fn)", forEach, onChange);
+    return new StatefulDependentAtom(seed, scope);
 }
 //# sourceMappingURL=atom.js.map

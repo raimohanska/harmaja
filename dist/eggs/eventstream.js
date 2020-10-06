@@ -11,36 +11,34 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-import { EventStream } from "./abstractions";
+import { EventStream, EventStreamSeed } from "./abstractions";
 import { Dispatcher } from "./dispatcher";
+import { globalScope } from "./scope";
 // Note that we could use a Dispatcher as Bus, except for prototype inheritance of EventStream on the way
 var BaseEventStream = /** @class */ (function (_super) {
     __extends(BaseEventStream, _super);
-    function BaseEventStream(desc) {
+    function BaseEventStream(desc, scope) {
         var _this = _super.call(this, desc) || this;
         _this.dispatcher = new Dispatcher();
+        _this._scope = scope;
         return _this;
     }
     BaseEventStream.prototype.on = function (event, observer) {
         return this.dispatcher.on(event, observer);
     };
+    BaseEventStream.prototype.scope = function () {
+        return this._scope;
+    };
     return BaseEventStream;
 }(EventStream));
 export { BaseEventStream };
 export function never() {
-    return new BaseEventStream("never");
+    return new BaseEventStream("never", globalScope);
 }
-export function interval(scope, delay, value) {
-    return new Interval(scope, delay, value);
+export function interval(delay, value) {
+    return new EventStreamSeed("interval(" + delay + ", " + value + ")", function (observer) {
+        var interval = setInterval(function () { return observer(value); }, delay);
+        return function () { return clearInterval(interval); };
+    });
 }
-var Interval = /** @class */ (function (_super) {
-    __extends(Interval, _super);
-    function Interval(scope, delay, value) {
-        var _this = _super.call(this, "interval(" + delay + ", fn)") || this;
-        var interval;
-        scope(function () { return interval = setInterval(function () { return _this.dispatcher.dispatch("value", value); }, delay); }, function () { return clearInterval(interval); }, _this.dispatcher);
-        return _this;
-    }
-    return Interval;
-}(BaseEventStream));
 //# sourceMappingURL=eventstream.js.map

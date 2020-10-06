@@ -6,11 +6,11 @@ import { StatefulProperty } from "./property";
 
 // TODO: pipe, curry
 
-export function applyScope<T>(stream: EventStreamSeed<T>, scope: Scope): EventStream<T>;
-export function applyScope<T>(stream: AtomSeed<T>, scope: Scope): Atom<T>;
-export function applyScope<T>(stream: PropertySeed<T>, scope: Scope): Property<T>;
+export function applyScope<T>(scope: Scope, stream: EventStreamSeed<T>): EventStream<T>;
+export function applyScope<T>(scope: Scope, stream: AtomSeed<T>): Atom<T>;
+export function applyScope<T>(scope: Scope, stream: PropertySeed<T>): Property<T>;
 
-export function applyScope<T>(seed: any, scope: Scope): any {
+export function applyScope<T>(scope: Scope, seed: any): any {
     if (seed instanceof EventStreamSeed) {        
         return new SeedToStream(seed, scope)
     } else if (seed instanceof AtomSeed) {

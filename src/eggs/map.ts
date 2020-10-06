@@ -19,7 +19,7 @@ export function map<A, B>(o: any, fn: (value: A) => B): any {
 }
 
 function mapES<A, B>(s: EventStream<A>, fn: (a: A) => B): EventStream<B> {
-    return applyScope(mapESS(s, fn), s.scope())
+    return applyScope(s.scope(), mapESS(s, fn))
 }
 function mapESS<A, B>(s: EventStreamSeed<A>, fn: (a: A) => B): EventStreamSeed<B> {
     return new EventStreamSeed(s + `.map(fn)`, observer => s.forEach(v => observer(fn(v))))

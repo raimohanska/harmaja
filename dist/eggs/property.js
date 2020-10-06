@@ -31,10 +31,10 @@ var __spread = (this && this.__spread) || function () {
     for (var ar = [], i = 0; i < arguments.length; i++) ar = ar.concat(__read(arguments[i]));
     return ar;
 };
-import { Property } from "./abstractions";
+import { Property, PropertySeed } from "./abstractions";
 import { Dispatcher } from "./dispatcher";
 import { never } from "./eventstream";
-import { afterScope, beforeScope, checkScope, globalScope } from "./scope";
+import { beforeScope, checkScope, globalScope } from "./scope";
 import { duplicateSkippingObserver } from "./util";
 var StatefulPropertyBase = /** @class */ (function (_super) {
     __extends(StatefulPropertyBase, _super);
@@ -85,15 +85,20 @@ var DerivedProperty = /** @class */ (function (_super) {
             unsubs.forEach(function (f) { return f(); });
         };
     };
+    DerivedProperty.prototype.scope = function () {
+        if (this.sources.length === 0)
+            return globalScope;
+        return this.sources[0].scope();
+    };
     return DerivedProperty;
 }(Property));
 export { DerivedProperty };
 var StatefulProperty = /** @class */ (function (_super) {
     __extends(StatefulProperty, _super);
-    function StatefulProperty(desc, scope, source) {
-        var _this = _super.call(this, desc) || this;
+    function StatefulProperty(seed, scope) {
+        var _this = _super.call(this, seed.desc) || this;
         _this.value = beforeScope;
-        var unsub = null;
+        _this._scope = scope;
         var meAsObserver = function (newValue) {
             if (newValue !== _this.value) {
                 _this.value = newValue;
@@ -102,56 +107,31 @@ var StatefulProperty = /** @class */ (function (_super) {
             }
         };
         scope(function () {
-            var _a;
-            _a = __read(source(meAsObserver), 2), _this.value = _a[0], unsub = _a[1];
-        }, function () {
-            _this.value = afterScope;
-            unsub();
+            var _a = __read(seed.subscribe(meAsObserver), 2), newValue = _a[0], unsub = _a[1];
+            _this.value = newValue;
+            return unsub;
         }, _this.dispatcher);
         return _this;
     }
     StatefulProperty.prototype.get = function () {
         return checkScope(this, this.value);
     };
+    StatefulProperty.prototype.scope = function () {
+        return this._scope;
+    };
     return StatefulProperty;
 }(StatefulPropertyBase));
 export { StatefulProperty };
-export function map(prop, fn) {
-    return new DerivedProperty(prop + ".map(fn)", [prop], fn);
-}
-export function filter(scope, prop, predicate) {
-    var source = function (propertyAsChangeObserver) {
-        var unsub = prop.on("change", function (newValue) {
-            if (predicate(newValue)) {
-                propertyAsChangeObserver(newValue);
-            }
-        });
-        var initialValue = prop.get();
-        if (!predicate(initialValue)) {
-            throw Error("Initial value not matching filter for " + prop);
-        }
-        return [initialValue, unsub];
+export function toPropertySeed(stream, initial) {
+    var forEach = function (observer) {
+        return [initial, stream.forEach(observer)];
     };
-    return new StatefulProperty(prop + ".map(fn)", scope, source);
+    return new PropertySeed(stream + (".toProperty(" + initial + ")"), forEach);
 }
-export function toProperty(scope, stream, initial) {
-    var source = function (propertyAsChangeObserver) {
-        return [initial, stream.on("value", propertyAsChangeObserver)];
-    };
-    return new StatefulProperty(stream + (".toProperty(" + initial + ")"), scope, source);
-}
-export function scan(scope, stream, initial, fn) {
-    var source = function (propertyAsChangeObserver) {
-        var current = initial;
-        var unsub = stream.on("value", function (newValue) {
-            current = fn(current, newValue);
-            propertyAsChangeObserver(current);
-        });
-        return [initial, unsub];
-    };
-    return new StatefulProperty(stream + ".scan(fn)", scope, source);
+export function toProperty(stream, initial, scope) {
+    return new StatefulProperty(toPropertySeed(stream, initial), scope);
 }
 export function constant(value) {
-    return toProperty(globalScope, never(), value);
+    return toProperty(never(), value, globalScope);
 }
 //# sourceMappingURL=property.js.map
