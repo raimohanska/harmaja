@@ -145,4 +145,48 @@ describe("Listview", () => {
             expect(getHtml(c)).toEqual("<div>02</div>") 
         })
     })
+
+    describe("Nested ListViews", () => {
+        const make = (value: B.Property<number[][]>) => mounted(
+            <ul>
+                <ListView
+                    observable={value}
+                    getKey={() => 0}
+                    renderObservable={(_, items) => (
+                        <li>
+                            <ListView
+                                observable={items}
+                                getKey={item => item}
+                                renderObservable={(_, item) =>
+                                    // Does not work:
+                                    item.map(x => <span>{x}</span>)
+                                    // Works:
+                                    // <span>{item}</span>
+                                }
+                            />
+                       </li>
+                    )}
+                />
+            </ul>
+        )
+        it("Observable-in-ListView", () => testRender([[1]], (value, set) => {
+            const el = make(value)
+            expect(getHtml(el)).toEqual("<ul><li><span>1</span></li></ul>")
+            // Adding 1 item works
+            set([[1, 2]])
+            expect(getHtml(el)).toEqual("<ul><li><span>1</span><span>2</span></li></ul>")
+            // Adding the second doesn't add anything => this fails
+            set([[1, 2, 3]])
+            expect(getHtml(el)).toEqual("<ul><li><span>1</span><span>2</span><span>3</span></li></ul>")
+            return el
+        }))
+        it("Observable-in-ListView, add 2 items", () => testRender([[1]], (value, set) => {
+            const el = make(value)
+            expect(getHtml(el)).toEqual("<ul><li><span>1</span></li></ul>")
+            // Adding 2 items right away crashes
+            set([[1, 2, 3]])
+            expect(getHtml(el)).toEqual("<ul><li><span>1</span><span>2</span><span>3</span></li></ul>")
+            return el
+        }))
+    })
 })
