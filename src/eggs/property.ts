@@ -79,7 +79,7 @@ export class StatefulProperty<V> extends StatefulPropertyBase<V> {
         }
         scope(
             () => {
-                const [newValue, unsub] = seed.forEach(meAsObserver)
+                const [newValue, unsub] = seed.subscribe(meAsObserver)
                 this.value = newValue
                 return unsub
             },

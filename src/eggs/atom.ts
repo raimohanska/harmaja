@@ -1,8 +1,8 @@
-import { Observer, PropertyEventType, Atom, Property, PropertyEvents, Unsub, PropertySeed, AtomSeed } from "./abstractions";
-import { duplicateSkippingObserver } from "./util";
-import * as L from "../lens"
+import * as L from "../lens";
+import { Atom, AtomSeed, Observer, Property, PropertyEvents, PropertyEventType } from "./abstractions";
 import { Dispatcher } from "./dispatcher";
 import { afterScope, beforeScope, checkScope, globalScope, OutOfScope, Scope } from "./scope";
+import { duplicateSkippingObserver } from "./util";
 
 class RootAtom<V> extends Atom<V> {    
     private dispatcher = new Dispatcher<PropertyEvents<V>>();
@@ -126,7 +126,7 @@ export class StatefulDependentAtom<V> extends Atom<V> {
         }
         scope(
             () => {
-                const [newValue, unsub] = seed.forEach(meAsObserver);
+                const [newValue, unsub] = seed.subscribe(meAsObserver);
                 this.value = newValue;
                 return () => {
                     this.value = afterScope; 
