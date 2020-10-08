@@ -69,13 +69,11 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
                     }
                 }
                 // 2. add/remove nodes
-                if (nextValues.length > currentValues.length) {
-                    let prevElement = controller.currentElements[controller.currentElements.length - 1]
+                if (nextValues.length > currentValues.length) {                    
                     for (let i = currentValues.length; i < nextValues.length; i++) {
                         const nextItemKey = key(nextValues[i])
                         const newElement = renderItem(nextItemKey, nextValues, i)
-                        H.addAfterNode(controller, prevElement, newElement)
-                        prevElement = newElement                        
+                        H.addAfterNode(controller, controller.currentElements[i - 1], newElement)
                     }
                 } else if (nextValues.length < currentValues.length) {
                     for (let i = currentValues.length - 1; i >= nextValues.length; i--) {

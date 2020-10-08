@@ -68,7 +68,7 @@ describe("Listview", () => {
     })
 
     describe("Observable-in-ListView", () => {
-        it("Works", () => testRender(1, (value, set) => {
+        it("Changing item value contents", () => testRender(1, (value, set) => {
             const listView = mounted(<ul><ListView 
                 observable = { B.constant([1, 2, 3]) }
                 renderItem = { item => B.constant(<li>{value.map(v => v * item)}</li>) }
@@ -76,6 +76,28 @@ describe("Listview", () => {
             expect(getHtml(listView)).toEqual("<ul><li>1</li><li>2</li><li>3</li></ul>")
             set(2)
             expect(getHtml(listView)).toEqual("<ul><li>2</li><li>4</li><li>6</li></ul>")
+            return listView
+        }))
+
+        it("Changing item values", () => testRender(1, (value, set) => {
+            const listView = mounted(<ul><ListView 
+                observable = { B.constant([1, 2, 3]) }
+                renderItem = { item => value.map(v => <li>{v * item}</li>) }
+            /></ul>)
+            expect(getHtml(listView)).toEqual("<ul><li>1</li><li>2</li><li>3</li></ul>")
+            set(2)
+            expect(getHtml(listView)).toEqual("<ul><li>2</li><li>4</li><li>6</li></ul>")
+            return listView
+        }))
+
+        it("Changing item list only", () => testRender([1], (value, set) => {
+            const listView = mounted(<ul><ListView 
+                observable = { value }
+                renderItem = { item => B.constant(<li>{item}</li>) }
+            /></ul>)
+            expect(getHtml(listView)).toEqual("<ul><li>1</li></ul>")
+            set([1,2,3])
+            expect(getHtml(listView)).toEqual("<ul><li>1</li><li>2</li><li>3</li></ul>")
             return listView
         }))
 
