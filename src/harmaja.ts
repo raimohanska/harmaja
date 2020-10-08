@@ -603,9 +603,6 @@ function replaceMany(controller: NodeController | null, oldContent: HarmajaStati
     }
     if (oldNodes.length === 0) throw new Error("Cannot replace zero nodes");
     if (newNodes.length === 0) throw new Error("Cannot replace with zero nodes");
-    for (let node of oldNodes) {
-        callOnUnmounts(node)
-    }
     oldNodes[0].parentElement!.replaceChild(newNodes[0], oldNodes[0])
     for (let i = 1; i < oldNodes.length; i++) {
         oldNodes[i].remove()
@@ -614,6 +611,9 @@ function replaceMany(controller: NodeController | null, oldContent: HarmajaStati
         newNodes[i - 1].after(newNodes[i])
     }
     replacedByController(controller, oldNodes, newNodes)
+    for (let node of oldNodes) {
+        callOnUnmounts(node)
+    }
     for (let node of newNodes) {
         callOnMounts(node)
     }

@@ -78,7 +78,7 @@ describe("Listview", () => {
     // TODO renderAtom test
 
     describe("Observable-in-ListView", () => {
-        it("Works", () => testRender(1, (value, set) => {
+        it("Changing item value contents", () => testRender(1, (value, set) => {
             const listView = mounted(<ul><ListView 
                 observable = { B.constant([1, 2, 3]) }
                 renderItem = { item => B.constant(<li>{map(value, v => v * item)}</li>) }
@@ -86,6 +86,32 @@ describe("Listview", () => {
             expect(getHtml(listView)).toEqual("<ul><li>1</li><li>2</li><li>3</li></ul>")
             set(2)
             expect(getHtml(listView)).toEqual("<ul><li>2</li><li>4</li><li>6</li></ul>")
+            return listView
+        }))
+
+        it("Changing item values", () => testRender(1, (value, set) => {
+            const listView = mounted(<ul><ListView 
+                observable = { B.constant([1, 2, 3]) }
+                renderItem = { item => B.map(value, v => <li>{v * item}</li>) }
+            /></ul>)
+            expect(getHtml(listView)).toEqual("<ul><li>1</li><li>2</li><li>3</li></ul>")
+            set(2)
+            expect(getHtml(listView)).toEqual("<ul><li>2</li><li>4</li><li>6</li></ul>")
+            return listView
+        }))
+
+        it("Changing item list only", () => testRender([1], (value, set) => {
+            const listView = mounted(<ul><ListView 
+                observable = { value }
+                renderItem = { item => B.constant(<li>{item}</li>) }
+            /></ul>)
+            expect(getHtml(listView)).toEqual("<ul><li>1</li></ul>")
+            set([1,2])
+            expect(getHtml(listView)).toEqual("<ul><li>1</li><li>2</li></ul>")
+            set([1,8])
+            expect(getHtml(listView)).toEqual("<ul><li>1</li><li>8</li></ul>")
+            set([1,2,3])
+            expect(getHtml(listView)).toEqual("<ul><li>1</li><li>2</li><li>3</li></ul>")
             return listView
         }))
 
@@ -154,5 +180,49 @@ describe("Listview", () => {
             outer.set([0, 2])
             expect(getHtml(c)).toEqual("<div>02</div>") 
         })
+    })
+
+    describe("Nested ListViews", () => {
+        const make = (value: B.Property<number[][]>) => mounted(
+            <ul>
+                <ListView
+                    observable={value}
+                    getKey={() => 0}
+                    renderObservable={(_, items) => (
+                        <li>
+                            <ListView
+                                observable={items}
+                                getKey={item => item}
+                                renderObservable={(_, item) =>
+                                    // Does not work:
+                                    B.map(item, x => <span>{x}</span>)
+                                    // Works:
+                                    // <span>{item}</span>
+                                }
+                            />
+                       </li>
+                    )}
+                />
+            </ul>
+        )
+        it("Observable-in-ListView, add 1 item", () => testRender([[1]], (value, set) => {
+            const el = make(value)
+            expect(getHtml(el)).toEqual("<ul><li><span>1</span></li></ul>")
+            // Adding 1 item works
+            set([[1, 2]])
+            expect(getHtml(el)).toEqual("<ul><li><span>1</span><span>2</span></li></ul>")
+            // Adding the second doesn't add anything => this fails
+            set([[1, 2, 3]])
+            expect(getHtml(el)).toEqual("<ul><li><span>1</span><span>2</span><span>3</span></li></ul>")
+            return el
+        }))
+        it("Observable-in-ListView, add 2 items", () => testRender([[1]], (value, set) => {
+            const el = make(value)
+            expect(getHtml(el)).toEqual("<ul><li><span>1</span></li></ul>")
+            // Adding 2 items right away crashes
+            set([[1, 2, 3]])
+            expect(getHtml(el)).toEqual("<ul><li><span>1</span><span>2</span><span>3</span></li></ul>")
+            return el
+        }))
     })
 })

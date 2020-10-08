@@ -890,9 +890,32 @@ More dealing with async request at [examples/consultants](examples/consultants/i
 
 ## Detaching and syncing state
 
-TODO: study on buffering local changes until commit / cancel
+I find quite often myself wanting to have some local state for editing something that comes from the global state. I mean so that the local changes are not automatically pushed to the global state.
 
-Covered in [examples/todoapp-backend](examples/todoapp-backend/index.jsx).
+I wrote the following helper for this:
+
+```typescript
+export function editAtom<A>(source: B.Property<A>): H.Atom<A> {
+    const localValue = H.atom<A | undefined>(undefined)
+    const value = B.combine(source, localValue, (s, l) => l !== undefined ? l : s)
+    return H.atom(value, localValue.set)
+}
+```
+
+This method gives you an `Atom` that reflects the global state *until a local change is made* and after that, reflects the local state. You can do
+
+```typescript
+const globalState: Atom<string>;
+const localState = editAtom(globalState);
+```
+
+Now in your component you can work with the `localState` atom freely. When you want to commit the value back to global state, you can
+
+```typescript
+globalState.set(localState.get())
+```
+
+The topic is also covered in [examples/todoapp-backend](examples/todoapp-backend/index.tsx).
 
 ## Category theory view
 

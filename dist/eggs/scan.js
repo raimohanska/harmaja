@@ -3,7 +3,7 @@ import { applyScope } from "./applyscope";
 export function scan(stream, initial, fn, scope) {
     var seed = new PropertySeed(stream + ".scan(fn)", function (observer) {
         var current = initial;
-        var unsub = stream.on("value", function (newValue) {
+        var unsub = stream.forEach(function (newValue) {
             current = fn(current, newValue);
             observer(current);
         });

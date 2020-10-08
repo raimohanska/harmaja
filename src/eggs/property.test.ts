@@ -12,7 +12,7 @@ describe("Property", () => {
 
     it("scan", () => {
         const b = B.bus<number>()
-        const prop = B.scan(B.globalScope, b, 0, (a, b) => a + b)
+        const prop = B.scan(b, 0, (a, b) => a + b, B.globalScope)
         const values: number[] = []
         const valuesChange: number[] = []
         prop.forEach(v => values.push(v))

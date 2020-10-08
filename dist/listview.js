@@ -57,12 +57,10 @@ export function ListView(props) {
                 }
                 // 2. add/remove nodes
                 if (nextValues.length > currentValues.length) {
-                    var prevElement = controller.currentElements[controller.currentElements.length - 1];
                     for (var i = currentValues.length; i < nextValues.length; i++) {
                         var nextItemKey = key(nextValues[i]);
                         var newElement = renderItem(nextItemKey, nextValues, i);
-                        H.addAfterNode(controller, prevElement, newElement);
-                        prevElement = newElement;
+                        H.addAfterNode(controller, controller.currentElements[i - 1], newElement);
                     }
                 }
                 else if (nextValues.length < currentValues.length) {

@@ -1,6 +1,7 @@
 import { PropertySeed } from "./abstractions";
 import { StatefulProperty } from "./property";
 // TODO: apply to seeds and observables (freezeUnless is actually filter for Atoms!)
+// Use transform!
 export function filter(scope, prop, predicate) {
     var forEach = function (propertyAsChangeObserver) {
         var unsub = prop.on("change", function (newValue) {

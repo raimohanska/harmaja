@@ -715,6 +715,14 @@ function replaceMany(controller, oldContent, newContent) {
         throw new Error("Cannot replace zero nodes");
     if (newNodes.length === 0)
         throw new Error("Cannot replace with zero nodes");
+    oldNodes[0].parentElement.replaceChild(newNodes[0], oldNodes[0]);
+    for (var i = 1; i < oldNodes.length; i++) {
+        oldNodes[i].remove();
+    }
+    for (var i = 1; i < newNodes.length; i++) {
+        newNodes[i - 1].after(newNodes[i]);
+    }
+    replacedByController(controller, oldNodes, newNodes);
     try {
         for (var oldNodes_2 = __values(oldNodes), oldNodes_2_1 = oldNodes_2.next(); !oldNodes_2_1.done; oldNodes_2_1 = oldNodes_2.next()) {
             var node = oldNodes_2_1.value;
@@ -728,14 +736,6 @@ function replaceMany(controller, oldContent, newContent) {
         }
         finally { if (e_12) throw e_12.error; }
     }
-    oldNodes[0].parentElement.replaceChild(newNodes[0], oldNodes[0]);
-    for (var i = 1; i < oldNodes.length; i++) {
-        oldNodes[i].remove();
-    }
-    for (var i = 1; i < newNodes.length; i++) {
-        newNodes[i - 1].after(newNodes[i]);
-    }
-    replacedByController(controller, oldNodes, newNodes);
     try {
         for (var newNodes_1 = __values(newNodes), newNodes_1_1 = newNodes_1.next(); !newNodes_1_1.done; newNodes_1_1 = newNodes_1.next()) {
             var node = newNodes_1_1.value;
