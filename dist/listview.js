@@ -99,7 +99,7 @@ export function ListView(props) {
             // TODO: is filter necessary
             // TODO: use pipe
             var mapped = B.map(observable, function (items) { return items[index]; });
-            var filtered = B.filter(autoScope, mapped, function (item) { return item !== undefined; });
+            var filtered = B.filter(mapped, function (item) { return item !== undefined; }, autoScope);
             return props.renderObservable(key, filtered);
         }
         return props.renderItem(values[index]);

@@ -44,7 +44,7 @@ describe("Atom", () => {
 
     describe("Freezing", () => {
         it("Can be frozen on unwanted values", () => {
-            const a = A.freezeUnless(globalScope, A.atom<string | null>("hello"), a => a !== null)
+            const a = B.filter(A.atom<string | null>("hello"), a => a !== null, globalScope)
             
             a.set("world")
             expect(a.get()).toEqual("world")
@@ -53,7 +53,7 @@ describe("Atom", () => {
         })
     
         it("Can be frozen on unwanted values (when not getting in between sets)", () => {
-            const atom = A.freezeUnless(globalScope, A.atom<string | null>("hello"), a => a !== null)    
+            const atom = B.filter(A.atom<string | null>("hello"), a => a !== null, globalScope)    
             
             atom.set("world")        
             atom.set(null)
@@ -78,7 +78,7 @@ describe("Dependent Atom", () => {
             var b = B.bus()
             var prop = B.toProperty(b, "1", globalScope)
             const root = A.atom(prop, newValue => b.push(newValue))
-            var atom = A.freezeUnless(globalScope, root, a => a !== null)
+            var atom = B.filter(root, a => a !== null, globalScope)
     
             atom.set("world")
             expect(atom.get()).toEqual("world")
@@ -90,7 +90,7 @@ describe("Dependent Atom", () => {
             var b = B.bus()
             var prop = B.toProperty(b, "1", globalScope)
             const root = A.atom(prop, newValue => b.push(newValue))
-            var atom = A.freezeUnless(globalScope, root, a => a !== null)
+            var atom = B.filter(root, a => a !== null, globalScope)
     
             atom.set("world")        
             atom.set(null)

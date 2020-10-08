@@ -4,11 +4,10 @@ import { Scope } from "./scope";
 export declare class StatefulDependentAtom<V> extends Atom<V> {
     private _scope;
     private dispatcher;
-    private onChange;
     private value;
     constructor(seed: AtomSeed<V>, scope: Scope);
     get(): V;
-    set(newValue: V): void;
+    set: (updatedValue: V) => void;
     modify(fn: (old: V) => V): void;
     on(event: PropertyEventType, observer: Observer<V>): import("..").Callback;
     scope(): Scope;

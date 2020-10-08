@@ -1,21 +1,25 @@
-import { PropertySeed } from "./abstractions";
-import { StatefulProperty } from "./property";
-// TODO: apply to seeds and observables (freezeUnless is actually filter for Atoms!)
-// Use transform!
-export function filter(scope, prop, predicate) {
-    var forEach = function (propertyAsChangeObserver) {
-        var unsub = prop.on("change", function (newValue) {
-            if (predicate(newValue)) {
-                propertyAsChangeObserver(newValue);
+import { applyScope } from "./applyscope";
+import { transform } from "./transform";
+export function filter(s, fn, scope) {
+    var seed = transform(s + ".map(fn)", s, filterT(fn));
+    if (scope !== undefined) {
+        return applyScope(scope, seed);
+    }
+    return seed;
+}
+function filterT(fn) {
+    return {
+        changes: function (value, observer) {
+            if (fn(value)) {
+                observer(value);
             }
-        });
-        var initialValue = prop.get();
-        if (!predicate(initialValue)) {
-            throw Error("Initial value not matching filter for " + prop);
+        },
+        init: function (value) {
+            if (!fn(value)) {
+                throw Error("Initial value not matching filter");
+            }
+            return value;
         }
-        return [initialValue, unsub];
     };
-    var seed = new PropertySeed(prop + ".map(fn)", forEach);
-    return new StatefulProperty(seed, scope);
 }
 //# sourceMappingURL=filter.js.map

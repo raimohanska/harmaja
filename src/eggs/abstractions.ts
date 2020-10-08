@@ -29,13 +29,14 @@ export abstract class MulticastObservable<V, E extends string> extends Observabl
     }
 }
 
+export type PropertySubscribe<V> = (observer: Observer<V>) => [V, Unsub]
+
 export abstract class Property<V> extends MulticastObservable<V, PropertyEventType> {
     constructor(desc: string) {
         super(desc)
     }
 
     abstract get(): V
-
 
     subscribe(observer: Observer<V>): [V, Unsub] {
         const unsub = this.on("change", observer)
@@ -48,7 +49,7 @@ export abstract class Property<V> extends MulticastObservable<V, PropertyEventTy
  *  Must skip duplicates!
  **/
 export class PropertySeed<V> {
-    subscribe: (observer: Observer<V>) => [V, Unsub];
+    subscribe: PropertySubscribe<V>
     desc: string;
 
     constructor(desc: string, forEach: (observer: Observer<V>) => [V, Unsub]) {
@@ -93,10 +94,10 @@ export abstract class Atom<V> extends Property<V> {
  *  Must skip duplicates!
  **/
 export class AtomSeed<V> extends PropertySeed<V> {
-    onChange: (updatedValue: V) => void;
-    constructor(desc: string, forEach: (observer: Observer<V>) => [V, Unsub], onChange: (updatedValue: V) => void) {
+    set: (updatedValue: V) => void;
+    constructor(desc: string, forEach: (observer: Observer<V>) => [V, Unsub], set: (updatedValue: V) => void) {
         super(desc, forEach)
-        this.onChange = onChange
+        this.set = set
     }
 }
 

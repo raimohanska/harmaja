@@ -14,6 +14,7 @@ export declare abstract class MulticastObservable<V, E extends string> extends O
     log(message?: string): void;
     toString(): string;
 }
+export declare type PropertySubscribe<V> = (observer: Observer<V>) => [V, Unsub];
 export declare abstract class Property<V> extends MulticastObservable<V, PropertyEventType> {
     constructor(desc: string);
     abstract get(): V;
@@ -24,7 +25,7 @@ export declare abstract class Property<V> extends MulticastObservable<V, Propert
  *  Must skip duplicates!
  **/
 export declare class PropertySeed<V> {
-    subscribe: (observer: Observer<V>) => [V, Unsub];
+    subscribe: PropertySubscribe<V>;
     desc: string;
     constructor(desc: string, forEach: (observer: Observer<V>) => [V, Unsub]);
 }
@@ -55,8 +56,8 @@ export declare abstract class Atom<V> extends Property<V> {
  *  Must skip duplicates!
  **/
 export declare class AtomSeed<V> extends PropertySeed<V> {
-    onChange: (updatedValue: V) => void;
-    constructor(desc: string, forEach: (observer: Observer<V>) => [V, Unsub], onChange: (updatedValue: V) => void);
+    set: (updatedValue: V) => void;
+    constructor(desc: string, forEach: (observer: Observer<V>) => [V, Unsub], set: (updatedValue: V) => void);
 }
 export interface Bus<V> extends EventStream<V> {
     push(newValue: V): void;

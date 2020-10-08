@@ -111,13 +111,13 @@ class DependentAtom<V> extends Atom<V> {
 export class StatefulDependentAtom<V> extends Atom<V> {
     private _scope: Scope
     private dispatcher = new Dispatcher<PropertyEvents<V>>();
-    private onChange: (updatedValue: V) => void;
+    
     private value: V | OutOfScope = beforeScope
 
     constructor(seed: AtomSeed<V>, scope: Scope) {
         super(seed.desc)
         this._scope = scope;
-        this.onChange = seed.onChange;
+        this.set = seed.set;
         
         const meAsObserver = (newValue: V) => {
             this.value = newValue
@@ -139,9 +139,9 @@ export class StatefulDependentAtom<V> extends Atom<V> {
     get(): V {
         return checkScope(this, this.value)
     }
-    set(newValue: V) {
-        this.onChange(newValue)
-    }
+
+    set: (updatedValue: V) => void;
+    
     modify(fn: (old: V) => V) {
         this.set(fn(this.get()))
     }
@@ -192,22 +192,4 @@ export function atom<A>(x: any, y?: any): Atom<A> {
     } else {
         return new DependentAtom(`DependentAtom(${x})`, x, y)
     }
-}
-
-export function freezeUnless<A>(scope: Scope, atom: Atom<A>, freezeUnlessFn: (a: A) => boolean): Atom<A> {
-    const onChange = (v: A) => atom.set(v)
-    const forEach = (observer: Observer<A>) => {
-        const initial = atom.get()
-        if (!freezeUnlessFn(initial)) {
-            throw Error("Cannot create frozen atom with initial value not passing the given filter function")
-        }
-        const unsub = atom.on("change", newValue => {
-            if (freezeUnlessFn(newValue)) {
-                observer(newValue)
-            }
-        })
-        return [atom.get(), unsub] as any
-    }
-    const seed = new AtomSeed(atom + ".freezeUnless(fn)", forEach, onChange)
-    return new StatefulDependentAtom(seed, scope)
 }

@@ -130,7 +130,7 @@ var StatefulDependentAtom = /** @class */ (function (_super) {
         _this.dispatcher = new Dispatcher();
         _this.value = beforeScope;
         _this._scope = scope;
-        _this.onChange = seed.onChange;
+        _this.set = seed.set;
         var meAsObserver = function (newValue) {
             _this.value = newValue;
             _this.dispatcher.dispatch("change", newValue);
@@ -148,9 +148,6 @@ var StatefulDependentAtom = /** @class */ (function (_super) {
     }
     StatefulDependentAtom.prototype.get = function () {
         return checkScope(this, this.value);
-    };
-    StatefulDependentAtom.prototype.set = function (newValue) {
-        this.onChange(newValue);
     };
     StatefulDependentAtom.prototype.modify = function (fn) {
         this.set(fn(this.get()));
@@ -187,6 +184,7 @@ export function atom(x, y) {
         return new DependentAtom("DependentAtom(" + x + ")", x, y);
     }
 }
+// TODO: replace with filter
 export function freezeUnless(scope, atom, freezeUnlessFn) {
     var onChange = function (v) { return atom.set(v); };
     var forEach = function (observer) {

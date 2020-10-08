@@ -94,9 +94,9 @@ export { Atom };
  **/
 var AtomSeed = /** @class */ (function (_super) {
     __extends(AtomSeed, _super);
-    function AtomSeed(desc, forEach, onChange) {
+    function AtomSeed(desc, forEach, set) {
         var _this = _super.call(this, desc, forEach) || this;
-        _this.onChange = onChange;
+        _this.set = set;
         return _this;
     }
     return AtomSeed;

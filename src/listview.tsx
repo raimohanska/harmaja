@@ -111,7 +111,7 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
             // TODO: is filter necessary
             // TODO: use pipe
             const mapped = B.map(observable, items => items[index])
-            const filtered = B.filter(autoScope, mapped, item => item !== undefined)
+            const filtered = B.filter(mapped, item => item !== undefined, autoScope)
             return props.renderObservable(key, filtered)                   
         }
         return props.renderItem(values[index])            
