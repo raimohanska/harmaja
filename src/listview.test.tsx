@@ -96,6 +96,10 @@ describe("Listview", () => {
                 renderItem = { item => B.constant(<li>{item}</li>) }
             /></ul>)
             expect(getHtml(listView)).toEqual("<ul><li>1</li></ul>")
+            set([1,2])
+            expect(getHtml(listView)).toEqual("<ul><li>1</li><li>2</li></ul>")
+            set([1,8])
+            expect(getHtml(listView)).toEqual("<ul><li>1</li><li>8</li></ul>")
             set([1,2,3])
             expect(getHtml(listView)).toEqual("<ul><li>1</li><li>2</li><li>3</li></ul>")
             return listView
@@ -191,7 +195,7 @@ describe("Listview", () => {
                 />
             </ul>
         )
-        it("Observable-in-ListView", () => testRender([[1]], (value, set) => {
+        it("Observable-in-ListView, add 1 item", () => testRender([[1]], (value, set) => {
             const el = make(value)
             expect(getHtml(el)).toEqual("<ul><li><span>1</span></li></ul>")
             // Adding 1 item works
