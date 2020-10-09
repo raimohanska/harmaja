@@ -16,7 +16,7 @@
   },
   "dependencies": {},
   "peerDependencies": {
-    "lonna": "raimohanska/lonna#c8b74eed7f76e5b85763e286ee76f73c02c198a5"
+    "lonna": "raimohanska/lonna#74555ad"
   },
   "engines": {
     "node": ">13.0"

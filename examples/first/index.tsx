@@ -1,5 +1,5 @@
 import { applyScope } from "../../src/eggs/applyscope"
-import * as B from "../../src/index"
+import * as B from "lonna"
 import { h, mount, ListView } from "../../src/index"
 
 const numbers = B.bus<number>()

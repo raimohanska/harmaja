@@ -1,5 +1,5 @@
-import * as B from "baconjs"
-import { h, mount, ListView, Atom, atom } from "../../src/index"
+import * as B from "lonna"
+import { h, mount, ListView } from "../../src/index"
 import { Consultant, Id } from "./domain";
 import { initialConsultants, randomConsultant, saveChangesToServer, ServerFeedEvent, listenToServerEvents } from "./server";
 import "./styles.css";
@@ -7,11 +7,11 @@ import "./styles.css";
 type EditState = { state: "view" } | { state: "edit", consultant: Consultant } | { state: "saving", consultant: Consultant } | { state: "adding", consultant: Consultant }
 type Notification = { type: "info" | "warning" | "error"; text: string };
 
-const updates = new B.Bus<ServerFeedEvent>()
-const saveRequest = new B.Bus<Consultant>()
-const cancelRequest = new B.Bus<void>()
-const editRequest = new B.Bus<Consultant>()
-const addRequest = new B.Bus<Consultant>()
+const updates = B.bus<ServerFeedEvent>()
+const saveRequest = B.bus<Consultant>()
+const cancelRequest = B.bus<void>()
+const editRequest = B.bus<Consultant>()
+const addRequest = B.bus<Consultant>()
 
 const saveResult = saveRequest.merge(addRequest).flatMap(consultant =>
   B.fromPromise(saveChangesToServer(consultant))
