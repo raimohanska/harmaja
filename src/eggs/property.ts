@@ -1,6 +1,6 @@
 import { EventStream, EventStreamSeed, Observer, Property, PropertyEvents, PropertyEventType, PropertySeed, Unsub } from "./abstractions";
 import { Dispatcher } from "./dispatcher";
-import { never } from "./eventstream";
+import { never } from "./never";
 import { beforeScope, checkScope, globalScope, OutOfScope, Scope } from "./scope";
 import { duplicateSkippingObserver } from "./util";
 
@@ -95,15 +95,20 @@ export class StatefulProperty<V> extends StatefulPropertyBase<V> {
     }
 }
 
-export function toPropertySeed<A>(stream: EventStream<A> | EventStreamSeed<A>, initial: A) {
-    const forEach = (observer: Observer<A>): [A, Unsub] => {        
+export function toPropertySeed<A>(stream: EventStream<A> | EventStreamSeed<A>, initial: A): PropertySeed<A>;
+export function toPropertySeed<A, B>(stream: EventStream<A> | EventStreamSeed<A>, initial: B): PropertySeed<A | B>;
+export function toPropertySeed(stream: EventStream<any> | EventStreamSeed<any>, initial: any): PropertySeed<any> {
+    const forEach = (observer: Observer<any>): [any, Unsub] => {        
         return [initial, stream.forEach(observer)]
     }    
     return new PropertySeed(stream + `.toProperty(${initial})`, forEach)
 }
 
-export function toProperty<A>(stream: EventStream<A> | EventStreamSeed<A>, initial: A, scope: Scope) {    
-    return new StatefulProperty<A>(toPropertySeed(stream, initial), scope);
+export function toProperty<A>(stream: EventStream<A> | EventStreamSeed<A>, initial: A, scope: Scope): Property<A>;
+export function toProperty<A, B>(stream: EventStream<A> | EventStreamSeed<A>, initial: B, scope: Scope): Property<A | B>;
+
+export function toProperty(stream: EventStream<any> | EventStreamSeed<any>, initial: any, scope: Scope) {    
+    return new StatefulProperty(toPropertySeed(stream, initial), scope);
 }
 
 export function constant<A>(value: A): Property<A> {

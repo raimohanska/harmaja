@@ -1,6 +1,6 @@
-import { LowLevelApi as H, HarmajaOutput, DOMNode, NodeController, debug, HarmajaStaticOutput, componentScope } from "./harmaja"
 import * as B from "./eggs/eggs"
 import { autoScope } from "./eggs/eggs"
+import { DOMNode, HarmajaOutput, HarmajaStaticOutput, LowLevelApi as H } from "./harmaja"
 
 export type ListViewProps<A, K = A> = {
     observable: B.Property<A[]>, 
@@ -103,7 +103,7 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
     function renderItemRaw(key: K, values: A[], index: number) {
         if ("renderAtom" in props) {
             const nullableAtom = B.view(props.atom, index)
-            const nonNullableAtom = B.freezeUnless(autoScope, nullableAtom, a => a !== undefined) as B.Atom<A>
+            const nonNullableAtom = B.filter(nullableAtom, a => a !== undefined, autoScope) as B.Atom<A>
             const removeItem = () => nullableAtom.set(undefined)
             return props.renderAtom(key, nonNullableAtom, removeItem)
         }

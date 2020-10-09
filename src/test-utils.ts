@@ -41,3 +41,6 @@ export function getHtml(element: H.HarmajaStaticOutput): string {
         }
     }
 }
+export function wait(delay: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, delay))
+}
