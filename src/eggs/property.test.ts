@@ -31,5 +31,9 @@ describe("Property", () => {
         const b = B.constant(1)
         const b2 = B.map(b, x => x * 2)
         expect(b2.get()).toEqual(2)
+
+        // TODO: test skipping duplicates
+
+        // TODO: for Ostax: merge, or, not
     })
 })

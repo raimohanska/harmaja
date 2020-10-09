@@ -1,6 +1,6 @@
 import { Atom, AtomSeed, EventStream, EventStreamSeed, Property, PropertySeed } from "./abstractions";
 import { Scope } from "./scope";
-import { BaseEventStream } from "./eventstream";
+import { StatefulEventStream } from "./eventstream";
 import { StatefulDependentAtom } from "./atom";
 import { StatefulProperty } from "./property";
 
@@ -19,7 +19,7 @@ export function applyScope<T>(scope: Scope, seed: any): any {
     throw Error("Unknown seed")
 }
 
-class SeedToStream<V> extends BaseEventStream<V> {
+class SeedToStream<V> extends StatefulEventStream<V> {
     constructor(seed: EventStreamSeed<V>, scope: Scope) { 
         super(seed.desc, scope)                 
         scope(
