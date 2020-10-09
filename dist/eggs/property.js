@@ -33,7 +33,7 @@ var __spread = (this && this.__spread) || function () {
 };
 import { Property, PropertySeed } from "./abstractions";
 import { Dispatcher } from "./dispatcher";
-import { never } from "./eventstream";
+import { never } from "./never";
 import { beforeScope, checkScope, globalScope } from "./scope";
 import { duplicateSkippingObserver } from "./util";
 var StatefulPropertyBase = /** @class */ (function (_super) {

@@ -24,5 +24,7 @@ export declare class StatefulProperty<V> extends StatefulPropertyBase<V> {
     scope(): Scope;
 }
 export declare function toPropertySeed<A>(stream: EventStream<A> | EventStreamSeed<A>, initial: A): PropertySeed<A>;
-export declare function toProperty<A>(stream: EventStream<A> | EventStreamSeed<A>, initial: A, scope: Scope): StatefulProperty<A>;
+export declare function toPropertySeed<A, B>(stream: EventStream<A> | EventStreamSeed<A>, initial: B): PropertySeed<A | B>;
+export declare function toProperty<A>(stream: EventStream<A> | EventStreamSeed<A>, initial: A, scope: Scope): Property<A>;
+export declare function toProperty<A, B>(stream: EventStream<A> | EventStreamSeed<A>, initial: B, scope: Scope): Property<A | B>;
 export declare function constant<A>(value: A): Property<A>;

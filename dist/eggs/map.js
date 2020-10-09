@@ -15,36 +15,25 @@ var __read = (this && this.__read) || function (o, n) {
     return ar;
 };
 import { EventStream, EventStreamSeed, Property, PropertySeed } from "./abstractions";
-import { applyScope } from "./applyscope";
+import { StatelessEventStream } from "./eventstream";
 import { DerivedProperty } from "./property";
 export function map(o, fn) {
+    var desc = o + ".map(fn)";
     if (o instanceof EventStream) {
-        return mapES(o, fn);
+        return new StatelessEventStream(desc, function (observer) { return o.forEach(function (v) { return observer(fn(v)); }); }, o.scope());
     }
     else if (o instanceof EventStreamSeed) {
-        return mapESS(o, fn);
+        return new EventStreamSeed(desc, function (observer) { return o.forEach(function (v) { return observer(fn(v)); }); });
     }
     else if (o instanceof Property) {
-        return mapP(o, fn);
+        return new DerivedProperty(desc, [o], fn);
     }
     else if (o instanceof PropertySeed) {
-        return mapPS(o, fn);
+        return new PropertySeed(desc, function (observer) {
+            var _a = __read(o.subscribe(function (value) { return observer(fn(value)); }), 2), value = _a[0], unsub = _a[1];
+            return [fn(value), unsub];
+        });
     }
     throw Error("Unknown observable");
-}
-function mapES(s, fn) {
-    return applyScope(s.scope(), mapESS(s, fn));
-}
-function mapESS(s, fn) {
-    return new EventStreamSeed(s + ".map(fn)", function (observer) { return s.forEach(function (v) { return observer(fn(v)); }); });
-}
-function mapP(prop, fn) {
-    return new DerivedProperty(prop + ".map(fn)", [prop], fn);
-}
-function mapPS(seed, fn) {
-    return new PropertySeed(seed + ".map(fn)", function (observer) {
-        var _a = __read(seed.subscribe(function (value) { return observer(fn(value)); }), 2), value = _a[0], unsub = _a[1];
-        return [fn(value), unsub];
-    });
 }
 //# sourceMappingURL=map.js.map

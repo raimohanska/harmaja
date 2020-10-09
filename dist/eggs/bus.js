@@ -11,7 +11,7 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-import { BaseEventStream } from "./eventstream";
+import { StatefulEventStream } from "./eventstream";
 import { globalScope } from "./scope";
 export function bus() {
     return new BusImpl();
@@ -28,5 +28,5 @@ var BusImpl = /** @class */ (function (_super) {
         this.dispatcher.dispatch("value", newValue);
     };
     return BusImpl;
-}(BaseEventStream));
+}(StatefulEventStream));
 //# sourceMappingURL=bus.js.map

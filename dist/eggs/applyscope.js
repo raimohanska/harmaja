@@ -12,7 +12,7 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 import { AtomSeed, EventStreamSeed, PropertySeed } from "./abstractions";
-import { BaseEventStream } from "./eventstream";
+import { StatefulEventStream } from "./eventstream";
 import { StatefulDependentAtom } from "./atom";
 import { StatefulProperty } from "./property";
 export function applyScope(scope, seed) {
@@ -35,5 +35,5 @@ var SeedToStream = /** @class */ (function (_super) {
         return _this;
     }
     return SeedToStream;
-}(BaseEventStream));
+}(StatefulEventStream));
 //# sourceMappingURL=applyscope.js.map

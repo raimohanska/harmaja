@@ -1,6 +1,6 @@
-import { LowLevelApi as H } from "./harmaja";
 import * as B from "./eggs/eggs";
 import { autoScope } from "./eggs/eggs";
+import { LowLevelApi as H } from "./harmaja";
 export function ListView(props) {
     var observable = ("atom" in props) ? props.atom : props.observable;
     var _a = props.getKey, key = _a === void 0 ? (function (x) { return x; }) : _a;
@@ -91,7 +91,7 @@ export function ListView(props) {
     function renderItemRaw(key, values, index) {
         if ("renderAtom" in props) {
             var nullableAtom_1 = B.view(props.atom, index);
-            var nonNullableAtom = B.freezeUnless(autoScope, nullableAtom_1, function (a) { return a !== undefined; });
+            var nonNullableAtom = B.filter(nullableAtom_1, function (a) { return a !== undefined; }, autoScope);
             var removeItem = function () { return nullableAtom_1.set(undefined); };
             return props.renderAtom(key, nonNullableAtom, removeItem);
         }

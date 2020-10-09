@@ -29,4 +29,3 @@ export declare function atom<A>(initial: A): Atom<A>;
  * @param onChange   Function to be called when `atom.set` is called
  */
 export declare function atom<A>(input: Property<A>, onChange: (updatedValue: A) => void): Atom<A>;
-export declare function freezeUnless<A>(scope: Scope, atom: Atom<A>, freezeUnlessFn: (a: A) => boolean): Atom<A>;

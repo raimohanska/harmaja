@@ -25,7 +25,7 @@ export function transform(desc, x, transformer, scope) {
         seed = new AtomSeed(desc, transformSubscribe(x, transformer), function (newValue) { return x.set(newValue); });
     }
     else if (x instanceof Property || x instanceof PropertySeed) {
-        seed = new PropertySeed(desc, transformSubscribe(seed, transformer));
+        seed = new PropertySeed(desc, transformSubscribe(x, transformer));
     }
     else {
         throw Error("Unknown observable " + x);
@@ -36,6 +36,8 @@ export function transform(desc, x, transformer, scope) {
     return seed;
 }
 function transformSubscribe(src, transformer) {
+    if (src === undefined)
+        throw Error("Assertion failed");
     return function (observer) {
         var _a = __read(src.subscribe(function (value) { return transformer.changes(value, observer); }), 2), initial = _a[0], unsub = _a[1];
         return [transformer.init(initial), unsub];

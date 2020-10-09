@@ -13,32 +13,52 @@ var __extends = (this && this.__extends) || (function () {
 })();
 import { EventStream, EventStreamSeed } from "./abstractions";
 import { Dispatcher } from "./dispatcher";
-import { globalScope } from "./scope";
 // Note that we could use a Dispatcher as Bus, except for prototype inheritance of EventStream on the way
-var BaseEventStream = /** @class */ (function (_super) {
-    __extends(BaseEventStream, _super);
-    function BaseEventStream(desc, scope) {
+var StatefulEventStream = /** @class */ (function (_super) {
+    __extends(StatefulEventStream, _super);
+    function StatefulEventStream(desc, scope) {
         var _this = _super.call(this, desc) || this;
         _this.dispatcher = new Dispatcher();
         _this._scope = scope;
         return _this;
     }
-    BaseEventStream.prototype.on = function (event, observer) {
+    StatefulEventStream.prototype.on = function (event, observer) {
         return this.dispatcher.on(event, observer);
     };
-    BaseEventStream.prototype.scope = function () {
+    StatefulEventStream.prototype.scope = function () {
         return this._scope;
     };
-    return BaseEventStream;
+    return StatefulEventStream;
 }(EventStream));
-export { BaseEventStream };
-export function never() {
-    return new BaseEventStream("never", globalScope);
-}
-export function interval(delay, value) {
-    return new EventStreamSeed("interval(" + delay + ", " + value + ")", function (observer) {
-        var interval = setInterval(function () { return observer(value); }, delay);
-        return function () { return clearInterval(interval); };
-    });
-}
+export { StatefulEventStream };
+var StatelessEventStream = /** @class */ (function (_super) {
+    __extends(StatelessEventStream, _super);
+    function StatelessEventStream() {
+        var _this = this;
+        var desc, forEach, scope;
+        if (arguments[0] instanceof EventStreamSeed) {
+            var seed = arguments[0];
+            desc = seed.desc;
+            forEach = seed.forEach;
+            scope = arguments[1];
+        }
+        else {
+            desc = arguments[0];
+            forEach = arguments[1];
+            scope = arguments[2];
+        }
+        _this = _super.call(this, desc) || this;
+        _this._scope = scope;
+        _this.forEach = forEach;
+        return _this;
+    }
+    StatelessEventStream.prototype.on = function (event, observer) {
+        return this.forEach(observer);
+    };
+    StatelessEventStream.prototype.scope = function () {
+        return this._scope;
+    };
+    return StatelessEventStream;
+}(EventStream));
+export { StatelessEventStream };
 //# sourceMappingURL=eventstream.js.map

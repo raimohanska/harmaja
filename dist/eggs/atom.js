@@ -28,7 +28,7 @@ var __read = (this && this.__read) || function (o, n) {
     return ar;
 };
 import * as L from "../lens";
-import { Atom, AtomSeed } from "./abstractions";
+import { Atom } from "./abstractions";
 import { Dispatcher } from "./dispatcher";
 import { afterScope, beforeScope, checkScope, globalScope } from "./scope";
 import { duplicateSkippingObserver } from "./util";
@@ -183,23 +183,5 @@ export function atom(x, y) {
     else {
         return new DependentAtom("DependentAtom(" + x + ")", x, y);
     }
-}
-// TODO: replace with filter
-export function freezeUnless(scope, atom, freezeUnlessFn) {
-    var onChange = function (v) { return atom.set(v); };
-    var forEach = function (observer) {
-        var initial = atom.get();
-        if (!freezeUnlessFn(initial)) {
-            throw Error("Cannot create frozen atom with initial value not passing the given filter function");
-        }
-        var unsub = atom.on("change", function (newValue) {
-            if (freezeUnlessFn(newValue)) {
-                observer(newValue);
-            }
-        });
-        return [atom.get(), unsub];
-    };
-    var seed = new AtomSeed(atom + ".freezeUnless(fn)", forEach, onChange);
-    return new StatefulDependentAtom(seed, scope);
 }
 //# sourceMappingURL=atom.js.map
