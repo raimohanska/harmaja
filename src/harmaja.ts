@@ -1,6 +1,4 @@
-import { Dispatcher } from "./eggs/dispatcher"
-import * as B from "./eggs/eggs"
-import { Observer, Scope, Unsub } from "./eggs/eggs"
+import * as B from "lonna"
 
 export type HarmajaComponent = (props: HarmajaProps) => HarmajaOutput
 export type JSXElementType = string | HarmajaComponent
@@ -21,7 +19,7 @@ type TransientState = {
     mountE?: B.EventStream<void>,
     unmountCallbacks?: Callback[], 
     unmountE?: B.EventStream<void>,
-    scope?: Scope,
+    scope?: B.Scope,
     mountsController?: NodeController
 }
 
@@ -324,8 +322,8 @@ export function componentScope(): B.Scope {
     if (!transientState.scope) {
         const unmountE = unmountEvent()
         const mountE = mountEvent()
-        transientState.scope = (onIn: () => Unsub, dispatcher: Dispatcher<any>) => {
-            let unsub: Unsub | null = null
+        transientState.scope = (onIn: () => B.Unsub, dispatcher: B.Dispatcher<any>) => {
+            let unsub: B.Unsub | null = null
             unmountE.forEach(() => { if (unsub) unsub() })
             if (transientState.mountsController) {
                 const state = getNodeState(transientState.mountsController.currentElements[0])

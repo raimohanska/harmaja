@@ -1,4 +1,4 @@
-import * as B from "./eggs/eggs";
+import * as B from "lonna";
 export declare type HarmajaComponent = (props: HarmajaProps) => HarmajaOutput;
 export declare type JSXElementType = string | HarmajaComponent;
 export declare type HarmajaProps = Record<string, any>;

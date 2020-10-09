@@ -1,5 +1,4 @@
-import * as B from "./eggs/eggs";
-import { autoScope } from "./eggs/eggs";
+import * as B from "lonna";
 import { LowLevelApi as H } from "./harmaja";
 export function ListView(props) {
     var observable = ("atom" in props) ? props.atom : props.observable;
@@ -91,7 +90,7 @@ export function ListView(props) {
     function renderItemRaw(key, values, index) {
         if ("renderAtom" in props) {
             var nullableAtom_1 = B.view(props.atom, index);
-            var nonNullableAtom = B.filter(nullableAtom_1, function (a) { return a !== undefined; }, autoScope);
+            var nonNullableAtom = B.filter(nullableAtom_1, function (a) { return a !== undefined; }, B.autoScope);
             var removeItem = function () { return nullableAtom_1.set(undefined); };
             return props.renderAtom(key, nonNullableAtom, removeItem);
         }
@@ -99,7 +98,7 @@ export function ListView(props) {
             // TODO: is filter necessary
             // TODO: use pipe
             var mapped = B.map(observable, function (items) { return items[index]; });
-            var filtered = B.filter(mapped, function (item) { return item !== undefined; }, autoScope);
+            var filtered = B.filter(mapped, function (item) { return item !== undefined; }, B.autoScope);
             return props.renderObservable(key, filtered);
         }
         return props.renderItem(values[index]);

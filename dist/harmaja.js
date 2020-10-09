@@ -40,7 +40,7 @@ var __spread = (this && this.__spread) || function () {
     for (var ar = [], i = 0; i < arguments.length; i++) ar = ar.concat(__read(arguments[i]));
     return ar;
 };
-import * as B from "./eggs/eggs";
+import * as B from "lonna";
 var transientStateStack = [];
 /**
  *  Element constructor used by JSX.

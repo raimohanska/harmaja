@@ -1,14 +1,13 @@
 import { h } from "./index"
 import * as H from "./index"
-import * as B from "./eggs/eggs"
+import * as B from "lonna"
 import { DOMNode, unmount, callOnMounts, HarmajaOutput, HarmajaStaticOutput } from "./harmaja"
-import { scope, toProperty } from "./eggs/eggs"
 
 export function testRender<T>(init: T, test: (property: B.Property<T>, set: (v: T) => any) => HarmajaOutput) {
     const bus = B.bus<T>()
-    const testScope = scope() 
+    const testScope = B.scope() 
     testScope.start()
-    const property = toProperty(bus, init, testScope.apply)
+    const property = B.toProperty(bus, init, testScope.apply)
     const element = test(property, bus.push)
     unmount(element as HarmajaStaticOutput)
     // Verify that all subscribers are removed on unmount

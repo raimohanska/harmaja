@@ -11,10 +11,13 @@
     "jest": "^26.4.0",
     "parcel-bundler": "^1.12.4",
     "ts-jest": "^26.2.0",
-    "typescript": "^4"
+    "typescript": "^4",
+    "lonna": "raimohanska/lonna#bb18817"
   },
   "dependencies": {},
-  "peerDependencies": {},
+  "peerDependencies": {
+    "lonna": "raimohanska/lonna#c8b74eed7f76e5b85763e286ee76f73c02c198a5"
+  },
   "engines": {
     "node": ">13.0"
   },

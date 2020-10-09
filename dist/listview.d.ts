@@ -1,4 +1,4 @@
-import * as B from "./eggs/eggs";
+import * as B from "lonna";
 import { HarmajaOutput } from "./harmaja";
 export declare type ListViewProps<A, K = A> = {
     observable: B.Property<A[]>;

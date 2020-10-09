@@ -1,4 +1,4 @@
-import * as B from "./eggs/eggs"
+import * as B from "lonna"
 import * as CSS from 'csstype';
 
 import * as H from "./harmaja"

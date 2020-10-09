@@ -1,5 +1,4 @@
-import * as B from "./eggs/eggs"
-import { autoScope } from "./eggs/eggs"
+import * as B from "lonna"
 import { DOMNode, HarmajaOutput, HarmajaStaticOutput, LowLevelApi as H } from "./harmaja"
 
 export type ListViewProps<A, K = A> = {
@@ -103,7 +102,7 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
     function renderItemRaw(key: K, values: A[], index: number) {
         if ("renderAtom" in props) {
             const nullableAtom = B.view(props.atom, index)
-            const nonNullableAtom = B.filter(nullableAtom, a => a !== undefined, autoScope) as B.Atom<A>
+            const nonNullableAtom = B.filter(nullableAtom, a => a !== undefined, B.autoScope) as B.Atom<A>
             const removeItem = () => nullableAtom.set(undefined)
             return props.renderAtom(key, nonNullableAtom, removeItem)
         }
@@ -111,7 +110,7 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
             // TODO: is filter necessary
             // TODO: use pipe
             const mapped = B.map(observable, items => items[index])
-            const filtered = B.filter(mapped, item => item !== undefined, autoScope)
+            const filtered = B.filter(mapped, item => item !== undefined, B.autoScope)
             return props.renderObservable(key, filtered)                   
         }
         return props.renderItem(values[index])            
