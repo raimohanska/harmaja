@@ -2,6 +2,7 @@ import { EventStream, EventStreamSeed, Property, PropertySeed } from "./abstract
 import { StatelessEventStream } from "./eventstream";
 import { DerivedProperty } from "./property";
 
+// TODO: Map to value of Property (needs sampledBy)
 
 export function map<A, B>(prop: Property<A>, fn: (value: A) => B): Property<B>;
 export function map<A, B>(prop: PropertySeed<A>, fn: (value: A) => B): PropertySeed<B>;
