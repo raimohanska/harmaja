@@ -33,7 +33,7 @@ const notificationE: B.EventStream<Notification> =
   saveFailed.map(() => ({ type: "error", text: "Failed to save"} as Notification))
   .merge(saveSuccess.map(() => ({ type: "info", text: "Saved"})))
 const notification: B.Property<Notification | null> = notificationE
-  .flatMapLatest(notification => B.once(notification).concat(B.later(2000, null)))
+  .flatMapLatest(notification => B.once(notification).merge(B.later(2000, null)))
   .toProperty(null)
 
 saveResult.forEach(savedConsultant => {
@@ -119,7 +119,7 @@ function NotificationView({ notification }: { notification: B.Property<Notificat
 type CardState = "view" | "edit" | "disabled";
 
 function ConsultantCard({ id, consultant, editState }: { id: Id, consultant: B.Property<Consultant>, editState: B.Property<EditState> }) {
-  const cardState: B.Property<CardState> = B.combineWith(consultant, editState, (c, state) => {
+  const cardState: B.Property<CardState> = B.combine(consultant, editState, (c, state) => {
     if (state.state === "edit") {
       if (state.consultant.id === c.id) {
         return "edit"
@@ -131,13 +131,13 @@ function ConsultantCard({ id, consultant, editState }: { id: Id, consultant: B.P
     }
     return "view"
   })
-  const consultantToShow: B.Property<Consultant> = B.combineWith(consultant, editState, (c, state) => {
+  const consultantToShow: B.Property<Consultant> = B.combine(consultant, editState, (c, state) => {
     if (state.state !== "view" && state.consultant.id === c.id) {
       return state.consultant
     }
     return c
   })
-  const localConsultant: Atom<Consultant> = atom(consultantToShow, editRequest.push)
+  const localConsultant: B.Atom<Consultant> = B.atom(consultantToShow, editRequest.push)
 
   async function saveLocalChanges() {
     const currentConsultant = localConsultant.get()
@@ -150,7 +150,7 @@ function ConsultantCard({ id, consultant, editState }: { id: Id, consultant: B.P
   
   return (
     <div
-      style={cardState.map(s => { 
+      style={B.map(cardState, s => { 
         const disabledStyle = (s === "disabled") ? { opacity: 0.5, pointerEvents: "none" as any /* TODO: really weird that this value is not accepted */ } : {}
         const style = {
           ...{
@@ -164,7 +164,7 @@ function ConsultantCard({ id, consultant, editState }: { id: Id, consultant: B.P
         return style
     })}
     >
-      <img alt={localConsultant.view("name")} src="profile-placeholder.png" style={{ maxWidth: "100px" }} />
+      <img alt={B.view(localConsultant, "name")} src="profile-placeholder.png" style={{ maxWidth: "100px" }} />
       <div
         style={{
           display: "flex",
@@ -174,7 +174,7 @@ function ConsultantCard({ id, consultant, editState }: { id: Id, consultant: B.P
         }}
       >
         <div style={{ position: "absolute", top: 0, right: 0 }}>
-          {cardState.map(s => s === "edit").map(editing => editing ? (
+          {B.map(B.map(cardState, s => s === "edit"), editing => editing ? (
             <span>
               <SimpleButton
                 {...{
@@ -194,10 +194,10 @@ function ConsultantCard({ id, consultant, editState }: { id: Id, consultant: B.P
             null
           ))}
         </div>
-        <TextInput value={localConsultant.view("name")} style={{ display: "inline-block", minWidth: "10em", border: "none" }} />
+        <TextInput value={B.view(localConsultant, "name")} style={{ display: "inline-block", minWidth: "10em", border: "none" }} />
         <span style={{ marginLeft: "1em", textAlign: "left", width: "100%" }}>
           <Textarea
-            value={localConsultant.view("description")}            
+            value={B.view(localConsultant, "description")}            
             style={{
               height: "100%",
               width: "100%",
@@ -212,7 +212,7 @@ function ConsultantCard({ id, consultant, editState }: { id: Id, consultant: B.P
 }
 
 
-const TextInput = (props: { value: Atom<string>, elementName: string } & any) => {
+const TextInput = (props: { value: B.Atom<string>, elementName: string } & any) => {
   return <input {...{ 
           type: "text", 
           onInput: e => { 
@@ -223,7 +223,7 @@ const TextInput = (props: { value: Atom<string>, elementName: string } & any) =>
         }} />  
 };
 
-const Textarea = (props: { value: Atom<string>, elementName: string } & any) => {
+const Textarea = (props: { value: B.Atom<string>, elementName: string } & any) => {
   return <textarea {...{ 
           onInput: e => { 
               props.value.set(e.currentTarget.value)

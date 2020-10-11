@@ -1605,6 +1605,11 @@ babylon-walk@^1.0.2:
     babel-types "^6.15.0"
     lodash.clone "^4.5.0"
 
+baconjs@^3.0.15:
+  version "3.0.15"
+  resolved "https://registry.yarnpkg.com/baconjs/-/baconjs-3.0.15.tgz#8d605ca6308be64f5cf3195fe9bf5817c0186e9d"
+  integrity sha512-s0fn7zkpYWOYGbOxMJzizKsZXTGIj1dLtXM/LirlWbryjt3ERt4reiIHs9Hb8qyYeOOTb2GCgIU3pemfJPKr0w==
+
 balanced-match@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/balanced-match/-/balanced-match-1.0.0.tgz#89b4d199ab2bee49de164ea02b89ce462d71b767"
@@ -4416,8 +4421,9 @@ log-symbols@^2.2.0:
   dependencies:
     chalk "^2.0.1"
 
-lonna@../lonna:
+lonna@raimohanska/lonna#master:
   version "0.0.2"
+  resolved "https://codeload.github.com/raimohanska/lonna/tar.gz/10ebf8920b2719a83b8ea1a69758b802fcee7859"
 
 loose-envify@^1.0.0:
   version "1.4.0"

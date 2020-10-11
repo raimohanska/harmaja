@@ -1,6 +1,6 @@
-import * as B from "../../src/eggs/eggs"
+import * as B from "lonna"
 
-import { h, mount, ListView, Atom, atom } from "../../src/index"
+import { h, mount, ListView } from "../../src/index"
 import itemAddedFromSocketE from "./fake-socket";
 
 // The domain object constructor
@@ -70,7 +70,7 @@ const ItemView = ({ id, item }: { id: number, item: B.Property<TodoItem> }) => 
   // this case we push changes to the bus which will then cause state changes to propagate back here.
   // A dependent atom provides a bridge between atom-based components and "unidirectional data flow"
   // style state management.
-  const itemAtom = atom(item, updated => updateItemBus.push(updated))
+  const itemAtom = B.atom(item, updated => updateItemBus.push(updated))
   
   return (
     <span>
@@ -84,7 +84,7 @@ const ItemView = ({ id, item }: { id: number, item: B.Property<TodoItem> }) => 
 };
 
 const NewItem = () => {
-  const name = atom("")
+  const name = B.atom("")
   const addNew = () => addItemBus.push(name.get())
   return (
     <div className="newItem">
@@ -94,7 +94,7 @@ const NewItem = () => {
   );
 };
 
-const TextInput = (props: { value: Atom<string> } & any) => {
+const TextInput = (props: { value: B.Atom<string> } & any) => {
   return <input {...{ 
           type: "text", 
           onInput: e => { 
@@ -105,7 +105,7 @@ const TextInput = (props: { value: Atom<string> } & any) => {
         }} />  
 };
 
-const Checkbox = (props: { checked: Atom<boolean> } & any) => {
+const Checkbox = (props: { checked: B.Atom<boolean> } & any) => {
     return <input {...{ 
             type: "checkbox", 
             onInput: e => { 

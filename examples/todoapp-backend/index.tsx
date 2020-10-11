@@ -1,17 +1,17 @@
-import * as B from "baconjs"
+import * as B from "lonna"
 
-import { h, mount, ListView, Atom, atom } from "../../src/index"
+import { h, mount, ListView } from "../../src/index"
 import { todoItem, TodoItem, Id } from "./domain";
 import { saveChangesToServer, ServerFeedEvent, listenToServerEvents, findIndex } from "./server";
 
 type EditState = { state: "view" } | { state: "edit", item: TodoItem } | { state: "saving", item: TodoItem } | { state: "adding", item: TodoItem }
 type Notification = { type: "info" | "warning" | "error"; text: string };
 
-const updates = new B.Bus<ServerFeedEvent>()
-const saveRequest = new B.Bus<TodoItem>()
-const cancelRequest = new B.Bus<void>()
-const editRequest = new B.Bus<TodoItem>()
-const addRequest = new B.Bus<TodoItem>()
+const updates = B.bus<ServerFeedEvent>()
+const saveRequest = B.bus<TodoItem>()
+const cancelRequest = B.bus<void>()
+const editRequest = B.bus<TodoItem>()
+const addRequest = B.bus<TodoItem>()
 
 const saveResult = saveRequest.merge(addRequest).flatMap(item =>
   B.fromPromise(saveChangesToServer(item))
@@ -33,7 +33,7 @@ const notificationE: B.EventStream<Notification> =
   saveFailed.map(() => ({ type: "error", text: "Failed to save"} as Notification))
   .merge(saveSuccess.map(() => ({ type: "info", text: "Saved"})))
 const notification: B.Property<Notification | null> = notificationE
-  .flatMapLatest(notification => B.once(notification).concat(B.later(2000, null)))
+  .flatMapLatest(notification => B.once(notification).merge(B.later(2000, null)))
   .toProperty(null)
 
 saveResult.forEach(savedTodoItem => {

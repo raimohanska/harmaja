@@ -1,5 +1,5 @@
 import { TodoItem, todoItem } from "./domain";
-import * as B from "baconjs"
+import * as B from "lonna"
 
 export type InitTodos = {
   type: "init";
@@ -34,7 +34,7 @@ let storedItems: TodoItem[] = initialItems;
 function serverFeed(): B.EventStream<ServerFeedEvent> {
   console.log("Start server feed");
   storedItems = initialItems;
-  const b = new B.Bus<ServerFeedEvent>();
+  const b = B.bus<ServerFeedEvent>();
 
   (async () => {
     await randomDelay(2000);

@@ -1,6 +1,6 @@
-import * as B from "baconjs"
+import * as B from "lonna"
 
-import { h, mount, ListView, Atom, atom, unmountEvent } from "../../src/index"
+import { h, mount, ListView, unmountEvent } from "../../src/index"
 import { todoItem, TodoItem, Id } from "./domain";
 import { saveChangesToServer, ServerFeedEvent, listenToServerEvents, findIndex } from "./server";
 
@@ -42,11 +42,11 @@ const ScrollPosDisplay = () => {
 }
 
 const App = () => {
-  const showScroller = atom(true)
+  const showScroller = B.atom(true)
   return <div>
     <button onClick={ () => showScroller.modify(x => !x) } style={{ position: "fixed", right: "80px" }}>Toggle visibility</button>
     {
-      showScroller.map(show => show ? <ScrollPosDisplay/> : null)
+      B.map(showScroller, show => show ? <ScrollPosDisplay/> : null)
     }
     <ScrollingThing/>
   </div>

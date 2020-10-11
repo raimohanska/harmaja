@@ -1,5 +1,5 @@
-import * as B from "../../src/eggs/eggs"
-import { h, mount, ListView, atom, Atom } from "../../src/index"
+import * as B from "lonna"
+import { h, mount, ListView } from "../../src/index"
 import { search } from "./search-engine"
 
 const Root = () =>
@@ -30,12 +30,12 @@ const SearchResults = ({ state } : { state: B.Property<SearchState> }) => {
     const currentResults: B.Property<string[] | null> = state.map(s => s.state === "done" ? s.results : null)
     const latestResults: B.Property<string[]> = currentResults.filter(results => results !== null).startWith([])
 
-    const message = B.combineWith(state, latestResults, (s, r) => {
+    const message = B.combine(state, latestResults, (s, r) => {
         if (s.state == "done" && r.length === 0) return "Nothing found"
         if (s.state === "searching" && r.length === 0) return "Searching..."
         return ""
     })
-    const style = B.combineWith(state, latestResults, (s, r) => {
+    const style = B.combine(state, latestResults, (s, r) => {
         if (s.state === "searching" && r.length > 0) return { opacity: 0.5 }
         return {}
     })
@@ -51,8 +51,8 @@ const SearchResults = ({ state } : { state: B.Property<SearchState> }) => {
 }
 
 const SearchResultsSimplest = ({ state } : { state: B.Property<SearchState> }) => {
-    const currentResults: B.Property<string[]> = state.map(s => s.state === "done" ? s.results : [])
-    const message: B.Property<string> = currentResults.map(r => r.length === 0 ? "Nothing found" : null)
+    const currentResults: B.Property<string[]> = B.map(state, s => s.state === "done" ? s.results : [])
+    const message: B.Property<string> = B.map(currentResults, r => r.length === 0 ? "Nothing found" : null)
     
     return <div>
         { message }
@@ -64,8 +64,8 @@ const SearchResultsSimplest = ({ state } : { state: B.Property<SearchState> }) =
 }
 
 const SearchResults2 = ({ state } : { state: B.Property<SearchState> }) => {
-    const currentResults: B.Property<string[]> = state.map(s => s.state === "done" ? s.results : [])
-    const message: B.Property<string> = state.map(s => {
+    const currentResults: B.Property<string[]> = B.map(state, s => s.state === "done" ? s.results : [])
+    const message: B.Property<string> = B.map(state, s => {
         if (s.state === "searching") return "Searching..."
         if (s.state === "done" && s.results.length === 0) return "Nothing found."
         return ""
@@ -80,7 +80,7 @@ const SearchResults2 = ({ state } : { state: B.Property<SearchState> }) => {
     </div>
 }
 
-const TextInput = (props: { value: Atom<string> } & any) => {
+const TextInput = (props: { value: B.Atom<string> } & any) => {
     return <input {...{ 
             type: "text", 
             onInput: e => { 
