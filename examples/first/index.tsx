@@ -1,4 +1,3 @@
-import { applyScope } from "../../src/eggs/applyscope"
 import * as B from "lonna"
 import { h, mount, ListView } from "../../src/index"
 

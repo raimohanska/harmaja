@@ -1,11 +1,10 @@
 import * as B from "lonna"
+import { globalScope } from "lonna";
 
 import { h, mount, ListView, unmountEvent } from "../../src/index"
-import { todoItem, TodoItem, Id } from "./domain";
-import { saveChangesToServer, ServerFeedEvent, listenToServerEvents, findIndex } from "./server";
 
-const scrollPos = B.fromEvent(window, "scroll").map(() => window.scrollY).map(Math.floor).toProperty(window.scrollY)
-scrollPos.forEach() // <- to keep it updated even when no actual subscribers
+// TODO: define as Property directly
+const scrollPos = B.toProperty(B.map(B.fromEvent(window, "scroll"), () => Math.floor(window.scrollY)), window.scrollY, globalScope)
 
 const randomColor = () => "#" + Math.floor(Math.random()*16777215).toString(16);
 
@@ -33,7 +32,10 @@ const ScrollingThing = () => {
 };
 
 const ScrollPosDisplay = () => {
-  scrollPos.doLog("snoop")
+
+  // TODO: not ready yet
+
+  scrollPos.map(x => { console.log(x); return x })
     .takeUntil(unmountEvent()) // takeUntil is necessary here! Otherwise the forEach side-effect will continue after component unMount
     .forEach( pos => console.log(pos) )
   return <div style={{ position: "fixed", right: "20px", background: "black", color: "white", padding: "10px" }}>{ 

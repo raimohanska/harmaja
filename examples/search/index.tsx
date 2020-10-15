@@ -1,5 +1,6 @@
 import * as B from "lonna"
-import { h, mount, ListView } from "../../src/index"
+import { globalScope } from "lonna"
+import { h, mount, ListView, componentScope } from "../../src/index"
 import { search } from "./search-engine"
 
 const Root = () =>
@@ -10,13 +11,14 @@ const Root = () =>
 type SearchState = { state: "initial" } | { state: "searching", searchString: string } | { state: "done", searchString: string, results: string[] }
 
 const Search = () => {
-    const searchString = atom("")
-    const searchStringChange: B.EventStream<string> = searchString.changes().debounce(500)
-    const searchResult: B.EventStream<string[]> = searchStringChange.flatMapLatest(s => B.fromPromise(search(s)))
-    const state: B.Property<SearchState> = B.update(
+    const searchString = B.atom("")
+    const searchStringChange: B.EventStream<string> = B.debounce(B.changes(searchString), 500, globalScope)
+    const searchResult: B.EventStream<string[]> = B.flatMapLatest(searchStringChange, s => B.fromPromise(search(s), () => [], xs => xs, error => []), globalScope)
+    
+    const state: B.Property<SearchState> = B.update(globalScope,
         { state: "initial"} as SearchState,
         [searchStringChange, (state, searchString) => ({ state: "searching", searchString })],
-        [searchResult, searchString, (state, results, searchString) => ({ state: "done", results, searchString})]
+        [searchResult, searchString, (state, results, searchString) => ({ state: "done", results, searchString})],
     )
     return <div>
         <h1>Cobol search</h1>
@@ -25,16 +27,22 @@ const Search = () => {
     </div>
 }
 
+// TODO: globalScope => componentScope (there were some problems with that)
+
 
 const SearchResults = ({ state } : { state: B.Property<SearchState> }) => {
-    const currentResults: B.Property<string[] | null> = state.map(s => s.state === "done" ? s.results : null)
-    const latestResults: B.Property<string[]> = currentResults.filter(results => results !== null).startWith([])
+    // TODO works only once
+    const latestResults: B.Property<string[]> = B.scan(B.changes(state), [], ((results, newState) => 
+        newState.state === "done" ? newState.results : results
+    ), globalScope)
 
     const message = B.combine(state, latestResults, (s, r) => {
         if (s.state == "done" && r.length === 0) return "Nothing found"
         if (s.state === "searching" && r.length === 0) return "Searching..."
         return ""
     })
+
+
     const style = B.combine(state, latestResults, (s, r) => {
         if (s.state === "searching" && r.length > 0) return { opacity: 0.5 }
         return {}

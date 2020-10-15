@@ -1,7 +1,7 @@
 import { Consultant } from "./domain";
 import { randomName } from "./names";
 import { sentences } from "./sentences";
-import * as B from "baconjs"
+import * as B from "lonna"
 
 export type InitConsultants = {
   type: "init";
@@ -21,7 +21,7 @@ let counter = 0;
 function serverFeed(): B.EventStream<ServerFeedEvent> {
   console.log("Start server feed");
   consultants = generate(3, randomConsultant);
-  const b = new B.Bus<ServerFeedEvent>();
+  const b = B.bus<ServerFeedEvent>();
 
   (async () => {
     await randomDelay(2000);
@@ -67,8 +67,10 @@ export async function saveChangesToServer(
   consultant: Consultant
 ): Promise<void> {
   await randomDelay(2000);
-  if (Math.random() < 0.1)
+  if (Math.random() < 0.5) {
+    console.log("Throwing random error")
     throw new Error("Oops, random error occurred on server");
+  }
   const index = findIndex(consultants, c => c.id === consultant.id);
   if (index < 0) {
     consultants.push(consultant);

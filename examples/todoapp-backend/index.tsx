@@ -1,4 +1,5 @@
 import * as B from "lonna"
+import { globalScope } from "lonna";
 
 import { h, mount, ListView } from "../../src/index"
 import { todoItem, TodoItem, Id } from "./domain";
@@ -13,28 +14,34 @@ const cancelRequest = B.bus<void>()
 const editRequest = B.bus<TodoItem>()
 const addRequest = B.bus<TodoItem>()
 
-const saveResult = saveRequest.merge(addRequest).flatMap(item =>
-  B.fromPromise(saveChangesToServer(item))
-    .map(() => item as TodoItem | null)
-    .mapError(() => null)
+const saveResult = B.flatMap(B.merge(saveRequest, addRequest), item =>
+  B.changes(B.fromPromise(saveChangesToServer(item), 
+    () => undefined, // this never passes because only changes are monitored
+    () => item, 
+    error => null
+  )),
+  globalScope
 )
 
-const allItems: B.Property<TodoItem []> = updates.scan([], reducer)
-const editState = B.update<EditState>({ state: "view" }, 
+const allItems: B.Property<TodoItem []> = B.scan(updates, [], reducer, globalScope)
+const editState = B.update<EditState>(globalScope, { state: "view" }, 
   [addRequest, (_, item) => ({ state: "adding", item})],
   [editRequest, (_, item) => ({ state: "edit", item})],
   [saveRequest, (_, item) => ({ state: "saving", item})],
   [saveResult, (state, success) => (!success && state.state == "saving") ? { state: "edit", item: state.item } : { state: "view"}],
   [cancelRequest, () => ( { state: "view" })]
 )
-const saveFailed = saveResult.filter(success => !success)
-const saveSuccess = saveResult.filter(success => !!success)
-const notificationE: B.EventStream<Notification> = 
-  saveFailed.map(() => ({ type: "error", text: "Failed to save"} as Notification))
-  .merge(saveSuccess.map(() => ({ type: "info", text: "Saved"})))
-const notification: B.Property<Notification | null> = notificationE
-  .flatMapLatest(notification => B.once(notification).merge(B.later(2000, null)))
-  .toProperty(null)
+const saveFailed = B.filter(saveResult, success => !success)
+const saveSuccess = B.filter(saveResult, success => !!success)
+const notificationE = B.merge(
+  B.map(saveFailed, () => ({ type: "error", text: "Failed to save"} as Notification)),
+  B.map(saveSuccess, () => ({ type: "info", text: "Saved"}))
+)
+const notification: B.Property<Notification | null> = B.toProperty(
+  B.flatMapLatest(notificationE, notification => B.toProperty(B.later(2000, null), notification)),
+  null, globalScope
+)
+
 
 saveResult.forEach(savedTodoItem => {
   if (savedTodoItem) {
@@ -101,7 +108,7 @@ const ItemList = ({ items }: { items: B.Property<TodoItem[]>}) => {
 
 type ItemState = "view" | "edit" | "disabled";
 const ItemView = ({ id, item, editState }: { id: number, editState: B.Property<EditState>, item: B.Property<TodoItem> }) => {  
-  const itemState: B.Property<ItemState> = B.combineWith(item, editState, (c, state) => {
+  const itemState: B.Property<ItemState> = B.combine(item, editState, (c, state) => {
     if (state.state === "edit") {
       if (state.item.id === c.id) {
         return "edit"
@@ -113,13 +120,13 @@ const ItemView = ({ id, item, editState }: { id: number, editState: B.Property<
     }
     return "view"
   })
-  const itemToShow: B.Property<TodoItem> = B.combineWith(item, editState, (c, state) => {
+  const itemToShow: B.Property<TodoItem> = B.combine(item, editState, (c, state) => {
     if (state.state !== "view" && state.item.id === c.id) {
       return state.item
     }
     return c
   })
-  const localItem: Atom<TodoItem> = atom(itemToShow, editRequest.push)
+  const localItem: B.Atom<TodoItem> = B.atom(itemToShow, editRequest.push)
 
   async function saveLocalChanges() {
     const currentItem = localItem.get()
@@ -132,10 +139,10 @@ const ItemView = ({ id, item, editState }: { id: number, editState: B.Property<
   
   return (
     <span className={itemState}>
-      <span className="name"><TextInput value={localItem.view("name")} /></span>
-      <Checkbox checked={localItem.view("completed")}/>
+      <span className="name"><TextInput value={B.view(localItem, "name")} /></span>
+      <Checkbox checked={B.view(localItem, "completed")}/>
       {
-        itemState.map(s => s === "edit" ? <span className="controls">
+        B.map(itemState, s => s === "edit" ? <span className="controls">
             <a href="#" onClick={saveLocalChanges}>Save</a>
             <a href="#" onClick={cancelLocalChanges}>Cancel</a>
           </span>
@@ -146,8 +153,8 @@ const ItemView = ({ id, item, editState }: { id: number, editState: B.Property<
 };
 
 const NewItem = () => {
-  const disableNew: B.Property<boolean> = editState.map(state => state.state !== "view");
-  const name = atom("")
+  const disableNew: B.Property<boolean> = B.map(editState, state => state.state !== "view");
+  const name = B.atom("")
   const addNew = () => addRequest.push(todoItem(name.get()))
   return (
     <div className="newItem">
@@ -157,7 +164,7 @@ const NewItem = () => {
   );
 };
 
-const TextInput = (props: { value: Atom<string> } & any) => {
+const TextInput = (props: { value: B.Atom<string> } & any) => {
   return <input {...{ 
           type: "text", 
           onInput: e => { 
@@ -168,7 +175,7 @@ const TextInput = (props: { value: Atom<string> } & any) => {
         }} />  
 };
 
-const Checkbox = (props: { checked: Atom<boolean> } & any) => {
+const Checkbox = (props: { checked: B.Atom<boolean> } & any) => {
     return <input {...{ 
             type: "checkbox", 
             onInput: e => { 
@@ -180,7 +187,7 @@ const Checkbox = (props: { checked: Atom<boolean> } & any) => {
   };
 
 function NotificationView({ notification }: { notification: B.Property<Notification | null> }) {
-  return <span>{notification.map(notification => {
+  return <span>{B.map(notification, notification => {
     if (!notification) return null;
     return (
       <div
@@ -197,7 +204,7 @@ function NotificationView({ notification }: { notification: B.Property<Notificat
 }  
 
 const JsonView = ({ json }: { json: B.Property<any>}) => {
-  return <pre>{json.map(st => JSON.stringify(st, null, 2))}</pre>;
+  return <pre>{B.map(json, st => JSON.stringify(st, null, 2))}</pre>;
 };
 
 mount(<App/>, document.getElementById("root")!)

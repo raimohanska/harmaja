@@ -1,4 +1,5 @@
 import * as B from "lonna"
+import { globalScope } from "lonna";
 import { h, mount, ListView } from "../../src/index"
 import { Consultant, Id } from "./domain";
 import { initialConsultants, randomConsultant, saveChangesToServer, ServerFeedEvent, listenToServerEvents } from "./server";
@@ -13,28 +14,33 @@ const cancelRequest = B.bus<void>()
 const editRequest = B.bus<Consultant>()
 const addRequest = B.bus<Consultant>()
 
-const saveResult = saveRequest.merge(addRequest).flatMap(consultant =>
-  B.fromPromise(saveChangesToServer(consultant))
-    .map(() => consultant as Consultant | null)
-    .mapError(() => null)
+const saveResult = B.flatMap(B.merge(saveRequest, addRequest), consultant =>
+  B.changes(B.fromPromise<void, Consultant | null>(saveChangesToServer(consultant), 
+    () => undefined, // this never passes because only changes are monitored
+    () => consultant, 
+    error => null
+  )),
+  globalScope
 )
 
-const consultants: B.Property<Consultant []> = updates.scan(initialConsultants, reducer)
-const editState = B.update<EditState>({ state: "view" }, 
+const consultants: B.Property<Consultant []> = B.scan(updates, initialConsultants, reducer, globalScope)
+const editState = B.update<EditState>(globalScope, { state: "view" }, 
   [addRequest, (_, consultant) => ({ state: "adding", consultant})],
   [editRequest, (_, consultant) => ({ state: "edit", consultant})],
   [saveRequest, (_, consultant) => ({ state: "saving", consultant})],
   [saveResult, (state, success) => (!success && state.state == "saving") ? { state: "edit", consultant: state.consultant } : { state: "view"}],
   [cancelRequest, () => ( { state: "view" })]
 )
-const saveFailed = saveResult.filter(success => !success)
-const saveSuccess = saveResult.filter(success => !!success)
-const notificationE: B.EventStream<Notification> = 
-  saveFailed.map(() => ({ type: "error", text: "Failed to save"} as Notification))
-  .merge(saveSuccess.map(() => ({ type: "info", text: "Saved"})))
-const notification: B.Property<Notification | null> = notificationE
-  .flatMapLatest(notification => B.once(notification).merge(B.later(2000, null)))
-  .toProperty(null)
+const saveFailed = B.filter(saveResult, success => !success)
+const saveSuccess = B.filter(saveResult, success => !!success)
+const notificationE = B.merge(
+  B.map(saveFailed, () => ({ type: "error", text: "Failed to save"} as Notification)),
+  B.map(saveSuccess, () => ({ type: "info", text: "Saved"}))
+)
+const notification: B.Property<Notification | null> = B.toProperty(
+  B.flatMapLatest(notificationE, notification => B.toProperty(B.later(2000, null), notification)),
+  null, globalScope
+)
 
 saveResult.forEach(savedConsultant => {
   if (savedConsultant) {
@@ -72,7 +78,7 @@ function reducer(consultants: Consultant[], event: ServerFeedEvent) {
 
 
 export default function App() {
-  const disableNew = editState.map(state => state.state !== "view");
+  const disableNew = B.map(editState, state => state.state !== "view");
   
   return (
     <div className="App">
@@ -100,7 +106,7 @@ export default function App() {
 }
 
 function NotificationView({ notification }: { notification: B.Property<Notification | null> }) {
-  return <span>{notification.map(notification => {
+  return <span>{B.map(notification, notification => {
     if (!notification) return null;
     return (
       <div

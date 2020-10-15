@@ -195,7 +195,7 @@ function render(child) {
 }
 var startUpdatingNodes = function (observable) { return function (controller) {
     return observable.forEach(function (nextChildren) {
-        var oldElements = controller.currentElements;
+        var oldElements = controller.currentElements.slice();
         var newNodes = flattenChildren(nextChildren).flatMap(render).flatMap(toDOMNodes);
         if (newNodes.length === 0) {
             newNodes = [createPlaceholder()];
@@ -503,6 +503,8 @@ function detachController(oldElements, controller) {
             }
             // Not removing controller from list. Even though the element is discarded, it's still not ok to
             // attach other controllers to it.        
+            if (controller.unsub)
+                detachOnUnmount(el, controller.unsub);
         }
     }
     catch (e_8_1) { e_8 = { error: e_8_1 }; }
@@ -512,8 +514,6 @@ function detachController(oldElements, controller) {
         }
         finally { if (e_8) throw e_8.error; }
     }
-    if (controller.unsub)
-        detachOnUnmount(oldElements[0], controller.unsub);
 }
 function createController(elements, bootstrap, options) {
     var controller = __assign(__assign({}, options), { currentElements: elements });

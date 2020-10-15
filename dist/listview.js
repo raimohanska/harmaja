@@ -28,7 +28,6 @@ export function ListView(props) {
                 H.replaceMany(controller, oldElements, nextElements);
             }
             else if (currentValues.length === 0) {
-                var prevElement = controller.currentElements[0]; // i.e. the placeholder element
                 for (var i = 0; i < nextValues.length; i++) {
                     var nextItemKey = key(nextValues[i]);
                     var newElement = renderItem(nextItemKey, nextValues, i);
@@ -36,9 +35,8 @@ export function ListView(props) {
                         H.replaceNode(controller, i, newElement);
                     }
                     else {
-                        H.addAfterNode(controller, prevElement, newElement);
+                        H.addAfterNode(controller, controller.currentElements[i - 1], newElement);
                     }
-                    prevElement = newElement;
                 }
             }
             else {

@@ -1,4 +1,5 @@
 import * as B from "lonna"
+import { globalScope } from "lonna";
 
 import { h, mount, ListView } from "../../src/index"
 import itemAddedFromSocketE from "./fake-socket";
@@ -26,10 +27,10 @@ const removeItemBus = B.bus<Id>();
 const updateItemBus =  B.bus<TodoItem>();
 // New items event stream is merged from use events and events from "server"
 // Merging two streams of strings and finally mapping them into TodoItem objects
-const newItemE = itemAddedFromSocketE.merge(addItemBus).map(todoItem)
+const newItemE = B.map(B.merge(itemAddedFromSocketE, addItemBus), todoItem)
 
 // The state "megablob" reactive property created by reducing from events
-const allItems: B.Property<TodoItem[]> = B.update(initialItems, 
+const allItems: B.Property<TodoItem[]> = B.update(globalScope, initialItems, 
     [newItemE, (items, item) => items.concat(item)],
     [removeItemBus, (items, removedItemId) => items.filter(i => i.id !== removedItemId)],
     [updateItemBus, (items, updatedItem) => items.map(i => i.id === updatedItem.id ? updatedItem : i)]

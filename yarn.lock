@@ -4421,9 +4421,10 @@ log-symbols@^2.2.0:
   dependencies:
     chalk "^2.0.1"
 
-lonna@raimohanska/lonna#master:
-  version "0.0.2"
-  resolved "https://codeload.github.com/raimohanska/lonna/tar.gz/10ebf8920b2719a83b8ea1a69758b802fcee7859"
+lonna@^0.1.4:
+  version "0.1.4"
+  resolved "https://registry.yarnpkg.com/lonna/-/lonna-0.1.4.tgz#205c0bdcd4560301cfd48bec0cd264d702198d69"
+  integrity sha512-xphMM6fAlRTP1Vz+lQ0IMoKBh/iVX+k1yTWarzSXEmnyC1ZtXFrEpxijpcl4NRWn+Gt003XkEh1Pfbkcks+caA==
 
 loose-envify@^1.0.0:
   version "1.4.0"
