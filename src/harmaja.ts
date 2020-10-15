@@ -136,7 +136,7 @@ function render(child: HarmajaChild | HarmajaOutput): HarmajaStaticOutput {
 
 const startUpdatingNodes = (observable: HarmajaObservableChild) => (controller: NodeController): Callback => {
     return observable.forEach((nextChildren: HarmajaChildOrChildren) => {
-        let oldElements = controller.currentElements    
+        let oldElements = controller.currentElements.slice()  
         let newNodes = flattenChildren(nextChildren).flatMap(render).flatMap(toDOMNodes)                
         if (newNodes.length === 0) {
             newNodes = [createPlaceholder()]

@@ -42,17 +42,15 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
                 const oldElements = controller.currentElements
                 
                 H.replaceMany(controller, oldElements, nextElements)
-            } else if (currentValues.length === 0) {
-                let prevElement = controller.currentElements[0] // i.e. the placeholder element
+            } else if (currentValues.length === 0) {         
                 for (let i = 0; i < nextValues.length; i++) {
                     const nextItemKey = key(nextValues[i])
                     const newElement = renderItem(nextItemKey, nextValues, i)
                     if (i == 0) {
                         H.replaceNode(controller, i, newElement)        
                     } else {
-                        H.addAfterNode(controller, prevElement, newElement)                        
+                        H.addAfterNode(controller, controller.currentElements[i - 1], newElement)                        
                     }                        
-                    prevElement = newElement
                 }
 
             } else {
