@@ -7,6 +7,8 @@ import { ListView } from "./listview"
 type Item = { id: number, name: string}
 const testItems: Item[] = [{ id: 1, name: "first" }]
 const testItems2: Item[] = [{ id: 1, name: "first" }, { id: 2, name: "second" }]
+const testItems3: Item[] = [{ id: 2, name: "second" }]
+
 describe("Listview", () => {
     it("With renderItem", () => testRender(testItems, (value, set) => {
         const el = mounted(<ul><ListView
@@ -16,8 +18,22 @@ describe("Listview", () => {
         expect(getHtml(el)).toEqual("<ul><li>first</li></ul>")
         set([])
         expect(getHtml(el)).toEqual("<ul></ul>")
+
         set(testItems)
         expect(getHtml(el)).toEqual("<ul><li>first</li></ul>")
+
+        set(testItems2)
+        expect(getHtml(el)).toEqual("<ul><li>first</li><li>second</li></ul>")
+
+        set([])
+        expect(getHtml(el)).toEqual("<ul></ul>")
+
+        set(testItems)
+        expect(getHtml(el)).toEqual("<ul><li>first</li></ul>")
+
+        set([])
+        expect(getHtml(el)).toEqual("<ul></ul>")
+
         set(testItems2)
         expect(getHtml(el)).toEqual("<ul><li>first</li><li>second</li></ul>")
         return el

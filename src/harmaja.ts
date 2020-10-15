@@ -431,8 +431,9 @@ function detachController(oldElements: ChildNode[], controller: NodeController) 
         }
         // Not removing controller from list. Even though the element is discarded, it's still not ok to
         // attach other controllers to it.        
+        if (controller.unsub) detachOnUnmount(el, controller.unsub)
     }
-    if (controller.unsub) detachOnUnmount(oldElements[0], controller.unsub)
+    
 }
 
 function createController(elements: ChildNode[], bootstrap: NodeControllerFn, options?: NodeControllerOptions) {
