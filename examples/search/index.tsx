@@ -1,5 +1,4 @@
 import * as B from "lonna"
-import { globalScope } from "lonna"
 import { h, mount, ListView, componentScope } from "../../src/index"
 import { search } from "./search-engine"
 
@@ -12,10 +11,10 @@ type SearchState = { state: "initial" } | { state: "searching", searchString: 
 
 const Search = () => {
     const searchString = B.atom("")
-    const searchStringChange: B.EventStream<string> = B.debounce(B.changes(searchString), 500, globalScope)
-    const searchResult: B.EventStream<string[]> = B.flatMapLatest(searchStringChange, s => B.fromPromise(search(s), () => [], xs => xs, error => []), globalScope)
+    const searchStringChange: B.EventStream<string> = B.debounce(B.changes(searchString), 500, componentScope())
+    const searchResult: B.EventStream<string[]> = B.flatMapLatest(searchStringChange, s => B.fromPromise(search(s), () => [], xs => xs, error => []), componentScope())
     
-    const state: B.Property<SearchState> = B.update(globalScope,
+    const state: B.Property<SearchState> = B.update(componentScope(),
         { state: "initial"} as SearchState,
         [searchStringChange, (state, searchString) => ({ state: "searching", searchString })],
         [searchResult, searchString, (state, results, searchString) => ({ state: "done", results, searchString})],
@@ -27,12 +26,10 @@ const Search = () => {
     </div>
 }
 
-// TODO: globalScope => componentScope (there were some problems with that)
-
 const SearchResults = ({ state } : { state: B.Property<SearchState> }) => {
     const latestResults: B.Property<string[]> = B.scan(B.changes(state), [], ((results, newState) => 
         newState.state === "done" ? newState.results : results
-    ), globalScope)
+    ), componentScope())
 
     const message = B.combine(state, latestResults, (s, r) => {
         if (s.state == "done" && r.length === 0) return "Nothing found"

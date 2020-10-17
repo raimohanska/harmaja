@@ -293,7 +293,7 @@ export function mountEvent(): B.EventStream<void> {
         const event = B.bus<void>()
         onMount(() => {
             event.push()
-            //event.end() // TODO: should we support end events?
+            event.end()
         })    
         transientState.mountE = event
     }
@@ -320,19 +320,27 @@ export function unmountEvent(): B.EventStream<void> {
 export function componentScope(): B.Scope {
     const transientState = getTransientState("unmountEvent")
     if (!transientState.scope) {
+        console.log("create")
         const unmountE = unmountEvent()
         const mountE = mountEvent()
         transientState.scope = (onIn: () => B.Unsub, dispatcher: B.Dispatcher<any>) => {
+            console.log("scope")
             let unsub: B.Unsub | null = null
             unmountE.forEach(() => { if (unsub) unsub() })
             if (transientState.mountsController) {
                 const state = getNodeState(transientState.mountsController.currentElements[0])
+                console.log("state now", state)
                 if (state.mounted) {
                     unsub = onIn()
                     return
                 }
+            } else {
+                console.log("no ctrl")
             }
-            mountE.forEach(onIn)
+            mountE.forEach(() => {
+                console.log("component scope in")
+                unsub = onIn()
+            })
         }
     }
     return transientState.scope

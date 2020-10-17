@@ -330,7 +330,7 @@ export function mountEvent() {
         var event_1 = B.bus();
         onMount(function () {
             event_1.push();
-            //event.end() // TODO: should we support end events?
+            event_1.end();
         });
         transientState.mountE = event_1;
     }
@@ -355,20 +355,29 @@ export function unmountEvent() {
 export function componentScope() {
     var transientState = getTransientState("unmountEvent");
     if (!transientState.scope) {
+        console.log("create");
         var unmountE_1 = unmountEvent();
         var mountE_1 = mountEvent();
         transientState.scope = function (onIn, dispatcher) {
+            console.log("scope");
             var unsub = null;
             unmountE_1.forEach(function () { if (unsub)
                 unsub(); });
             if (transientState.mountsController) {
                 var state = getNodeState(transientState.mountsController.currentElements[0]);
+                console.log("state now", state);
                 if (state.mounted) {
                     unsub = onIn();
                     return;
                 }
             }
-            mountE_1.forEach(onIn);
+            else {
+                console.log("no ctrl");
+            }
+            mountE_1.forEach(function () {
+                console.log("component scope in");
+                unsub = onIn();
+            });
         };
     }
     return transientState.scope;

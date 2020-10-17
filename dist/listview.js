@@ -95,6 +95,7 @@ export function ListView(props) {
         if ("renderObservable" in props) {
             // TODO: is filter necessary
             // TODO: use pipe
+            // TODO: implement view also for Properties, use here for symmetry.
             var mapped = B.map(observable, function (items) { return items[index]; });
             var filtered = B.filter(mapped, function (item) { return item !== undefined; }, B.autoScope);
             return props.renderObservable(key, filtered);

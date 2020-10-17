@@ -328,7 +328,6 @@ declare global {
 
     interface InputEvent<T = Element> extends HarmajaEvent<T> {
         target: EventTarget & T;
-        // TODO add missing
     }
 
     interface KeyboardEvent<T = Element> extends HarmajaEvent<T, NativeKeyboardEvent> {

@@ -1,10 +1,11 @@
 import * as B from "lonna"
-import { globalScope } from "lonna";
 
-import { h, mount, ListView, unmountEvent } from "../../src/index"
+import { h, mount, componentScope } from "../../src/index"
 
-// TODO: define as Property directly
-const scrollPos = B.toProperty(B.map(B.fromEvent(window, "scroll"), () => Math.floor(window.scrollY)), window.scrollY, globalScope)
+const scrollPos = B.toStatelessProperty(
+  B.map(B.fromEvent(window, "scroll"), 
+  () => Math.floor(window.scrollY)), () => Math.floor(window.scrollY)
+)
 
 const randomColor = () => "#" + Math.floor(Math.random()*16777215).toString(16);
 
@@ -32,12 +33,16 @@ const ScrollingThing = () => {
 };
 
 const ScrollPosDisplay = () => {
+  const mapped = B.map(scrollPos, x => { console.log("Scrollpos subscription active", x); return x })
+  // TODO: side-effects story in Readme. Make sure to mention that properties cannot be subscribe to out of scope, but their changes can
+  
+  // By calling applyScope, the side-effect is only applied while component stays mounted
+  // We cannot subscribe here to the Property because it's out of scope and it will fail to produce a current value
+  B.changes(B.applyScope(componentScope(), mapped))
+    .forEach(value => {
+      console.log("Performing side-effects for value", value)
+    })
 
-  // TODO: not ready yet
-
-  scrollPos.map(x => { console.log(x); return x })
-    .takeUntil(unmountEvent()) // takeUntil is necessary here! Otherwise the forEach side-effect will continue after component unMount
-    .forEach( pos => console.log(pos) )
   return <div style={{ position: "fixed", right: "20px", background: "black", color: "white", padding: "10px" }}>{ 
     scrollPos /* This is ok! Harmaja will unsubscribe if the component is unmounted */
   }</div>
