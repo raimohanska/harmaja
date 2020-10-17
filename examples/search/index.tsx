@@ -29,9 +29,7 @@ const Search = () => {
 
 // TODO: globalScope => componentScope (there were some problems with that)
 
-
 const SearchResults = ({ state } : { state: B.Property<SearchState> }) => {
-    // TODO works only once
     const latestResults: B.Property<string[]> = B.scan(B.changes(state), [], ((results, newState) => 
         newState.state === "done" ? newState.results : results
     ), globalScope)
