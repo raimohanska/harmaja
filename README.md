@@ -8,7 +8,7 @@ An experimental web frontend framework named after a lighthouse. It maybe easies
 - Dynamic content passed to components as observable properties
 - Directly embed Observables in JSX, resulting to "surgical" DOM updates
 - Written in Typescript. Type-safety considered a high priority.
-- Uses [Lonna](https://github.com/raimohanska/lonna) for observables at the moment. Has script for switching to Bacon.js. Should be able to switch to other implementations as well.
+- Support [Lonna](https://github.com/raimohanska/lonna) and [Bacon.js](https://baconjs.github.io/) for observables at the moment. You can select the desired library by imports (see below).
 - Strongly inspired by [Calmm.js](https://github.com/calmm-js/documentation/blob/master/introduction-to-calmm.md). If you're familiar with Calmm, you can think of Harmaja as "Calmm, but with types and no React dependency
 
 Published on NPM: https://www.npmjs.com/package/harmaja
@@ -67,6 +67,34 @@ Then you can start using JSX, creating your application components and mounting 
 const App = () => <h1>yes</h1>
 mount(<App/>, document.getElementById("root")!)
 ```
+
+## Observable Library Selection
+
+You can select the desired Observable library with imports. Currently [Lonna](https://github.com/raimohanska/lonna) and [Bacon.js](https://baconjs.github.io/) are supported but I'm planning to include at least RxJs soon.
+
+### Lonna Observables
+
+To use the default Lonna Observables:
+
+```
+import { h } from "harmaja";
+```
+
+Lonna includes Atoms and Lenses in addition to Properties, EventStreams and Buses, so you should use `import { atom, Atom } from "lonna"`.
+
+### Bacon.js
+
+To use Bacon.js Observables:
+
+```
+import { h } from "harmaja/bacon";
+```
+
+Bacon.js doesn't include Atoms and Lenses, but Harmaja includes them so you should use `import { atom, Atom } from "harmaja/bacon"`.
+
+Note that you'll need to use the variant in all of your Harmaja imports within your application. Mixing and matching two implementations accross
+your application is a very bad idea.
+
 
 ## API
 
