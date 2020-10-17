@@ -323,7 +323,7 @@ export function componentScope(): B.Scope {
         console.log("create")
         const unmountE = unmountEvent()
         const mountE = mountEvent()
-        transientState.scope = (onIn: () => B.Unsub, dispatcher: B.Dispatcher<any>) => {
+        transientState.scope = { subscribe:  (onIn: () => B.Unsub, dispatcher: B.Dispatcher<any>) => {
             console.log("scope")
             let unsub: B.Unsub | null = null
             unmountE.forEach(() => { if (unsub) unsub() })
@@ -341,7 +341,7 @@ export function componentScope(): B.Scope {
                 console.log("component scope in")
                 unsub = onIn()
             })
-        }
+        }}
     }
     return transientState.scope
 }
