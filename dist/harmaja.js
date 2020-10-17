@@ -40,7 +40,7 @@ var __spread = (this && this.__spread) || function () {
     for (var ar = [], i = 0; i < arguments.length; i++) ar = ar.concat(__read(arguments[i]));
     return ar;
 };
-import * as B from "lonna";
+import * as O from "./observables/observables";
 var transientStateStack = [];
 /**
  *  Element constructor used by JSX.
@@ -62,7 +62,7 @@ export function createElement(type, props) {
         transientStateStack.push({});
         var result = constructor(__assign(__assign({}, props), { children: flattenedChildren }));
         var transientState = transientStateStack.pop();
-        if (result instanceof B.Property) {
+        if (O.isProperty(result)) {
             return createController([createPlaceholder()], composeControllers(handleMounts(transientState), startUpdatingNodes(result)));
         }
         else if (transientState.unmountCallbacks || transientState.mountCallbacks || transientState.scope) {
@@ -140,10 +140,9 @@ function renderElement(type, props, children) {
     var e_3, _a;
     var el = document.createElement(type);
     var _loop_1 = function (key, value) {
-        if (value instanceof B.Property) {
-            var observable_1 = value;
+        if (O.isProperty(value)) {
             attachOnMount(el, function () {
-                var unsub = observable_1.forEach(function (nextValue) {
+                var unsub = O.forEach(value, function (nextValue) {
                     setProp(el, key, nextValue);
                 });
                 attachOnUnmount(el, unsub);
@@ -185,7 +184,7 @@ function render(child) {
     if (child === null) {
         return createPlaceholder();
     }
-    if (child instanceof B.Property) {
+    if (O.isProperty(child)) {
         return createController([createPlaceholder()], startUpdatingNodes(child));
     }
     if (isDOMElement(child)) {
@@ -194,7 +193,7 @@ function render(child) {
     throw Error(child + " is not a valid element");
 }
 var startUpdatingNodes = function (observable) { return function (controller) {
-    return observable.forEach(function (nextChildren) {
+    return O.forEach(observable, function (nextChildren) {
         var oldElements = controller.currentElements.slice();
         var newNodes = flattenChildren(nextChildren).flatMap(render).flatMap(toDOMNodes);
         if (newNodes.length === 0) {
@@ -286,14 +285,14 @@ export function mount(harmajaElement, root) {
  *  - `onUnmountEvent` will be triggered
  */
 export function unmount(harmajaElement) {
-    if (harmajaElement instanceof B.Property) {
+    if (O.isProperty(harmajaElement)) {
         // A dynamic component, let's try to find the current mounted nodes
         //console.log("Unmounting dynamic", harmajaElement)
-        unmount(harmajaElement.get());
+        unmount(O.get(harmajaElement));
     }
     else if (harmajaElement instanceof Array) {
         //console.log("Unmounting array")
-        harmajaElement.forEach(unmount);
+        O.forEach(harmajaElement, unmount);
     }
     else {
         //console.log("Unmounting node", debug(harmajaElement))
@@ -327,7 +326,7 @@ export function onUnmount(callback) {
 export function mountEvent() {
     var transientState = getTransientState("mountEvent");
     if (!transientState.mountE) {
-        var event_1 = B.bus();
+        var event_1 = O.bus();
         onMount(function () {
             event_1.push();
             event_1.end();
@@ -343,7 +342,7 @@ export function mountEvent() {
 export function unmountEvent() {
     var transientState = getTransientState("unmountEvent");
     if (!transientState.unmountE) {
-        var event_2 = B.bus();
+        var event_2 = O.bus();
         onUnmount(function () {
             event_2.push();
             //event.end()
@@ -355,27 +354,20 @@ export function unmountEvent() {
 export function componentScope() {
     var transientState = getTransientState("unmountEvent");
     if (!transientState.scope) {
-        console.log("create");
         var unmountE_1 = unmountEvent();
         var mountE_1 = mountEvent();
-        transientState.scope = { subscribe: function (onIn, dispatcher) {
-                console.log("scope");
+        transientState.scope = { subscribe: function (onIn) {
                 var unsub = null;
-                unmountE_1.forEach(function () { if (unsub)
+                O.forEach(unmountE_1, function () { if (unsub)
                     unsub(); });
                 if (transientState.mountsController) {
                     var state = getNodeState(transientState.mountsController.currentElements[0]);
-                    console.log("state now", state);
                     if (state.mounted) {
                         unsub = onIn();
                         return;
                     }
                 }
-                else {
-                    console.log("no ctrl");
-                }
-                mountE_1.forEach(function () {
-                    console.log("component scope in");
+                O.forEach(mountE_1, function () {
                     unsub = onIn();
                 });
             } };

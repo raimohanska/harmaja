@@ -1,4 +1,4 @@
-import * as B from "lonna"
+import * as O from "./observables/observables"
 
 export type HarmajaComponent = (props: HarmajaProps) => HarmajaOutput
 export type JSXElementType = string | HarmajaComponent
@@ -8,18 +8,19 @@ export type HarmajaChild = HarmajaObservableChild | DOMNode | string | number |
 export type HarmajaChildren = (HarmajaChild | HarmajaChildren)[]
 export type HarmajaChildOrChildren = HarmajaChild | HarmajaChildren
 // TODO: naming sucks
-export type HarmajaObservableChild = B.Property<HarmajaChildOrChildren>
+export interface HarmajaObservableChild extends O.Property<HarmajaChildOrChildren> {}
 export type HarmajaStaticOutput = DOMNode | DOMNode[] // Can be one or more, but an empty array is not allowed
-export type HarmajaOutput = DOMNode | B.Property<HarmajaOutput> | HarmajaOutput[]
+export type HarmajaOutput = DOMNode | HarmajaDynamicOutput | HarmajaOutput[]
+export interface HarmajaDynamicOutput extends O.Property<HarmajaOutput> {}
 export type DOMNode = ChildNode
 
 let transientStateStack: TransientState[] = []
 type TransientState = { 
     mountCallbacks?: Callback[], 
-    mountE?: B.EventStream<void>,
+    mountE?: O.EventStream<void>,
     unmountCallbacks?: Callback[], 
-    unmountE?: B.EventStream<void>,
-    scope?: B.Scope,
+    unmountE?: O.EventStream<void>,
+    scope?: O.Scope,
     mountsController?: NodeController
 }
 
@@ -38,7 +39,7 @@ export function createElement(type: JSXElementType, props?: HarmajaProps, ...chi
         transientStateStack.push({})
         const result = constructor({...props, children: flattenedChildren})
         const transientState = transientStateStack.pop()!
-        if (result instanceof B.Property) {
+        if (O.isProperty(result)) {
             return createController([createPlaceholder()], composeControllers(handleMounts(transientState), startUpdatingNodes(result as HarmajaObservableChild)))
         } else if (transientState.unmountCallbacks || transientState.mountCallbacks || transientState.scope) {
             return createController(toDOMNodes(render(result)), handleMounts(transientState))
@@ -90,10 +91,9 @@ function flattenChildren(child: HarmajaChildOrChildren): HarmajaChild[] {
 function renderElement(type: string, props: HarmajaProps, children: HarmajaChild[]): DOMNode {
     const el = document.createElement(type)
     for (let [key, value] of Object.entries(props || {})) {
-        if (value instanceof B.Property) {
-            const observable: B.Property<string> = value            
+        if (O.isProperty(value)) {      
             attachOnMount(el, () => {
-                const unsub = observable.forEach(nextValue => {
+                const unsub = O.forEach(value, nextValue => {
                     setProp(el, key, nextValue)        
                 })
                 attachOnUnmount(el, unsub)    
@@ -125,7 +125,7 @@ function render(child: HarmajaChild | HarmajaOutput): HarmajaStaticOutput {
     if (child === null) {
         return createPlaceholder()
     }
-    if (child instanceof B.Property) {
+    if (O.isProperty(child)) {
         return createController([createPlaceholder()], startUpdatingNodes(child as HarmajaObservableChild))
     }    
     if (isDOMElement(child)) {
@@ -135,7 +135,7 @@ function render(child: HarmajaChild | HarmajaOutput): HarmajaStaticOutput {
 }
 
 const startUpdatingNodes = (observable: HarmajaObservableChild) => (controller: NodeController): Callback => {
-    return observable.forEach((nextChildren: HarmajaChildOrChildren) => {
+    return O.forEach(observable, (nextChildren: HarmajaChildOrChildren) => {
         let oldElements = controller.currentElements.slice()  
         let newNodes = flattenChildren(nextChildren).flatMap(render).flatMap(toDOMNodes)                
         if (newNodes.length === 0) {
@@ -250,13 +250,13 @@ export function mount(harmajaElement: HarmajaOutput, root: Element): HarmajaStat
  *  - `onUnmountEvent` will be triggered
  */
 export function unmount(harmajaElement: HarmajaOutput) {
-    if (harmajaElement instanceof B.Property) {
+    if (O.isProperty(harmajaElement)) {
         // A dynamic component, let's try to find the current mounted nodes
         //console.log("Unmounting dynamic", harmajaElement)
-        unmount(harmajaElement.get())
-    } else if (harmajaElement instanceof Array) {
+        unmount(O.get(harmajaElement));
+    } else if ((harmajaElement as any) instanceof Array) {
         //console.log("Unmounting array")
-        harmajaElement.forEach(unmount)
+        O.forEach(harmajaElement,unmount)
     } else {
         //console.log("Unmounting node", debug(harmajaElement))
         removeNode(null, 0, harmajaElement)
@@ -287,58 +287,52 @@ export function onUnmount(callback: Callback) {
  *  The onMount event as EventStream, emitting a value after the component has been mounted to the document.
  *  NOTE: Call only in component constructors. Otherwise will not do anything useful.
  */
-export function mountEvent(): B.EventStream<void> {
+export function mountEvent(): O.NativeEventStream<void> {
     const transientState = getTransientState("mountEvent")
     if (!transientState.mountE) {
-        const event = B.bus<void>()
+        const event = O.bus<void>()
         onMount(() => {
             event.push()
             event.end()
         })    
         transientState.mountE = event
     }
-    return transientState.mountE!
+    return transientState.mountE! as O.NativeEventStream<void>
 }
 
 /**
  *  The onUnmount event as EventStream, emitting a value after the component has been unmounted from the document.
  *  NOTE: Call only in component constructors. Otherwise will not do anything useful.
  */
-export function unmountEvent(): B.EventStream<void> {
+export function unmountEvent(): O.NativeEventStream<void> {
     const transientState = getTransientState("unmountEvent")
     if (!transientState.unmountE) {
-        const event = B.bus<void>()
+        const event = O.bus<void>()
         onUnmount(() => {
             event.push()
             //event.end()
         })    
         transientState.unmountE = event
     }
-    return transientState.unmountE!
+    return transientState.unmountE! as O.NativeEventStream<void>
 }
 
-export function componentScope(): B.Scope {
+export function componentScope(): O.Scope {
     const transientState = getTransientState("unmountEvent")
     if (!transientState.scope) {
-        console.log("create")
         const unmountE = unmountEvent()
         const mountE = mountEvent()
-        transientState.scope = { subscribe:  (onIn: () => B.Unsub, dispatcher: B.Dispatcher<any>) => {
-            console.log("scope")
-            let unsub: B.Unsub | null = null
-            unmountE.forEach(() => { if (unsub) unsub() })
+        transientState.scope = { subscribe:  (onIn: () => O.Unsub) => {
+            let unsub: O.Unsub | null = null
+            O.forEach(unmountE, () => { if (unsub) unsub() })
             if (transientState.mountsController) {
                 const state = getNodeState(transientState.mountsController.currentElements[0])
-                console.log("state now", state)
                 if (state.mounted) {
                     unsub = onIn()
                     return
                 }
-            } else {
-                console.log("no ctrl")
             }
-            mountE.forEach(() => {
-                console.log("component scope in")
+            O.forEach(mountE, () => {
                 unsub = onIn()
             })
         }}

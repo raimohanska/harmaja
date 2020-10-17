@@ -1,21 +1,21 @@
-import * as B from "lonna"
+import * as O from "./observables/observables"
 import { DOMNode, HarmajaOutput, HarmajaStaticOutput, LowLevelApi as H } from "./harmaja"
 
 export type ListViewProps<A, K = A> = {
-    observable: B.Property<A[]>, 
-    renderObservable: (key: K, x: B.Property<A>) => HarmajaOutput, // Actually requires a DOMNode but JSX forces this wider type
+    observable: O.NativeProperty<A[]>, 
+    renderObservable: (key: K, x: O.NativeProperty<A>) => HarmajaOutput, // Actually requires a DOMNode but JSX forces this wider type
     getKey: (x: A) => K
 } | {
-    observable: B.Property<A[]>, 
+    observable: O.NativeProperty<A[]>, 
     renderItem: (x: A) => HarmajaOutput,
     getKey?: (x: A) => K
 } | {
-    atom: B.Atom<A[]>, 
-    renderAtom: (key: K, x: B.Atom<A>, remove: () => void) => HarmajaOutput, 
+    atom: O.NativeAtom<A[]>, 
+    renderAtom: (key: K, x: O.NativeAtom<A>, remove: () => void) => HarmajaOutput, 
     getKey: (x: A) => K
 }
 export function ListView<A, K>(props: ListViewProps<A, K>) {
-    const observable: B.Property<A[]> = ("atom" in props) ? props.atom : props.observable
+    const observable: O.Property<A[]> = ("atom" in props) ? props.atom : props.observable
     const { getKey: key = ((x: A): K => x as any) } = props    
     let currentValues: A[] | null = null
     const options = { 
@@ -24,7 +24,7 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
         }
     }
 
-    return H.createController([H.createPlaceholder()], (controller) => observable.forEach((nextValues: A[]) => {
+    return H.createController([H.createPlaceholder()], (controller) => O.forEach(observable, (nextValues: A[]) => {
         if (!currentValues) {
             if (nextValues.length) {
                 const oldElements = controller.currentElements
@@ -99,18 +99,15 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
     }
     function renderItemRaw(key: K, values: A[], index: number) {
         if ("renderAtom" in props) {
-            const nullableAtom = B.view(props.atom, index)
-            const nonNullableAtom = B.filter(nullableAtom, a => a !== undefined, B.autoScope) as B.Atom<A>
-            const removeItem = () => nullableAtom.set(undefined)
-            return props.renderAtom(key, nonNullableAtom, removeItem)
+            const nullableAtom = O.view(props.atom as O.Atom<A[]>, index) // cast to ensure non-usage of native methods
+            const nonNullableAtom = O.filter(nullableAtom, a => a !== undefined) as O.Atom<A>
+            const removeItem = () => O.set(nullableAtom, undefined)
+            return props.renderAtom(key, nonNullableAtom as O.NativeAtom<A>, removeItem)
         }
         if ("renderObservable" in props) {
-            // TODO: is filter necessary
-            // TODO: use pipe
-            // TODO: implement view also for Properties, use here for symmetry.
-            const mapped = B.map(observable, items => items[index])
-            const filtered = B.filter(mapped, item => item !== undefined, B.autoScope)
-            return props.renderObservable(key, filtered)                   
+            const mapped = O.view(observable as O.Property<A[]>, index) // cast to ensure non-usage of native methods
+            const filtered = O.filter(mapped, item => item !== undefined) as O.Property<A>
+            return props.renderObservable(key, filtered as O.NativeProperty<A>)                   
         }
         return props.renderItem(values[index])            
     }

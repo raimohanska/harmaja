@@ -1,13 +1,16 @@
-import * as B from "lonna";
+import * as O from "./observables/observables";
 export declare type HarmajaComponent = (props: HarmajaProps) => HarmajaOutput;
 export declare type JSXElementType = string | HarmajaComponent;
 export declare type HarmajaProps = Record<string, any>;
 export declare type HarmajaChild = HarmajaObservableChild | DOMNode | string | number | null;
 export declare type HarmajaChildren = (HarmajaChild | HarmajaChildren)[];
 export declare type HarmajaChildOrChildren = HarmajaChild | HarmajaChildren;
-export declare type HarmajaObservableChild = B.Property<HarmajaChildOrChildren>;
+export interface HarmajaObservableChild extends O.Property<HarmajaChildOrChildren> {
+}
 export declare type HarmajaStaticOutput = DOMNode | DOMNode[];
-export declare type HarmajaOutput = DOMNode | B.Property<HarmajaOutput> | HarmajaOutput[];
+export declare type HarmajaOutput = DOMNode | HarmajaDynamicOutput | HarmajaOutput[];
+export interface HarmajaDynamicOutput extends O.Property<HarmajaOutput> {
+}
 export declare type DOMNode = ChildNode;
 /**
  *  Element constructor used by JSX.
@@ -57,13 +60,13 @@ export declare function onUnmount(callback: Callback): void;
  *  The onMount event as EventStream, emitting a value after the component has been mounted to the document.
  *  NOTE: Call only in component constructors. Otherwise will not do anything useful.
  */
-export declare function mountEvent(): B.EventStream<void>;
+export declare function mountEvent(): O.NativeEventStream<void>;
 /**
  *  The onUnmount event as EventStream, emitting a value after the component has been unmounted from the document.
  *  NOTE: Call only in component constructors. Otherwise will not do anything useful.
  */
-export declare function unmountEvent(): B.EventStream<void>;
-export declare function componentScope(): B.Scope;
+export declare function unmountEvent(): O.NativeEventStream<void>;
+export declare function componentScope(): O.Scope;
 export declare function callOnMounts(element: Node): void;
 declare function attachOnMount(element: DOMNode, onMount: Callback): void;
 declare function attachOnUnmount(element: DOMNode, onUnmount: Callback): void;

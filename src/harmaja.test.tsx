@@ -2,7 +2,7 @@ import { h, Fragment, mount, mountEvent, onMount, onUnmount, unmount, unmountEve
 import * as H from "./index"
 import { renderAsString, getHtml, mounted, testRender } from "./test-utils"
 import { HarmajaOutput } from "./harmaja"
-import * as B from "lonna"
+import * as O from "./test-utils"
 
 function body() {
     let body = <body/>
@@ -96,8 +96,8 @@ describe("Harmaja", () => {
         })
     
         it("Replaces multiple elements correctly", () => {
-            const Component = ({ things }: { things: B.Atom<string[]> }) => <ul>{B.map(things, ts => ts.map(t => <li>{t}</li>))}</ul>
-            const things = B.atom(["a"])
+            const Component = ({ things }: { things: O.Atom<string[]> }) => <ul>{O.map(things, ts => ts.map(t => <li>{t}</li>))}</ul>
+            const things = O.atom(["a"])
             expect(renderAsString(<Component things={things}/>)).toEqual("<ul><li>a</li></ul>")
             things.set([])
             expect(renderAsString(<Component things={things}/>)).toEqual("<ul></ul>")
@@ -120,9 +120,9 @@ describe("Harmaja", () => {
 
             it("Observable-in-observable", () => {
                 const initial = ["init"]
-                const inner = B.atom(["a","b"])
-                const Component = () => B.map(inner, xs => xs.map(x => <span>{x}</span>))
-                const outer = B.atom([1, initial as any])
+                const inner = O.atom(["a","b"])
+                const Component = () => O.map(inner, xs => xs.map(x => <span>{x}</span>))
+                const outer = O.atom([1, initial as any])
                 const c = mounted(<div>{outer}</div>)
                 expect(getHtml(c)).toEqual("<div>1init</div>")
                 outer.set([1, <Component/>])
@@ -139,15 +139,15 @@ describe("Harmaja", () => {
                 
                 
                 const initial = ["init"]
-                const inner = B.atom(["a","b"])
+                const inner = O.atom(["a","b"])
                 const Component = () => { 
                     onUnmount(() => unmountCalled++)
-                    onMount(() => mountCalled++)
+                    onMount(() => mountCalled++)                    
                     unmountEvent().forEach(() => unmountCalled++)
                     mountEvent().forEach(() => mountCalled++)
-                    return B.map(inner, xs => xs.map(x => <span>{x}</span>)) 
+                    return O.map(inner, xs => xs.map(x => <span>{x}</span>)) 
                 }
-                const outer = B.atom([1, initial as any])
+                const outer = O.atom([1, initial as any])
                 const c = mounted(<div>{outer}</div>)
                 expect(getHtml(c)).toEqual("<div>1init</div>")
                 expect(unmountCalled).toEqual(0)
@@ -199,8 +199,8 @@ describe("Harmaja", () => {
     describe("Nested controllers", () => {
         it("Observable-in-observable", () => {
             const initial = ["init"]
-            const inner = B.atom(["a","b"])
-            const outer = B.atom([1, initial as any])
+            const inner = O.atom(["a","b"])
+            const outer = O.atom([1, initial as any])
             const c = mounted(<div>{outer}</div>)
             expect(getHtml(c)).toEqual("<div>1init</div>")
             outer.set([1, inner])
@@ -213,8 +213,8 @@ describe("Harmaja", () => {
     })
 
     it("Special - nested dependent", () => testRender(1, (value, set) => {
-        const p = B.atom<number>(value, updated => console.log(updated))
-        const el = mounted(<div>{B.map(p, () => <div>{p}</div>)}</div>)
+        const p = O.atom<number>(value, updated => console.log(updated))
+        const el = mounted(<div>{O.map(p, () => <div>{p}</div>)}</div>)
         expect(getHtml(el)).toEqual("<div><div>1</div></div>")
         return el as any
     }))

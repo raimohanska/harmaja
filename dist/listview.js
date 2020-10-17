@@ -1,4 +1,4 @@
-import * as B from "lonna";
+import * as O from "./observables/observables";
 import { LowLevelApi as H } from "./harmaja";
 export function ListView(props) {
     var observable = ("atom" in props) ? props.atom : props.observable;
@@ -9,7 +9,7 @@ export function ListView(props) {
             getSingleNodeOrFail(newNodes); // Verify that a child node is replaced by exactly one child node.
         }
     };
-    return H.createController([H.createPlaceholder()], function (controller) { return observable.forEach(function (nextValues) {
+    return H.createController([H.createPlaceholder()], function (controller) { return O.forEach(observable, function (nextValues) {
         if (!currentValues) {
             if (nextValues.length) {
                 var oldElements = controller.currentElements;
@@ -87,17 +87,14 @@ export function ListView(props) {
     }
     function renderItemRaw(key, values, index) {
         if ("renderAtom" in props) {
-            var nullableAtom_1 = B.view(props.atom, index);
-            var nonNullableAtom = B.filter(nullableAtom_1, function (a) { return a !== undefined; }, B.autoScope);
-            var removeItem = function () { return nullableAtom_1.set(undefined); };
+            var nullableAtom_1 = O.view(props.atom, index); // cast to ensure non-usage of native methods
+            var nonNullableAtom = O.filter(nullableAtom_1, function (a) { return a !== undefined; });
+            var removeItem = function () { return O.set(nullableAtom_1, undefined); };
             return props.renderAtom(key, nonNullableAtom, removeItem);
         }
         if ("renderObservable" in props) {
-            // TODO: is filter necessary
-            // TODO: use pipe
-            // TODO: implement view also for Properties, use here for symmetry.
-            var mapped = B.map(observable, function (items) { return items[index]; });
-            var filtered = B.filter(mapped, function (item) { return item !== undefined; }, B.autoScope);
+            var mapped = O.view(observable, index); // cast to ensure non-usage of native methods
+            var filtered = O.filter(mapped, function (item) { return item !== undefined; });
             return props.renderObservable(key, filtered);
         }
         return props.renderItem(values[index]);

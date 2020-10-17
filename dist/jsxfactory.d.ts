@@ -1,10 +1,10 @@
-import * as B from "lonna";
+import * as B from "./observables/observables";
 import * as CSS from 'csstype';
 import * as H from "./harmaja";
 declare type ChildrenType = H.HarmajaChildren | H.HarmajaChild;
 export declare const h: typeof H.createElement;
 declare type WithObservablesInFields<T> = {
-    [K in keyof T]: T[K] | B.Property<T[K]>;
+    [K in keyof T]: T[K] | B.NativeProperty<T[K]>;
 };
 declare type NativeAnimationEvent = AnimationEvent;
 declare type NativeClipboardEvent = ClipboardEvent;

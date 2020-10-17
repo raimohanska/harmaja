@@ -1,19 +1,6 @@
-import { h } from "./index"
+import { HarmajaStaticOutput } from "./harmaja"
 import * as H from "./index"
-import * as B from "lonna"
-import { unmount, HarmajaOutput, HarmajaStaticOutput } from "./harmaja"
-
-export function testRender<T>(init: T, test: (property: B.Property<T>, set: (v: T) => any) => HarmajaOutput) {
-    const bus = B.bus<T>()
-    const testScope = B.createScope() 
-    testScope.start()
-    const property = B.toProperty(bus, init, testScope)
-    const element = test(property, bus.push)
-    unmount(element as HarmajaStaticOutput)
-    // Verify that all subscribers are removed on unmount
-    testScope.end()
-    expect((property as any)._dispatcher.hasObservers()).toEqual(false)
-}
+export * from "./observables/test-utils"
 
 export function mounted(element: H.HarmajaOutput) {    
     const parent = document.createElement("html")

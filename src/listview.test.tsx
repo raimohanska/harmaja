@@ -1,6 +1,5 @@
 import { h } from "./index"
-import * as H from "./index"
-import * as B from "lonna"
+import * as O from "./test-utils"
 import { testRender, mounted, getHtml } from "./test-utils"
 import { ListView } from "./listview"
 
@@ -18,7 +17,7 @@ describe("Listview", () => {
         expect(getHtml(el)).toEqual("<ul><li>first</li></ul>")
         set([])
         expect(getHtml(el)).toEqual("<ul></ul>")
-
+        
         set(testItems)
         expect(getHtml(el)).toEqual("<ul><li>first</li></ul>")
 
@@ -41,7 +40,7 @@ describe("Listview", () => {
 
     it("Allows only single-node items", () => {        
         expect(() => mounted(<ul><ListView
-            observable={B.constant([1])}
+            observable={O.constant([1])}
             renderItem={item => [<li>{item}</li>, <li/>]}
         /></ul>)).toThrow("Only single-element results supported in ListView. Got [object HTMLLIElement],[object HTMLLIElement]")
     })
@@ -51,7 +50,7 @@ describe("Listview", () => {
             const el = mounted(<ul><ListView
                 observable={value}
                 renderObservable={(key, item) => { 
-                    return <li>{B.map(item, i => i.name)}</li>}}
+                    return <li>{O.map(item, i => i.name)}</li>}}
                 getKey={item => item.id}
             /></ul>)
             expect(getHtml(el)).toEqual("<ul><li>first</li></ul>")
@@ -72,7 +71,7 @@ describe("Listview", () => {
                 observable={value}
                 renderObservable={(id: number, item) => {
                     renderedIds.push(id)
-                    return <li>{B.map(item, i => i.name)}</li>
+                    return <li>{O.map(item, i => i.name)}</li>
                 }}
                 getKey={item => item.id}
             /></ul>)
@@ -95,8 +94,8 @@ describe("Listview", () => {
     describe("Observable-in-ListView", () => {
         it("Changing item value contents", () => testRender(1, (value, set) => {
             const listView = mounted(<ul><ListView 
-                observable = { B.constant([1, 2, 3]) }
-                renderItem = { item => B.constant(<li>{B.map(value, v => v * item)}</li>) }
+                observable = { O.constant([1, 2, 3]) }
+                renderItem = { item => O.constant(<li>{O.map(value, v => v * item)}</li>) }
             /></ul>)
             expect(getHtml(listView)).toEqual("<ul><li>1</li><li>2</li><li>3</li></ul>")
             set(2)
@@ -106,8 +105,8 @@ describe("Listview", () => {
 
         it("Changing item values", () => testRender(1, (value, set) => {
             const listView = mounted(<ul><ListView 
-                observable = { B.constant([1, 2, 3]) }
-                renderItem = { item => B.map(value, v => <li>{v * item}</li>) }
+                observable = { O.constant([1, 2, 3]) }
+                renderItem = { item => O.map(value, v => <li>{v * item}</li>) }
             /></ul>)
             expect(getHtml(listView)).toEqual("<ul><li>1</li><li>2</li><li>3</li></ul>")
             set(2)
@@ -118,7 +117,7 @@ describe("Listview", () => {
         it("Changing item list only", () => testRender([1], (value, set) => {
             const listView = mounted(<ul><ListView 
                 observable = { value }
-                renderItem = { item => B.constant(<li>{item}</li>) }
+                renderItem = { item => O.constant(<li>{item}</li>) }
             /></ul>)
             expect(getHtml(listView)).toEqual("<ul><li>1</li></ul>")
             set([1,2])
@@ -132,17 +131,17 @@ describe("Listview", () => {
 
         it("Allows only single-node items", () => {
             expect(() => mounted(<ul><ListView 
-                observable = { B.constant([1]) }
-                renderItem = { item => B.constant([<div/>, <div/>]) }
+                observable = { O.constant([1]) }
+                renderItem = { item => O.constant([<div/>, <div/>]) }
             /></ul>)).toThrow("Only single-element results supported in ListView. Got [object HTMLDivElement],[object HTMLDivElement]")
         })
     })
 
     describe("Listview-in-Observable", () => {
         it ("Simplest", () => {
-            const items = B.atom([1,2,3])
+            const items = O.atom([1,2,3])
             const inner = <ListView observable={items} renderItem={i => <span>{i}</span>}/>
-            const outer = B.atom([0, inner, 2])
+            const outer = O.atom([0, inner, 2])
             const c = mounted(<div>{outer}</div>)
             expect(getHtml(c)).toEqual("<div>0<span>1</span><span>2</span><span>3</span>2</div>") 
             outer.set([0, 2])
@@ -150,9 +149,9 @@ describe("Listview", () => {
         })
 
         it ("Replacing whole list", () => {
-            const items = B.atom([1,2,3])
+            const items = O.atom([1,2,3])
             const inner = <ListView observable={items} renderItem={i => <span>{i}</span>}/>
-            const outer = B.atom([0, inner, 2])
+            const outer = O.atom([0, inner, 2])
             const c = mounted(<div>{outer}</div>)
             expect(getHtml(c)).toEqual("<div>0<span>1</span><span>2</span><span>3</span>2</div>") 
             items.set([4,5,6])
@@ -161,9 +160,9 @@ describe("Listview", () => {
             expect(getHtml(c)).toEqual("<div>02</div>") 
         })
         it ("Removing some elements", () => {
-            const items = B.atom([1,2,3])
+            const items = O.atom([1,2,3])
             const inner = <ListView observable={items} renderItem={i => <span>{i}</span>}/>
-            const outer = B.atom([0, inner, 2])
+            const outer = O.atom([0, inner, 2])
             const c = mounted(<div>{outer}</div>)
             expect(getHtml(c)).toEqual("<div>0<span>1</span><span>2</span><span>3</span>2</div>") 
             items.set([1])
@@ -172,9 +171,9 @@ describe("Listview", () => {
             expect(getHtml(c)).toEqual("<div>02</div>") 
         })
         it ("Adding some elements", () => {
-            const items = B.atom([1])
+            const items = O.atom([1])
             const inner = <ListView observable={items} renderItem={i => <span>{i}</span>}/>
-            const outer = B.atom([0, inner, 2])
+            const outer = O.atom([0, inner, 2])
             const c = mounted(<div>{outer}</div>)
             expect(getHtml(c)).toEqual("<div>0<span>1</span>2</div>") 
             items.set([1, 2])
@@ -183,9 +182,9 @@ describe("Listview", () => {
             expect(getHtml(c)).toEqual("<div>02</div>") 
         })
         it ("Empty->Non-empty->Empty", () => {
-            const items = B.atom([] as number[])
+            const items = O.atom([] as number[])
             const inner = <ListView observable={items} renderItem={i => <span>{i}</span>}/>
-            const outer = B.atom([0, inner, 2])
+            const outer = O.atom([0, inner, 2])
             const c = mounted(<div>{outer}</div>)
             expect(getHtml(c)).toEqual("<div>02</div>") 
             items.set([4,5,6])
@@ -198,7 +197,7 @@ describe("Listview", () => {
     })
 
     describe("Nested ListViews", () => {
-        const make = (value: B.Property<number[][]>) => mounted(
+        const make = (value: O.Property<number[][]>) => mounted(
             <ul>
                 <ListView
                     observable={value}
@@ -210,7 +209,7 @@ describe("Listview", () => {
                                 getKey={item => item}
                                 renderObservable={(_, item) =>
                                     // Does not work:
-                                    B.map(item, x => <span>{x}</span>)
+                                    O.map(item, x => <span>{x}</span>)
                                     // Works:
                                     // <span>{item}</span>
                                 }

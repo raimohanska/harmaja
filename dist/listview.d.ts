@@ -1,16 +1,16 @@
-import * as B from "lonna";
+import * as O from "./observables/observables";
 import { HarmajaOutput } from "./harmaja";
 export declare type ListViewProps<A, K = A> = {
-    observable: B.Property<A[]>;
-    renderObservable: (key: K, x: B.Property<A>) => HarmajaOutput;
+    observable: O.NativeProperty<A[]>;
+    renderObservable: (key: K, x: O.NativeProperty<A>) => HarmajaOutput;
     getKey: (x: A) => K;
 } | {
-    observable: B.Property<A[]>;
+    observable: O.NativeProperty<A[]>;
     renderItem: (x: A) => HarmajaOutput;
     getKey?: (x: A) => K;
 } | {
-    atom: B.Atom<A[]>;
-    renderAtom: (key: K, x: B.Atom<A>, remove: () => void) => HarmajaOutput;
+    atom: O.NativeAtom<A[]>;
+    renderAtom: (key: K, x: O.NativeAtom<A>, remove: () => void) => HarmajaOutput;
     getKey: (x: A) => K;
 };
 export declare function ListView<A, K>(props: ListViewProps<A, K>): ChildNode[];
