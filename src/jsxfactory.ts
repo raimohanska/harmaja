@@ -1,4 +1,4 @@
-import * as B from "./observables/observables"
+import * as B from "./observable/observables"
 import * as CSS from 'csstype';
 
 import * as H from "./harmaja"

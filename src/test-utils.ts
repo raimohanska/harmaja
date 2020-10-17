@@ -1,6 +1,6 @@
 import { HarmajaStaticOutput } from "./harmaja"
 import * as H from "./index"
-export * from "./observables/test-utils"
+export * from "./observable/test-utils"
 
 export function mounted(element: H.HarmajaOutput) {    
     const parent = document.createElement("html")

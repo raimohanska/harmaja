@@ -1,4 +1,4 @@
-import * as O from "./observables/observables"
+import * as O from "./observable/observables"
 import { DOMNode, HarmajaOutput, HarmajaStaticOutput, LowLevelApi as H } from "./harmaja"
 
 export type ListViewProps<A, K = A> = {

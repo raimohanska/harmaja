@@ -3,4 +3,5 @@
 OBS=$1 
 echo Switching to $OBS observables
 
-(cd src && rm -fr observables && ln -s $OBS observables)
+git checkout src/observable
+sed -i "" 's/lonna/'$OBS'/' src/observable/*

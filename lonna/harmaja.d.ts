@@ -1,4 +1,4 @@
-import * as O from "./observables/observables";
+import * as O from "./observable/observables";
 export declare type HarmajaComponent = (props: HarmajaProps) => HarmajaOutput;
 export declare type JSXElementType = string | HarmajaComponent;
 export declare type HarmajaProps = Record<string, any>;

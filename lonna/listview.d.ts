@@ -1,4 +1,4 @@
-import * as O from "./observables/observables";
+import * as O from "./observable/observables";
 import { HarmajaOutput } from "./harmaja";
 export declare type ListViewProps<A, K = A> = {
     observable: O.NativeProperty<A[]>;

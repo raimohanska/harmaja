@@ -1,4 +1,4 @@
-import * as O from "./observables/observables";
+import * as O from "./observable/observables";
 import { LowLevelApi as H } from "./harmaja";
 export function ListView(props) {
     var observable = ("atom" in props) ? props.atom : props.observable;
