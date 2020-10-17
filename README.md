@@ -1,13 +1,3 @@
-# Experimental branch!
-
-Replacing Bacon.js with an thing called [eggs](src/eggs), to see if I can come with a lib that's better suited for the purpose than Bacon.js.
-TODO:
-
-- Examples: only the first one converted and working
-- Listview test fails, apparently because ComponentScope doesn't work correctly, i.e. goes out of scope when replacing all elements
-- Try in a real-life project
-- Eggs has a very limited set of operators at the moment.
-
 # Harmaja
 
 An experimental web frontend framework named after a lighthouse. It maybe easiest to describe it in contrast to React. 
@@ -18,7 +8,7 @@ An experimental web frontend framework named after a lighthouse. It maybe easies
 - Dynamic content passed to components as observable properties
 - Directly embed Observables in JSX, resulting to "surgical" DOM updates
 - Written in Typescript. Type-safety considered a high priority.
-- Uses Bacon.js for observables at the moment (includes its own Atom implementation)
+- Uses [Lonna](https://github.com/raimohanska/lonna) for observables at the moment. Has script for switching to Bacon.js. Should be able to switch to other implementations as well.
 - Strongly inspired by [Calmm.js](https://github.com/calmm-js/documentation/blob/master/introduction-to-calmm.md). If you're familiar with Calmm, you can think of Harmaja as "Calmm, but with types and no React dependency
 
 Published on NPM: https://www.npmjs.com/package/harmaja
@@ -29,6 +19,8 @@ This document contains a lot of discussion on state management concepts such as 
 I present my views on these topics openly, with the goal to paint the whole picture of how I see application state management. So don't expect this to be a focused
 API document, but more like a research project. I'm very open to discussion and criticism so correct me if I'm wrong. On the other hand, I hope you to understand
 that many topics here are subjective and I'm presenting my own views of the day.
+
+**NOTE: the documentation below uses Bacon.js observables in examples and API links. Should use Lonna or more generic terms **
 
 ## Key concepts
 
