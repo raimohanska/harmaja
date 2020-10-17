@@ -1,0 +1,6 @@
+#!/usr/bin/env bash -e
+
+OBS=$1 
+echo Switching to $OBS observables
+
+(cd src && rm -fr observables && ln -s $OBS observables)
