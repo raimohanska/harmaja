@@ -1,0 +1,30 @@
+#!/usr/bin/env bash -e
+
+function json_replace() {
+    FILE=$1
+    FIELD=$2
+    VALUE=$3
+    sed -i "" 's/\("'$FIELD'".*:.*\)".*"/\1"'$VALUE'"/' $FILE
+}
+
+OBS=$1
+if [ -z $OBS ]; then
+  echo "Usage: build bacon|lonna">/dev/stderr
+  exit 1
+fi
+
+if [ ! -d src/$OBS ]; then
+  echo "Observable impl not found: " $OBS >/dev/stderr
+  exit 1
+fi
+
+rm -fr dist
+scripts/switch-observables $OBS
+
+json_replace tsconfig.json outDir $OBS
+
+yarn tsc
+yarn test
+
+json_replace tsconfig.json outDir dist
+scripts/switch-observables lonna

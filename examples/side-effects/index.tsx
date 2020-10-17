@@ -2,10 +2,7 @@ import * as B from "lonna"
 
 import { h, mount, componentScope } from "../../src/index"
 
-const scrollPos = B.toStatelessProperty(
-  B.map(B.fromEvent(window, "scroll"), 
-  () => Math.floor(window.scrollY)), () => Math.floor(window.scrollY)
-)
+const scrollPos = B.toStatelessProperty( B.fromEvent(window, "scroll"), () => Math.floor(window.scrollY))
 
 const randomColor = () => "#" + Math.floor(Math.random()*16777215).toString(16);
 

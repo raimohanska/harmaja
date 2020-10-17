@@ -28,11 +28,11 @@ that many topics here are subjective and I'm presenting my own views of the day.
 
 [*EventStream*](https://baconjs.github.io/api3/classes/eventstream.html) represents a stream of events that you can observe by calling its `forEach` method. In Bacon.js a *Bus* is an EventStream that allows you to `push` events to the stream as well as observe events. In Harmaja, buses are used for conveying distinct events from the UI to state reducers.
 
-[*Bus*](https://baconjs.github.io/api3/classes/bus.html) is an EventStream that allows you to [push](https://baconjs.github.io/api3/classes/bus.html#push) new events into it. It is used in Harmaja for defining events that originate from the UI. Typically, an `onClick` or similar handler function pushes a new value into a Bus.
+[*Bus*](https://github.com/raimohanska/lonna/blob/master/src/bus.ts#L5) is an EventStream that allows you to [push](https://github.com/raimohanska/lonna/blob/master/src/bus.ts#L16) new events into it. It is used in Harmaja for defining events that originate from the UI. Typically, an `onClick` or similar handler function pushes a new value into a Bus.
 
-[*Atom*](https://github.com/raimohanska/harmaja/blob/master/src/atom.ts) is a Property that also allows mutation using the `set` methods. You can create an atom simply by `atom("hello")` and then use `atom.get` and `atom.set` for viewing and mutating its value. May sound underwhelming, but the Atom is also a reactive property, meaning that it's state can be observed and *reacted*. In Harmaja particularly, you can embed atoms into your VDOM so that your DOM will automatically reflect the changes in their value! Furthermore, you can use `atom.view("attributename")` to get a new Atom that represents the state of a given attribute within the data structure wrapped by the original Atom. Currently Harmaja comes with its own Atom implementation.
+[*Atom*](https://github.com/raimohanska/lonna/blob/master/src/abstractions.ts#L217) is a Property that also allows mutation using the `set` methods. You can create an atom simply by `atom("hello")` and then use `get` and `set` for viewing and mutating its value. May sound underwhelming, but the Atom is also a reactive property, meaning that it's state can be observed and *reacted*. In Harmaja particularly, you can embed atoms into your VDOM so that your DOM will automatically reflect the changes in their value! Furthermore, you can use `view(atom,"attributename")` to get a new Atom that represents the state of a given attribute within the data structure wrapped by the original Atom. Currently Harmaja comes with its own Atom implementation.
 
-*State decomposition* means selecting a part or a slice of a bigger state object. This may be familiar to you from Redux, where you `mapStateToProps` or `useSelector` for making your component *react* to changes in some parts of the application state. In Harmaja, you use reactive properties or Atoms for representing state and then select parts of it for your component using [`property.map`](https://baconjs.github.io/api3/classes/property.html#map) or [`atom.view`](https://github.com/raimohanska/harmaja/blob/master/src/atom.ts#L9), the latter providing a read-write interface.
+*State decomposition* means selecting a part or a slice of a bigger state object. This may be familiar to you from Redux, where you `mapStateToProps` or `useSelector` for making your component *react* to changes in some parts of the application state. In Harmaja, you use reactive properties or Atoms for representing state and then select parts of it for your component using [`map`](https://github.com/raimohanska/lonna/blob/master/src/map.ts#L5) or [`view`](https://github.com/raimohanska/lonna/blob/master/src/view.ts#L7), the latter providing a read-write interface.
 
 *State composition* is the opposite of the above (but will co-operate nicely) and means that you can compose state from different sources. This is also a familiar concept from Redux, if you have ever composed reducers. For example, you can use [`Bacon.combineWith`](https://baconjs.github.io/api3/globals.html#combinewith) to compose two state atoms into a composite state Property.
 
@@ -197,7 +197,7 @@ My component reloads all the time => make sure you've eliminated duplicates in t
 
 ```typescript
 <div>
-    { someProperty.map(thing => thing.state === "success" ? <HugeComponent/> : <ErrorComponent/> }
+    { B.map(someProperty, thing => thing.state === "success" ? <HugeComponent/> : <ErrorComponent/> }
 </div>
 ```
 
@@ -205,7 +205,7 @@ In the above, the nested components will be re-constructed each time `someProper
 
 ```typescript
 <div>
-    { someProperty.map(thing => thing.state === "success").skipDuplicates().map(success => success ? <HugeComponent/> : <ErrorComponent/> }
+    { B.map(someProperty, thing => thing.state === "success").skipDuplicates().map(success => success ? <HugeComponent/> : <ErrorComponent/> }
 </div>
 ```
 
@@ -214,7 +214,7 @@ In the above, the nested components will be re-constructed each time `someProper
 When embedding observables in to the DOM, Harmaja will automatically subscribe an unsubscribe to the source observable. So, this is ok:
 
 ```typescript
-const scrollPos = B.fromEvent(window, "scroll").map(() => window.scrollY).toProperty(window.scrollY)
+const scrollPos = B.toStatelessProperty(B.fromEvent(window, "scroll"), () => Math.floor(window.scrollY))
 
 const ScrollPosDisplay = () => {
   return <div style={{ position: "fixed", right: "20px", background: "black", color: "white", padding: "10px" }}>{ 
@@ -301,7 +301,7 @@ Other interesting examples of Unidirectional data flow include [Elm](https://elm
 In Harmaja, you can implement Unidirectional data flow too. Sticking with the Todo App example, you define your events as [*buses*](https://baconjs.github.io/api3/classes/bus.html):
 
 ```typescript
-import * as B from "baconjs"
+import * as B from "lonna"
 
 const addItemBus = new B.Bus<TodoItem>();
 const removeItemBus = new B.Bus<TodoItem>();
@@ -358,7 +358,7 @@ import { React, mount } from "../.."
 const ItemView = ({ item }: { item: B.Property<TodoItem> }) => {  
   return (
     <span>
-      <span className="name">{item.map(i => i.name)}</span>      
+      <span className="name">{B.map(item, i => i.name)}</span>      
     </span>
   );
 };
@@ -369,13 +369,13 @@ in the function signature (how revolutionary!). This rather obviously makes the 
 the function signature you can easily decuce that this component will render a TodoItem and reflect any changes that are effected to that particular TodoItem (because
 the input is a reactive property).
 
-In the implementation, the [`map`](https://baconjs.github.io/api3/classes/property.html#map) method of the `Property<TodoItem>` is used to get a `Property<string>` which 
+In the implementation, the [`B.map`](https://baconjs.github.io/api3/classes/property.html#map) is used to get a `Property<string>` which 
 then can be directly embedded into the resulting DOM,
 because Harmaja natively renders Properties. When the value of `name` changes, the updated value will be applied to DOM.
 
 Think: *you can pick a part of your Store and use it as a Store*. This removes the need for the component to *know where the data is* in the global store. 
 In react-redux all components that actually *react* to store changes, need to know the "location" of their data in the store to be able to get it using `useSelector`.
-In contrast using the Property abstraction you can easily [`map`](https://baconjs.github.io/api3/classes/property.html#map) out the data from the store and give a handle to your components.
+In contrast using the Property abstraction you can easily `map` out the data from the store and give a handle to your components.
 
 Another big difference is that store data and local data are the same. No separate mechanism for dealing with local state. Instead, you can declare more Properties in
 your component constructors as you go, to flexibly define data stores at different application layers. Which arguably makes it easier to make changes too, as you don't
@@ -385,7 +385,7 @@ Anyway, let's put the Todo App together right now! To simplify a bit, if were we
 
 ```typescript
 const App = () => {
-    const firstItem: Property<TodoItem> = allItems.map(items => items[0])
+    const firstItem: Property<TodoItem> = B.map(allItems, items => items[0])
     return <ItemView item={firstItem}/>
 }
 ```
@@ -427,7 +427,7 @@ const ItemView = ({ item, onChange}: { item: B.Property<TodoItem>, onChange: (i
   const onNameChange = (newName: string) => { /* wat */ }
   return (
     <span>
-      <TextInput text={ item.map(i => i.name) } onChange = { onNameChange } />
+      <TextInput text={ B.map(item, i => i.name) } onChange = { onNameChange } />
     </span>
   );
 };
@@ -485,7 +485,7 @@ const ItemView = ({ item, onChange}: { item: B.Property<TodoItem>, onChange: (i
   const itemAtom: Atom<TodoItem> = atom(item, onChange)
   return (
     <span>
-      <TextInput value={itemAtom.view("name")} />
+      <TextInput value={B.view(itemAtom, "name")} />
     </span>
   );
 };
@@ -497,9 +497,10 @@ And that's also the full implementation! I hope this demonstrates the power of t
 ```typescript
 export interface Atom<A> extends B.Property<A> {
     set(newValue: A): this;
-    get(): A
-    view<K extends keyof A>(key: K): Atom<A[K]>    
+    get(): A    
 }
+
+function view<K extends keyof A>(a: Atom<A>, key: K): Atom<A[K]>
 ```
 
 Using `view` you can get another atom that gives read-write access to one field of ther TodoItem and done this in a type-safe manner (compiler errors in case you misspelled a field name). 
@@ -509,12 +510,8 @@ Finally, we have an abstraction that makes read-write data decomposition a breez
 The `view` method is actually based on the Lenses that's a concept been used in the functional programming world for quite a while. Yet, I haven't heard much talk about using Lenses in web application state management except for Calmm.js and before that the [Bacon.Model](https://github.com/baconjs/bacon.model) library. I could rant about lenses all night long but for now, I'll show you the full signature of the `view` method:
 
 ```typescript
-export interface Atom<A> extends B.Property<A> {
-    // ...
-    view<K extends keyof A>(key: K): K extends number ? Atom<A[K] | undefined> : Atom<A[K]>,
-    view<B>(lens: L.Lens<A, B>): Atom<B>,
-    // ...
-}
+export function view<A, K extends keyof A>(a: Atom<A>, key: K): K extends number ? Atom<A[K] | undefined> : Atom<A[K]>;
+export function view<A, B>(a: Atom<A>, lens: B.Lens<A, B>): Atom<B>;
 ```
 
 It reveals two things. First, it supports numbers for accessing array elements. But most importantly, you can create a view to an
@@ -541,7 +538,7 @@ To use our ItemView as a standalone component you can change it to use the Atom 
     const ItemView = ({ item }: { item: Atom<TodoItem> }) => {  
         return (
             <span>
-            <TextInput value={item.view("name")} />
+            <TextInput value={B.view(item, "name")} />
             </span>
         );
     };
@@ -651,7 +648,7 @@ so that in your ItemView you can implement removal simply thus:
 ```typescript
 const Item = ({ item, removeItem }: { item: Atom<TodoItem>, removeItem: () => void }) => (
     <span>
-      <span className="name">{item.view("name")}</span>      
+      <span className="name">{B.view(item, "name")}</span>      
       <a onClick={removeItem}>
         remove
       </a>
@@ -665,7 +662,7 @@ To make the name editable, you could now easily use the TextInput component we c
 ```typescript
 const Item = ({ item, removeItem }: { item: Atom<TodoItem>, removeItem: () => void }) => (
     <span>
-      <TextInput value={item.view("name")} />
+      <TextInput value={B.view(item, "name")} />
       <a onClick={removeItem}>
         remove
       </a>
@@ -756,8 +753,8 @@ For starters we might try a simplistic approach:
 
 ```typescript
 const SearchResultsSimplest = ({ state } : { state: B.Property<SearchState> }) => {
-    const currentResults: B.Property<string[] | null = state.map(s => s.state === "done" ? s.results : null)
-    const message: B.Property<string> = currentResults.map(r => r.length === 0 ? "Nothing found" : null)
+    const currentResults: B.Property<string[] | null = B.map(state, s => s.state === "done" ? s.results : null)
+    const message: B.Property<string> = B.map(currentResults, r => r.length === 0 ? "Nothing found" : null)
     
     return <div>
         { message }
@@ -769,7 +766,7 @@ const SearchResultsSimplest = ({ state } : { state: B.Property<SearchState> }) =
 }
 ```
 
-The list of result and a message string are derived from the state using [`.map`](https://baconjs.github.io/api3/classes/property.html#map) (state decomposition in action).
+The list of result and a message string are derived from the state using [`map`](https://github.com/raimohanska/lonna/blob/master/src/map.ts) (state decomposition in action).
 Then we can easily include the "Searching" indicator using the same technique. But showing previous results while 
 searching requires some local state, because that's not incluced in `state`. Fortunately, reactive properties provide
 good tools for this. For instance,
