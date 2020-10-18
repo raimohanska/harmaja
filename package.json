@@ -29,6 +29,7 @@
     "example-todoapp-backend": "parcel --out-dir dist/examples examples/todoapp-backend/index.html",
     "example-consultants": "mkdir -p dist/examples && cp -R examples/consultants/public/* dist/examples && parcel --out-dir dist/examples examples/consultants/index.html",
     "example-side-effects": "parcel --out-dir dist/examples examples/side-effects/index.html",
+    "example-todoapp-atoms-rxjs": "parcel --out-dir dist/examples examples/todoapp-atoms-rxjs/index.html",
     "tsc": "tsc",
     "build": "scripts/build lonna && scripts/build bacon && scripts/build rxjs",
     "build:watch": "tsc --watch",
