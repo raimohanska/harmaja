@@ -26,10 +26,8 @@ const initialItems = ["learn typescript", "fix handbrake"].map(s => todoItem(s))
 type AppEvent = { action: "add", name: string } | { action: "remove", id: Id } | { action: "update", item: TodoItem }
 
 const appEvents = new Rx.Subject<AppEvent>()
-// Events/actions
+
 // New items event stream is merged from use events and events from "server"
-// Merging two streams of strings and finally mapping them into TodoItem objects
-//const newItemE = Rx.map(Rx.merge(itemAddedFromSocketE, addItemBus), todoItem)
 
 itemAddedFromSocketE.forEach(name => appEvents.next({ action: "add", name }))
 
