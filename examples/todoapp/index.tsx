@@ -41,7 +41,7 @@ function reducer(items: TodoItem[], event: AppEvent): TodoItem[] {
     default: console.warn("Unknown event", event)
   }
 }
-const allItems = B.scan(appEvents, initialItems, reducer, globalScope)
+const allItems = appEvents.pipe(B.scan(initialItems, reducer, globalScope))
 
 const App = () => {
   return (
@@ -125,7 +125,7 @@ const Checkbox = (props: { checked: B.Atom<boolean> } & any) => {
   };
 
 const JsonView = ({ json }: { json: B.Property<any>}) => {
-  return <pre>{B.map(json, st => JSON.stringify(st, null, 2))}</pre>;
+  return <pre>{json.pipe<B.Property<string>>(B.map(st => JSON.stringify(st, null, 2)))}</pre>;
 };
 
 mount(<App/>, document.getElementById("root")!)

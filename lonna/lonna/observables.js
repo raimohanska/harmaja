@@ -23,7 +23,7 @@ export function view(a, key) {
     return O.view(a, key);
 }
 export function filter(prop, fn) {
-    return O.filter(prop, fn, O.autoScope);
+    return O.filter(fn, O.autoScope)(prop);
 }
 export var observablesThrowError = true;
 export var observablesImplementationName = "Lonna";

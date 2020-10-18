@@ -14,16 +14,16 @@ const cancelRequest = B.bus<void>()
 const editRequest = B.bus<TodoItem>()
 const addRequest = B.bus<TodoItem>()
 
-const saveResult = B.flatMap(B.merge(saveRequest, addRequest), item =>
+const saveResult = B.flatMap(item =>
   B.changes(B.fromPromise(saveChangesToServer(item), 
     () => undefined, // this never passes because only changes are monitored
     () => item, 
     error => null
   )),
   globalScope
-)
+)(B.merge(saveRequest, addRequest))
 
-const allItems: B.Property<TodoItem []> = B.scan(updates, [], reducer, globalScope)
+const allItems: B.Property<TodoItem []> = updates.pipe(B.scan([], reducer, globalScope))
 const editState = B.update<EditState>(globalScope, { state: "view" }, 
   [addRequest, (_, item) => ({ state: "adding", item})],
   [editRequest, (_, item) => ({ state: "edit", item})],
