@@ -1,6 +1,6 @@
 import * as Rx from "rxjs"
-import { scan, publishReplay, refCount, map, startWith } from "rxjs/operators"
-import { h, mount, ListView, atom, Atom } from "../../rxjs"
+import { scan, publishReplay, shareReplay, refCount, map, startWith, tap } from "rxjs/operators"
+import { h, mount, ListView, atom, Atom, unmountEvent, onUnmount } from "../../rxjs"
 import itemAddedFromSocketE from "./fake-socket";
 
 // TODO: I cannot seem to get this right with RxJs. 
@@ -47,8 +47,9 @@ function reducer(items: TodoItem[], event: AppEvent): TodoItem[] {
 const allItems: Rx.Observable<TodoItem[]> = appEvents.pipe(
   scan(reducer, initialItems),
   startWith(initialItems),
-  publishReplay(),
-  refCount()
+  tap(e => console.log("Updating", e)),
+  shareReplay(),
+  tap(e => console.log("Emitting", e)) // TODO: when removing the first item, why are out-of-date values emitted to some observers?
 )
 
 const App = () => {
