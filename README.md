@@ -95,6 +95,18 @@ Bacon.js doesn't include Atoms and Lenses, but Harmaja includes them so you shou
 Note that you'll need to use the variant in all of your Harmaja imports within your application. Mixing and matching two implementations accross
 your application is a very bad idea.
 
+### RxJs
+
+To use RxJs Observables:
+
+```
+import { h } from "harmaja/rxjs";
+```
+
+RxJs doesn't include Atoms and Lenses, but Harmaja includes them so you should use `import { atom, Atom } from "harmaja/rxjs"`.
+
+Note that you'll need to use the variant in all of your Harmaja imports within your application. Mixing and matching two implementations accross
+your application is a very bad idea.
 
 ## API
 

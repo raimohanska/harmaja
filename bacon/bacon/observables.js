@@ -4,6 +4,11 @@ import { getCurrentValue } from "./currentvalue";
 export function bus() {
     return new O.Bus();
 }
+export function pushAndEnd(bus, value) {
+    var nativeBus = bus;
+    nativeBus.push(value);
+    nativeBus.end();
+}
 export function get(prop) {
     return getCurrentValue(prop);
 }
@@ -38,4 +43,6 @@ export function filter(a, fn) {
         throw Error("Unknown observable: " + a);
     }
 }
+export var observablesThrowError = true;
+export var observablesImplementationName = "Bacon.js";
 //# sourceMappingURL=observables.js.map

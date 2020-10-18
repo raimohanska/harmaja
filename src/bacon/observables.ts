@@ -14,14 +14,17 @@ export type Observable<T> = {}
 export type Atom<T> = {}
 export type Property<T> = {}
 export type EventStream<T> = {}
-export interface Bus<T> {
-    push(value: T): void;
-    end(): void;
-}
+export interface Bus<T> extends NativeEventStream<T> {}
 export type Unsub = () => void
 
 export function bus<T>(): Bus<T> {
     return new O.Bus()
+}
+
+export function pushAndEnd<T>(bus: Bus<T>, value: T) {
+    const nativeBus = bus as O.Bus<T>
+    nativeBus.push(value)
+    nativeBus.end()
 }
 
 export function get<A>(prop: Property<A>): A {
@@ -62,3 +65,7 @@ export function filter<A>(a: any, fn: Predicate<A>): any {
         throw Error("Unknown observable: " + a)
     }
 }
+
+
+export const observablesThrowError = true
+export const observablesImplementationName = "Bacon.js"

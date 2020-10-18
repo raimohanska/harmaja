@@ -292,7 +292,7 @@ export function unmount(harmajaElement) {
     }
     else if (harmajaElement instanceof Array) {
         //console.log("Unmounting array")
-        O.forEach(harmajaElement, unmount);
+        harmajaElement.forEach(unmount);
     }
     else {
         //console.log("Unmounting node", debug(harmajaElement))
@@ -328,8 +328,7 @@ export function mountEvent() {
     if (!transientState.mountE) {
         var event_1 = O.bus();
         onMount(function () {
-            event_1.push();
-            event_1.end();
+            O.pushAndEnd(event_1, undefined);
         });
         transientState.mountE = event_1;
     }
@@ -344,8 +343,7 @@ export function unmountEvent() {
     if (!transientState.unmountE) {
         var event_2 = O.bus();
         onUnmount(function () {
-            event_2.push();
-            //event.end()
+            O.pushAndEnd(event_2, undefined);
         });
         transientState.unmountE = event_2;
     }

@@ -256,7 +256,7 @@ export function unmount(harmajaElement: HarmajaOutput) {
         unmount(O.get(harmajaElement));
     } else if ((harmajaElement as any) instanceof Array) {
         //console.log("Unmounting array")
-        O.forEach(harmajaElement,unmount)
+        (harmajaElement as Array<any>).forEach(unmount)
     } else {
         //console.log("Unmounting node", debug(harmajaElement))
         removeNode(null, 0, harmajaElement)
@@ -292,8 +292,7 @@ export function mountEvent(): O.NativeEventStream<void> {
     if (!transientState.mountE) {
         const event = O.bus<void>()
         onMount(() => {
-            event.push()
-            event.end()
+            O.pushAndEnd(event, undefined)
         })    
         transientState.mountE = event
     }
@@ -309,8 +308,7 @@ export function unmountEvent(): O.NativeEventStream<void> {
     if (!transientState.unmountE) {
         const event = O.bus<void>()
         onUnmount(() => {
-            event.push()
-            //event.end()
+            O.pushAndEnd(event, undefined)
         })    
         transientState.unmountE = event
     }

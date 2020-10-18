@@ -1,7 +1,8 @@
-import * as O from "baconjs";
-export declare type NativeProperty<T> = O.Property<T>;
-export declare type NativeAtom<T> = O.Property<T>;
-export declare type NativeEventStream<T> = O.EventStream<T>;
+import * as Rx from "rxjs";
+import * as A from "./atom";
+export declare type NativeProperty<T> = Rx.Observable<T>;
+export declare type NativeAtom<T> = A.Atom<T>;
+export declare type NativeEventStream<T> = Rx.Observable<T>;
 export declare type Scope = {};
 export declare type Predicate<A> = (value: A) => boolean;
 export declare type Observable<T> = {};
@@ -21,5 +22,9 @@ export declare function view<A, K extends keyof A>(a: Atom<A>, key: number): Ato
 export declare function view<A, K extends keyof A>(a: Property<A>, key: number): Property<A[K] | undefined>;
 export declare function filter<A>(a: Atom<A>, fn: Predicate<A>): Atom<A>;
 export declare function filter<A>(a: Property<A>, fn: Predicate<A>): Property<A>;
-export declare const observablesThrowError = true;
-export declare const observablesImplementationName = "Bacon.js";
+export declare const valueMissing: {};
+export declare type ValueMissing = typeof valueMissing;
+export declare function _forEach<V>(x: Rx.Observable<V>, fn: (value: V) => void): Unsub;
+export declare function getCurrentValue<A>(observable: Rx.Observable<A>): A;
+export declare const observablesThrowError = false;
+export declare const observablesImplementationName = "RxJs";

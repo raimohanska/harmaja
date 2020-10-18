@@ -8,11 +8,10 @@ export declare type Observable<T> = {};
 export declare type Atom<T> = {};
 export declare type Property<T> = {};
 export declare type EventStream<T> = {};
-export interface Bus<T> {
-    push(value: T): void;
-    end(): void;
+export interface Bus<T> extends NativeEventStream<T> {
 }
 export declare type Unsub = () => void;
+export declare function pushAndEnd<T>(bus: Bus<T>, value: T): void;
 export declare function bus<T>(): Bus<T>;
 export declare function get<A>(prop: Property<A>): A;
 export declare function set<A>(atom: Atom<A>, value: A): void;
@@ -22,3 +21,5 @@ export declare function view<A, K extends keyof A>(a: Atom<A>, key: number): Ato
 export declare function view<A, K extends keyof A>(a: Property<A>, key: number): Property<A[K] | undefined>;
 export declare function filter<A>(prop: Atom<A>, fn: Predicate<A>): Atom<A>;
 export declare function filter<A>(prop: Property<A>, fn: Predicate<A>): Property<A>;
+export declare const observablesThrowError = true;
+export declare const observablesImplementationName = "Lonna";

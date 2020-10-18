@@ -2,6 +2,7 @@ import { h } from "./index"
 import * as O from "./test-utils"
 import { testRender, mounted, getHtml } from "./test-utils"
 import { ListView } from "./listview"
+import { observablesImplementationName, observablesThrowError } from "./observable/observables"
 
 type Item = { id: number, name: string}
 const testItems: Item[] = [{ id: 1, name: "first" }]
@@ -38,7 +39,11 @@ describe("Listview", () => {
         return el
     }))
 
-    it("Allows only single-node items", () => {        
+    it("Allows only single-node items on list", () => {        
+        if (!observablesThrowError) {
+            console.log(`Skipping test because Observables cannot throw errors with ${observablesImplementationName}`)
+            return
+        }
         expect(() => mounted(<ul><ListView
             observable={O.constant([1])}
             renderItem={item => [<li>{item}</li>, <li/>]}
@@ -130,6 +135,10 @@ describe("Listview", () => {
         }))
 
         it("Allows only single-node items", () => {
+            if (!observablesThrowError) {
+                console.log(`Skipping test because Observables cannot throw errors with ${observablesImplementationName}`)
+                return
+            }    
             expect(() => mounted(<ul><ListView 
                 observable = { O.constant([1]) }
                 renderItem = { item => O.constant([<div/>, <div/>]) }

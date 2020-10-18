@@ -12,11 +12,14 @@ export type Observable<T> = {}
 export type Atom<T> = {}
 export type Property<T> = {}
 export type EventStream<T> = {}
-export interface Bus<T> {
-    push(value: T): void;
-    end(): void;
-}
+export interface Bus<T> extends NativeEventStream<T> {}
 export type Unsub = () => void
+
+export function pushAndEnd<T>(bus: Bus<T>, value: T) {
+    const nativeBus = bus as O.Bus<T>
+    nativeBus.push(value)
+    nativeBus.end()
+}
 
 export function bus<T>(): Bus<T> {
     return O.bus()
@@ -48,3 +51,6 @@ export function filter<A>(prop: Property<A>, fn: Predicate<A>): Property<A>;
 export function filter<A>(prop: Property<A> | Property<A>, fn: Predicate<A>): any {
     return O.filter(prop as any, fn, O.autoScope)
 }
+
+export const observablesThrowError = true
+export const observablesImplementationName = "Lonna"

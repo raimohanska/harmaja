@@ -1,4 +1,9 @@
 import * as O from "lonna";
+export function pushAndEnd(bus, value) {
+    var nativeBus = bus;
+    nativeBus.push(value);
+    nativeBus.end();
+}
 export function bus() {
     return O.bus();
 }
@@ -20,4 +25,6 @@ export function view(a, key) {
 export function filter(prop, fn) {
     return O.filter(prop, fn, O.autoScope);
 }
+export var observablesThrowError = true;
+export var observablesImplementationName = "Lonna";
 //# sourceMappingURL=observables.js.map
