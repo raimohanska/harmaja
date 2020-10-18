@@ -21,20 +21,27 @@ function todoItem(name: string, id: number = idCounter++, completed: boolean = f
 }
 const initialItems = ["learn typescript", "fix handbrake"].map(s => todoItem(s));
 
+type AppEvent = { action: "add", name: string } | { action: "remove", id: Id } | { action: "update", item: TodoItem }
+
+const appEvents = B.bus<AppEvent>()
 // Events/actions
-const addItemBus = B.bus<string>();
-const removeItemBus = B.bus<Id>();
-const updateItemBus =  B.bus<TodoItem>();
 // New items event stream is merged from use events and events from "server"
 // Merging two streams of strings and finally mapping them into TodoItem objects
-const newItemE = B.map(B.merge(itemAddedFromSocketE, addItemBus), todoItem)
+//const newItemE = Rx.map(Rx.merge(itemAddedFromSocketE, addItemBus), todoItem)
+
+itemAddedFromSocketE.forEach(name => appEvents.push({ action: "add", name }))
 
 // The state "megablob" reactive property created by reducing from events
-const allItems: B.Property<TodoItem[]> = B.update(globalScope, initialItems, 
-    [newItemE, (items, item) => items.concat(item)],
-    [removeItemBus, (items, removedItemId) => items.filter(i => i.id !== removedItemId)],
-    [updateItemBus, (items, updatedItem) => items.map(i => i.id === updatedItem.id ? updatedItem : i)]
-)
+
+function reducer(items: TodoItem[], event: AppEvent): TodoItem[] {
+  switch (event.action) {
+    case "add": return items.concat(todoItem(event.name))
+    case "remove": return items.filter(i => i.id !== event.id)
+    case "update":return items.map(i => i.id === event.item.id ? event.item : i)
+    default: console.warn("Unknown event", event)
+  }
+}
+const allItems = B.scan(appEvents, initialItems, reducer, globalScope)
 
 const App = () => {
   return (
@@ -71,13 +78,13 @@ const ItemView = ({ id, item }: { id: number, item: B.Property<TodoItem> }) => 
   // this case we push changes to the bus which will then cause state changes to propagate back here.
   // A dependent atom provides a bridge between atom-based components and "unidirectional data flow"
   // style state management.
-  const itemAtom = B.atom(item, updated => updateItemBus.push(updated))
+  const itemAtom = B.atom(item, updated => appEvents.push({ action: "update", item: updated }))
   
   return (
     <span>
       <span className="name"><TextInput value={B.view(itemAtom, "name")} /></span>
       <Checkbox checked={B.view(itemAtom, "completed")}/>
-      <a className="removeItem" onClick={() => removeItemBus.push(id)}>
+      <a className="removeItem" onClick={() => appEvents.push({ action: "remove", id})}>
         remove
       </a>
     </span>
@@ -86,7 +93,7 @@ const ItemView = ({ id, item }: { id: number, item: B.Property<TodoItem> }) => 
 
 const NewItem = () => {
   const name = B.atom("")
-  const addNew = () => addItemBus.push(name.get())
+  const addNew = () => appEvents.push({ action: "add", name: name.get() })
   return (
     <div className="newItem">
       <TextInput placeholder="new item name" value={name} />

@@ -33,10 +33,12 @@ itemAddedFromSocketE.forEach(name => appEvents.next({ action: "add", name }))
 // The state "megablob" reactive property created by reducing from events
 
 function reducer(items: TodoItem[], event: AppEvent): TodoItem[] {
-  if (event.action === "add") return items.concat(todoItem(event.name))
-  if (event.action === "remove") return items.filter(i => i.id !== event.id)
-  if (event.action === "update") return items.map(i => i.id === event.item.id ? event.item : i)
-  console.warn("Unknown event", event)
+  switch (event.action) {
+    case "add": return items.concat(todoItem(event.name))
+    case "remove": return items.filter(i => i.id !== event.id)
+    case "update":return items.map(i => i.id === event.item.id ? event.item : i)
+    default: console.warn("Unknown event", event)
+  }
 }
 
 const allItems: Rx.Observable<TodoItem[]> = appEvents.pipe(

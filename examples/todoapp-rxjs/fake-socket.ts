@@ -21,4 +21,4 @@ const items = [
 const randomInterval = () => Math.random() * 10000 + 5000;
 const randomItem = () => items[Math.floor(Math.random() * items.length)];
 
-export default B.repeat(() => B.later(randomInterval(), randomItem()), globalScope);
+export default B.repeat(() => B.later(randomInterval(), randomItem()));
