@@ -36,6 +36,6 @@
     "build:watch": "tsc --watch",
     "test": "jest",
     "test:watch": "jest --watchAll",
-    "switch-observables": "scripts/switch-observables $1"
+    "switch": "scripts/switch-observables $1"
   }
 }
