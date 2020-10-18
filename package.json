@@ -12,13 +12,13 @@
     "lonna": "^0.1.11",
     "parcel-bundler": "^1.12.4",
     "ts-jest": "^26.2.0",
-    "typescript": "^4"
+    "typescript": "^4",
+    "baconjs": "^3.0.15",
+    "lonna": "^0.1.11"
   },
   "dependencies": {
-    "baconjs": "^3.0.15"
   },
   "peerDependencies": {
-    "lonna": "^0.1.11"
   },
   "engines": {
     "node": ">13.0"
