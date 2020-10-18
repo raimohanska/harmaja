@@ -45,9 +45,7 @@ function reducer(items: TodoItem[], event: AppEvent): TodoItem[] {
 const allItems: Rx.Observable<TodoItem[]> = appEvents.pipe(
   scan(reducer, initialItems),
   startWith(initialItems),
-  tap(e => console.log("Updating", e)),
-  shareReplay(),
-  tap(e => console.log("Emitting", e)) // TODO: when removing the first item, why are out-of-date values emitted to some observers?
+  shareReplay(1),
 )
 
 const App = () => {
