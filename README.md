@@ -343,35 +343,40 @@ In Harmaja, you can implement Unidirectional data flow too. Sticking with the To
 ```typescript
 import * as B from "lonna"
 
-const addItemBus = new B.Bus<TodoItem>();
-const removeItemBus = new B.Bus<TodoItem>();
+type AppEvent = { action: "add", name: string } | { action: "remove", id: Id }
+const appEvents = B.bus<AppEvent>()
 ```
 
-The bus objects allow you to dispatch an event by calling their `push` method. From the events, the application state can be reduced using [`B.update`](https://baconjs.github.io/api3/globals.html#update) like thus:
+The bus objects allow you to dispatch an event by calling their `push` method. From the events, the application state can be reduced using [`B.scan`](https://github.com/raimohanska/lonna/blob/master/src/scan.ts) like thus:
 
 ```typescript
-const allItems: B.Property<TodoItem[]> = B.update([], 
-    [addItemBus, (items, item) => items.concat(item)],
-    [removeItemBus, (items, item) => items.filter(i => i.id !== item.id)]
-)
+const initialItems: TodoItem[] = []
+function reducer(items: TodoItem[], event: AppEvent): TodoItem[] {
+  switch (event.action) {
+    case "add": return items.concat(todoItem(event.name))
+    case "remove": return items.filter(i => i.id !== event.id)
+  }
+}
+const allItems = B.scan(appEvents, initialItems, reducer, B.globalScope)
 ```
 
 You can, if you like, then encapsulate all this into something like
 
 ```typescript
 interface TodoStore {
-    add: B.Bus<TodoItem>()
-    remove: B.Bus<TodoItem>()
+    dispatch: (action: AppEvent) => void
     items: B.Property<TodoItem[]>
 }
 ```
 
 ...so you have an encapsulation of this piece of application state, and you can pass this store to your UI components.
 
-A notable difference in this store setup to Redux is, that there are no action creators and reducers per se. 
-You define distinct events and derive state from them. 
 You can also define the buses and the derived state properties in your components if you want to have scoped state. 
-There is no such thing as *react context* in Harmaja, so everything has to be passed explicitly or defined in a global scope, at least for now. 
+There is no such thing as *react context* in Harmaja, so everything is either passed explicitly or defined in a global scope, at least for now. 
+
+The `globalScope` parameter above indicates the lifetime for the constructure reactive Property, and a global lifetime in this
+case means that the value will be kept up-to-date indefinitely. If you declare state in a component, you should use `componentScope()` instead to
+prevent resource leak. You can `import { componentScope } from "harmaja"`.
 
 ## From store to view
 
