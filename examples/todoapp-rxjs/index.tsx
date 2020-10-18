@@ -3,6 +3,9 @@ import { scan, publishReplay, refCount, map, startWith } from "rxjs/operators"
 import { h, mount, ListView, atom, Atom } from "../../rxjs"
 import itemAddedFromSocketE from "./fake-socket";
 
+// TODO: I cannot seem to get this right with RxJs. 
+// You can observe incorrect behavior when you remove the first item and click on the completion checkbox of the remaining one.
+
 // The domain object constructor
 let idCounter = 1;
 type Id = number
