@@ -40,6 +40,7 @@ var __spread = (this && this.__spread) || function () {
     for (var ar = [], i = 0; i < arguments.length; i++) ar = ar.concat(__read(arguments[i]));
     return ar;
 };
+import { mkScope } from "lonna";
 import * as O from "./observable/observables";
 var transientStateStack = [];
 /**
@@ -354,21 +355,21 @@ export function componentScope() {
     if (!transientState.scope) {
         var unmountE_1 = unmountEvent();
         var mountE_1 = mountEvent();
-        transientState.scope = { subscribe: function (onIn) {
-                var unsub = null;
-                O.forEach(unmountE_1, function () { if (unsub)
-                    unsub(); });
-                if (transientState.mountsController) {
-                    var state = getNodeState(transientState.mountsController.currentElements[0]);
-                    if (state.mounted) {
-                        unsub = onIn();
-                        return;
-                    }
-                }
-                O.forEach(mountE_1, function () {
+        transientState.scope = mkScope(function (onIn) {
+            var unsub = null;
+            O.forEach(unmountE_1, function () { if (unsub)
+                unsub(); });
+            if (transientState.mountsController) {
+                var state = getNodeState(transientState.mountsController.currentElements[0]);
+                if (state.mounted) {
                     unsub = onIn();
-                });
-            } };
+                    return;
+                }
+            }
+            O.forEach(mountE_1, function () {
+                unsub = onIn();
+            });
+        });
     }
     return transientState.scope;
 }
