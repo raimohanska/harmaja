@@ -517,7 +517,7 @@ An `Atom<A>` simply represents a two-way interface to data by extending [`Bacon.
 a `set: (newValue: A)` method for changing the value. Let's try it by changing our TextInput to
 
 ```typescript
-import { Atom, atom } from "harmaja"
+import { Atom, atom } from "lonna"
 const TextInput = ({value}: {text: Atom<string>}) => {
     return <input value={text} onInput={e => text.set(e.currentTarget.value)} />
 }
