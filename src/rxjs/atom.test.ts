@@ -1,6 +1,6 @@
-import * as B from "rxjs"
-import { map, distinctUntilChanged, switchMap } from "rxjs/operators"
+import * as Rx from "rxjs"
 import * as A from "./atom"
+import { map, distinctUntilChanged, switchMap } from "rxjs/operators"
 import { getCurrentValue } from "./observables"
 
 describe("Rx Atom", () => {
@@ -67,7 +67,7 @@ describe("Rx Atom", () => {
 
 describe("Rx Dependent Atom", () => {
     it("Works", () => {
-        var b = new B.BehaviorSubject("1")
+        var b = new Rx.BehaviorSubject("1")
         var atom = A.atom(b, newValue => b.next(newValue))
         b.subscribe() // Dependent atoms need a subscription to remain up-to-date
         expect(atom.get()).toEqual("1")
@@ -78,7 +78,7 @@ describe("Rx Dependent Atom", () => {
 
     describe("Freezing", () => {
         it("Can be frozen on unwanted values", () => {
-            var b = new B.BehaviorSubject("1") as B.BehaviorSubject<string | null>
+            var b = new Rx.BehaviorSubject("1") as Rx.BehaviorSubject<string | null>
             var atom = A.atom(b, newValue => b.next(newValue)).freezeUnless(a => a !== null)
             b.subscribe() // Dependent atoms need a subscription to remain up-to-date
     
@@ -89,7 +89,7 @@ describe("Rx Dependent Atom", () => {
         })
     
         it("Can be frozen on unwanted values (subscriber case)", () => {
-            var b = new B.BehaviorSubject("1") as B.BehaviorSubject<string | null>
+            var b = new Rx.BehaviorSubject("1") as Rx.BehaviorSubject<string | null>
             var atom = A.atom(b, newValue => b.next(newValue)).freezeUnless(a => a !== null)
             b.subscribe() // Dependent atoms need a subscription to remain up-to-date
             atom.subscribe()
@@ -119,6 +119,6 @@ describe("Rx Dependent Atom", () => {
     })
 
     it("Recognizes non-atoms", () => {
-        expect(A.isAtom(new B.BehaviorSubject(1))).toEqual(false)
+        expect(A.isAtom(new Rx.BehaviorSubject(1))).toEqual(false)
     })
 })

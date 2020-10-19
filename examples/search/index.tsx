@@ -1,4 +1,4 @@
-import * as B from "lonna"
+import * as L from "lonna"
 import { h, mount, ListView, componentScope } from "../../src/index"
 import { search } from "./search-engine"
 
@@ -10,11 +10,11 @@ const Root = () =>
 type SearchState = { state: "initial" } | { state: "searching", searchString: string } | { state: "done", searchString: string, results: string[] }
 
 const Search = () => {
-    const searchString = B.atom("")
-    const searchStringChange: B.EventStream<string> = searchString.pipe(B.changes, B.debounce(500, componentScope()))
-    const searchResult: B.EventStream<string[]> = searchStringChange.pipe(B.flatMapLatest<string, string[]>(s => B.fromPromise(search(s), () => [], xs => xs, error => []), componentScope()))
+    const searchString = L.atom("")
+    const searchStringChange: L.EventStream<string> = searchString.pipe(L.changes, L.debounce(500, componentScope()))
+    const searchResult: L.EventStream<string[]> = searchStringChange.pipe(L.flatMapLatest<string, string[]>(s => L.fromPromise(search(s), () => [], xs => xs, error => []), componentScope()))
     
-    const state: B.Property<SearchState> = B.update(
+    const state: L.Property<SearchState> = L.update(
         componentScope(),
         { state: "initial"} as SearchState,
         [searchStringChange, (state, searchString) => ({ state: "searching", searchString })],
@@ -27,20 +27,20 @@ const Search = () => {
     </div>
 }
 
-const SearchResults = ({ state } : { state: B.Property<SearchState> }) => {
+const SearchResults = ({ state } : { state: L.Property<SearchState> }) => {
     const latestResults = state.pipe(
-        B.changes, 
-        B.scan([], ((results: string[], newState: SearchState) => newState.state === "done" ? newState.results : results), componentScope())        
+        L.changes, 
+        L.scan([], ((results: string[], newState: SearchState) => newState.state === "done" ? newState.results : results), componentScope())        
     )
     
-    const message = B.combine(state, latestResults, (s, r) => {
+    const message = L.combine(state, latestResults, (s, r) => {
         if (s.state == "done" && r.length === 0) return "Nothing found"
         if (s.state === "searching" && r.length === 0) return "Searching..."
         return ""
     })
 
 
-    const style = B.combine(state, latestResults, (s, r) => {
+    const style = L.combine(state, latestResults, (s, r) => {
         if (s.state === "searching" && r.length > 0) return { opacity: 0.5 }
         return {}
     })
@@ -55,9 +55,9 @@ const SearchResults = ({ state } : { state: B.Property<SearchState> }) => {
     </div>
 }
 
-const SearchResultsSimplest = ({ state } : { state: B.Property<SearchState> }) => {
-    const currentResults: B.Property<string[]> = B.map((s: SearchState) => s.state === "done" ? s.results : [])(state)
-    const message: B.Property<string> = B.map((r: string[]) => r.length === 0 ? "Nothing found" : null)(currentResults)
+const SearchResultsSimplest = ({ state } : { state: L.Property<SearchState> }) => {
+    const currentResults: L.Property<string[]> = L.view(state, s => s.state === "done" ? s.results : [])
+    const message: L.Property<string> = L.view(currentResults, r => r.length === 0 ? "Nothing found" : null)
     
     return <div>
         { message }
@@ -68,10 +68,10 @@ const SearchResultsSimplest = ({ state } : { state: B.Property<SearchState> }) =
     </div>
 }
 
-const SearchResults2 = ({ state } : { state: B.Property<SearchState> }) => {
-    const currentResults: B.Property<string[]> = B.map((s: SearchState) => s.state === "done" ? s.results : [])(state)
+const SearchResults2 = ({ state } : { state: L.Property<SearchState> }) => {
+    const currentResults: L.Property<string[]> = L.view(state, s => s.state === "done" ? s.results : [])
 
-    const message: B.Property<string> = B.map((s: SearchState) => {
+    const message: L.Property<string> = L.map((s: SearchState) => {
         if (s.state === "searching") return "Searching..."
         if (s.state === "done" && s.results.length === 0) return "Nothing found."
         return ""
@@ -86,7 +86,7 @@ const SearchResults2 = ({ state } : { state: B.Property<SearchState> }) => {
     </div>
 }
 
-const TextInput = (props: { value: B.Atom<string> } & any) => {
+const TextInput = (props: { value: L.Atom<string> } & any) => {
     return <input {...{ 
             type: "text", 
             onInput: e => { 

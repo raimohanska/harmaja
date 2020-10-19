@@ -1,7 +1,7 @@
 import { Consultant } from "./domain";
 import { randomName } from "./names";
 import { sentences } from "./sentences";
-import * as B from "lonna"
+import * as L from "lonna"
 
 export type InitConsultants = {
   type: "init";
@@ -18,10 +18,10 @@ export const initialConsultants = generate(3, randomConsultant);
 let consultants: Consultant[] = initialConsultants;
 let counter = 0;
 
-function serverFeed(): B.EventStream<ServerFeedEvent> {
+function serverFeed(): L.EventStream<ServerFeedEvent> {
   console.log("Start server feed");
   consultants = generate(3, randomConsultant);
-  const b = B.bus<ServerFeedEvent>();
+  const b = L.bus<ServerFeedEvent>();
 
   (async () => {
     await randomDelay(2000);

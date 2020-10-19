@@ -1,4 +1,4 @@
-import * as B from "lonna"
+import * as L from "lonna"
 import { h, mount, ListView } from "../../src/index"
 import itemAddedFromSocketE from "./fake-socket";
 
@@ -19,7 +19,7 @@ function todoItem(name: string, id: number = idCounter++, completed: boolean = f
 const initialItems = ["learn typescript", "fix handbrake"].map(s => todoItem(s));
 
 // Application state defined as a single Atom
-const allItems: B.Atom<TodoItem[]> = B.atom(initialItems)
+const allItems: L.Atom<TodoItem[]> = L.atom(initialItems)
 // Helper function for adding a new item
 const addItem = (name: string) => allItems.modify(items => items.concat(todoItem(name)))
 itemAddedFromSocketE.forEach(addItem)
@@ -35,7 +35,7 @@ const App = () => {
   );
 };
 
-const ItemList = ({ items }: { items: B.Atom<TodoItem[]>}) => {
+const ItemList = ({ items }: { items: L.Atom<TodoItem[]>}) => {
   return (
     <ul>
       <ListView
@@ -51,12 +51,12 @@ const ItemList = ({ items }: { items: B.Atom<TodoItem[]>}) => {
   );
 };
 
-const ItemView = ({ item, removeItem }: { item: B.Atom<TodoItem>, removeItem: () => void }) => {  
-  const completed: B.Atom<boolean> = B.view(item, "completed")
+const ItemView = ({ item, removeItem }: { item: L.Atom<TodoItem>, removeItem: () => void }) => {  
+  const completed: L.Atom<boolean> = L.view(item, "completed")
   
   return (
     <span>
-      <span className="name">{B.view(item, "name")}</span>
+      <span className="name">{L.view(item, "name")}</span>
       <Checkbox checked={completed}/>
       <a className="removeItem" onClick={removeItem}>
         remove
@@ -66,7 +66,7 @@ const ItemView = ({ item, removeItem }: { item: B.Atom<TodoItem>, removeItem: (
 };
 
 const NewItem = () => {
-  const name = B.atom("")
+  const name = L.atom("")
   const addNew = () => addItem(name.get())
   return (
     <div className="newItem">
@@ -76,7 +76,7 @@ const NewItem = () => {
   );
 };
 
-const TextInput = (props: { value: B.Atom<string> } & any) => {
+const TextInput = (props: { value: L.Atom<string> } & any) => {
   return <input {...{ 
           type: "text", 
           onInput: e => { 
@@ -87,7 +87,7 @@ const TextInput = (props: { value: B.Atom<string> } & any) => {
         }} />  
 };
 
-const Checkbox = (props: { checked: B.Atom<boolean> } & any) => {
+const Checkbox = (props: { checked: L.Atom<boolean> } & any) => {
     return <input {...{ 
             type: "checkbox", 
             onInput: e => { 
@@ -99,8 +99,8 @@ const Checkbox = (props: { checked: B.Atom<boolean> } & any) => {
           }} />  
   };
 
-const JsonView = ({ json }: { json: B.Property<any>}) => {
-  return <pre>{json.pipe(B.map(st => JSON.stringify(st, null, 2)))}</pre>;
+const JsonView = ({ json }: { json: L.Property<any>}) => {
+  return <pre>{L.view(json, st => JSON.stringify(st, null, 2))}</pre>;
 };
   
 

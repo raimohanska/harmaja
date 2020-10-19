@@ -1,4 +1,4 @@
-import * as B from "lonna"
+import * as L from "lonna"
 import { globalScope } from "lonna";
 
 import { h, mount, ListView } from "../../src/index"
@@ -23,7 +23,7 @@ const initialItems = ["learn typescript", "fix handbrake"].map(s => todoItem(s))
 
 type AppEvent = { action: "add", name: string } | { action: "remove", id: Id } | { action: "update", item: TodoItem }
 
-const appEvents = B.bus<AppEvent>()
+const appEvents = L.bus<AppEvent>()
 // Events/actions
 // New items event stream is merged from use events and events from "server"
 // Merging two streams of strings and finally mapping them into TodoItem objects
@@ -41,7 +41,7 @@ function reducer(items: TodoItem[], event: AppEvent): TodoItem[] {
     default: console.warn("Unknown event", event)
   }
 }
-const allItems = appEvents.pipe(B.scan(initialItems, reducer, globalScope))
+const allItems = appEvents.pipe(L.scan(initialItems, reducer, globalScope))
 
 const App = () => {
   return (
@@ -59,31 +59,31 @@ ItemList2 uses the "observable" version of ListView. Here the renderObservable f
 Property<TodoItem> and is thus able to observe changes in the item. Now we don't have to replace
 the whole item view when something changes.
 */
-const ItemList = ({ items }: { items: B.Property<TodoItem[]>}) => {
+const ItemList = ({ items }: { items: L.Property<TodoItem[]>}) => {
   return (
     <ul>
       {/* when using this variant of ListView (renderItem) the items
           will be completely replaced with changed (based on the given `equals`) */}
       <ListView 
         observable={items} 
-        renderObservable={(id: number, item: B.Property<TodoItem>) => <li><ItemView id={id} item={item}/></li>}
+        renderObservable={(id: number, item: L.Property<TodoItem>) => <li><ItemView id={id} item={item}/></li>}
         getKey={ item => item.id }
       />
     </ul>
   );
 };
 
-const ItemView = ({ id, item }: { id: number, item: B.Property<TodoItem> }) => {  
+const ItemView = ({ id, item }: { id: number, item: L.Property<TodoItem> }) => {  
   // Use a "dependent atom", where you can specify what happens when the value is changed. In
   // this case we push changes to the bus which will then cause state changes to propagate back here.
   // A dependent atom provides a bridge between atom-based components and "unidirectional data flow"
   // style state management.
-  const itemAtom = B.atom(item, updated => appEvents.push({ action: "update", item: updated }))
+  const itemAtom = L.atom(item, updated => appEvents.push({ action: "update", item: updated }))
   
   return (
     <span>
-      <span className="name"><TextInput value={B.view(itemAtom, "name")} /></span>
-      <Checkbox checked={B.view(itemAtom, "completed")}/>
+      <span className="name"><TextInput value={L.view(itemAtom, "name")} /></span>
+      <Checkbox checked={L.view(itemAtom, "completed")}/>
       <a className="removeItem" onClick={() => appEvents.push({ action: "remove", id})}>
         remove
       </a>
@@ -92,7 +92,7 @@ const ItemView = ({ id, item }: { id: number, item: B.Property<TodoItem> }) => 
 };
 
 const NewItem = () => {
-  const name = B.atom("")
+  const name = L.atom("")
   const addNew = () => appEvents.push({ action: "add", name: name.get() })
   return (
     <div className="newItem">
@@ -102,7 +102,7 @@ const NewItem = () => {
   );
 };
 
-const TextInput = (props: { value: B.Atom<string> } & any) => {
+const TextInput = (props: { value: L.Atom<string> } & any) => {
   return <input {...{ 
           type: "text", 
           onInput: e => { 
@@ -113,7 +113,7 @@ const TextInput = (props: { value: B.Atom<string> } & any) => {
         }} />  
 };
 
-const Checkbox = (props: { checked: B.Atom<boolean> } & any) => {
+const Checkbox = (props: { checked: L.Atom<boolean> } & any) => {
     return <input {...{ 
             type: "checkbox", 
             onInput: e => { 
@@ -124,13 +124,9 @@ const Checkbox = (props: { checked: B.Atom<boolean> } & any) => {
           }} />  
   };
 
-const JsonView = ({ json }: { json: B.Property<any>}) => {
-  const s = json.pipe(B.map(st => JSON.stringify(st, null, 2)))
+const JsonView = ({ json }: { json: L.Property<any>}) => {
+  const s = L.view(json, st => JSON.stringify(st, null, 2))
   return <pre>{s}</pre>;
 };
 
 mount(<App/>, document.getElementById("root")!)
-
-function map<A, B>(fn: (a: A) => B): (a: B.Property<A>) => B.Property<B> {
-  return (a: B.Property<A>) => B.map(fn)(a)
-}

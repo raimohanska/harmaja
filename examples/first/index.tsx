@@ -1,51 +1,51 @@
-import * as B from "lonna"
+import * as L from "lonna"
 import { h, mount, ListView } from "../../src/index"
 
-const numbers = B.bus<number>()
+const numbers = L.bus<number>()
 
 // TODO: API ergonomics
-const multiplier = numbers.pipe(B.scan(1, (a, b) => a + b, B.globalScope))
-const interval = B.interval(3000, 1)
-const ticker = interval.pipe(B.scan(1, (a, b) => a + b, B.globalScope))
+const multiplier = numbers.pipe(L.scan(1, (a, b) => a + b, L.globalScope))
+const interval = L.interval(3000, 1)
+const ticker = interval.pipe(L.scan(1, (a, b) => a + b, L.globalScope))
 
 ticker.log("TICK")
 
-const dots: B.Property<number[]> = multiplier.pipe(B.map((count: number) => range(1, count)))
+const dots: L.Property<number[]> = L.view(multiplier, count => range(1, count))
 
 const H1 = ({children} : {children?: any[]}) => {
     return <h1 onClick={() => console.log("Clicked")}>{children}</h1>
 }
 
-const Plus = ({bus} : {bus: B.Bus<number>}) => {
+const Plus = ({bus} : {bus: L.Bus<number>}) => {
     return <button onClick={() => bus.push(1)}>+</button>
 }
 
-const Minus = ({bus} : {bus: B.Bus<number>}) => {
+const Minus = ({bus} : {bus: L.Bus<number>}) => {
     return <button onClick={() => bus.push(-1)}>-</button>
 }
 const ReactiveProps = () => {
-    return <input value={ticker} style={B.constant({"background": "black"})}/>
+    return <input value={ticker} style={L.constant({"background": "black"})}/>
 }
 
-const TickerWithMultiplier = ({ multiplier, ticker } : { multiplier: number, ticker: B.Property<number>}) => {
+const TickerWithMultiplier = ({ multiplier, ticker } : { multiplier: number, ticker: L.Property<number>}) => {
     console.log("Recreating with new multiplier", multiplier)
-    return <em>{ticker.pipe(B.map((n: number) => n * multiplier))}</em>
+    return <em>{L.view(ticker, n => n * multiplier)}</em>
 }
 
 const Root = () =>
     <div id="root">
         <ReactiveProps/>
         <Plus bus={numbers}/>   
-        <H1>Hello <b>World { multiplier.pipe(B.map((multiplier: number) => <TickerWithMultiplier {...{multiplier, ticker}}/>)) }</b>!</H1>
+        <H1>Hello <b>World { multiplier.pipe(L.map((multiplier: number) => <TickerWithMultiplier {...{multiplier, ticker}}/>)) }</b>!</H1>
         Multiplier <Plus bus={numbers}/>{ multiplier }<Minus bus={numbers}/>
         <br/> Naive array handling 
-        { dots.pipe(B.map((dots: number[]) => <span>{ dots.map((n: number) => <span>{ticker.pipe(B.map((m: number) => m * n))} </span>) } </span>)) }
+        { L.view(dots, dots => <span>{ dots.map((n: number) => <span>{L.view(ticker, m => m * n)} </span>) } </span>) }
         <br/> Smart array handling 
         <ListView<number, number> {...{ 
             observable: dots, 
-            renderItem: (n => <span>{ticker.pipe(B.map((m: number) => m * n))} </span>)
+            renderItem: (n => <span>{L.view(ticker, m => m * n)} </span>)
         }}/>
-        <br/>Handling nulls { null } { B.constant(null) }
+        <br/>Handling nulls { null } { L.constant(null) }
     </div>
 
 mount(<Root/>, document.getElementById("root")!)

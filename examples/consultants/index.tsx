@@ -1,4 +1,4 @@
-import * as B from "lonna"
+import * as L from "lonna"
 import { globalScope } from "lonna";
 import { h, mount, ListView } from "../../src/index"
 import { Consultant, Id } from "./domain";
@@ -8,14 +8,14 @@ import "./styles.css";
 type EditState = { state: "view" } | { state: "edit", consultant: Consultant } | { state: "saving", consultant: Consultant } | { state: "adding", consultant: Consultant }
 type Notification = { type: "info" | "warning" | "error"; text: string };
 
-const updates = B.bus<ServerFeedEvent>()
-const saveRequest = B.bus<Consultant>()
-const cancelRequest = B.bus<void>()
-const editRequest = B.bus<Consultant>()
-const addRequest = B.bus<Consultant>()
+const updates = L.bus<ServerFeedEvent>()
+const saveRequest = L.bus<Consultant>()
+const cancelRequest = L.bus<void>()
+const editRequest = L.bus<Consultant>()
+const addRequest = L.bus<Consultant>()
 
-const saveResult = B.flatMap(B.merge(saveRequest, addRequest), consultant =>
-  B.changes(B.fromPromise<void, Consultant | null>(saveChangesToServer(consultant), 
+const saveResult = L.flatMap(L.merge(saveRequest, addRequest), consultant =>
+  L.changes(L.fromPromise<void, Consultant | null>(saveChangesToServer(consultant), 
     () => undefined, // this never passes because only changes are monitored
     () => consultant, 
     error => null
@@ -23,22 +23,22 @@ const saveResult = B.flatMap(B.merge(saveRequest, addRequest), consultant =>
   globalScope
 )
 
-const consultants: B.Property<Consultant []> = B.scan(updates, initialConsultants, reducer, globalScope)
-const editState = B.update<EditState>(globalScope, { state: "view" }, 
+const consultants: L.Property<Consultant []> = L.scan(updates, initialConsultants, reducer, globalScope)
+const editState = L.update<EditState>(globalScope, { state: "view" }, 
   [addRequest, (_, consultant) => ({ state: "adding", consultant})],
   [editRequest, (_, consultant) => ({ state: "edit", consultant})],
   [saveRequest, (_, consultant) => ({ state: "saving", consultant})],
   [saveResult, (state, success) => (!success && state.state == "saving") ? { state: "edit", consultant: state.consultant } : { state: "view"}],
   [cancelRequest, () => ( { state: "view" })]
 )
-const saveFailed = B.filter(saveResult, success => !success)
-const saveSuccess = B.filter(saveResult, success => !!success)
-const notificationE = B.merge(
-  B.map(saveFailed, () => ({ type: "error", text: "Failed to save"} as Notification)),
-  B.map(saveSuccess, () => ({ type: "info", text: "Saved"}))
+const saveFailed = L.filter(saveResult, success => !success)
+const saveSuccess = L.filter(saveResult, success => !!success)
+const notificationE = L.merge(
+  L.map(saveFailed, () => ({ type: "error", text: "Failed to save"} as Notification)),
+  L.map(saveSuccess, () => ({ type: "info", text: "Saved"}))
 )
-const notification: B.Property<Notification | null> = B.toProperty(
-  B.flatMapLatest(notificationE, notification => B.toProperty(B.later(2000, null), notification)),
+const notification: L.Property<Notification | null> = L.toProperty(
+  L.flatMapLatest(notificationE, notification => L.toProperty(L.later(2000, null), notification)),
   null, globalScope
 )
 
@@ -78,7 +78,7 @@ function reducer(consultants: Consultant[], event: ServerFeedEvent) {
 
 
 export default function App() {
-  const disableNew = B.map(editState, state => state.state !== "view");
+  const disableNew = L.map(editState, state => state.state !== "view");
   
   return (
     <div className="App">
@@ -86,7 +86,7 @@ export default function App() {
       <h1>Fancy consultant CRM</h1>
       <ListView {...{
         observable: consultants,
-        renderObservable: (id: Id, consultant: B.Property<Consultant>) => <ConsultantCard id={id} consultant={consultant} editState={editState}/>,
+        renderObservable: (id: Id, consultant: L.Property<Consultant>) => <ConsultantCard id={id} consultant={consultant} editState={editState}/>,
         getKey: (c: Consultant) => c.id
       }}/>
       
@@ -105,8 +105,8 @@ export default function App() {
   );
 }
 
-function NotificationView({ notification }: { notification: B.Property<Notification | null> }) {
-  return <span>{B.map(notification, notification => {
+function NotificationView({ notification }: { notification: L.Property<Notification | null> }) {
+  return <span>{L.map(notification, notification => {
     if (!notification) return null;
     return (
       <div
@@ -124,8 +124,8 @@ function NotificationView({ notification }: { notification: B.Property<Notificat
 
 type CardState = "view" | "edit" | "disabled";
 
-function ConsultantCard({ id, consultant, editState }: { id: Id, consultant: B.Property<Consultant>, editState: B.Property<EditState> }) {
-  const cardState: B.Property<CardState> = B.combine(consultant, editState, (c, state) => {
+function ConsultantCard({ id, consultant, editState }: { id: Id, consultant: L.Property<Consultant>, editState: L.Property<EditState> }) {
+  const cardState: L.Property<CardState> = L.combine(consultant, editState, (c, state) => {
     if (state.state === "edit") {
       if (state.consultant.id === c.id) {
         return "edit"
@@ -137,13 +137,13 @@ function ConsultantCard({ id, consultant, editState }: { id: Id, consultant: B.P
     }
     return "view"
   })
-  const consultantToShow: B.Property<Consultant> = B.combine(consultant, editState, (c, state) => {
+  const consultantToShow: L.Property<Consultant> = L.combine(consultant, editState, (c, state) => {
     if (state.state !== "view" && state.consultant.id === c.id) {
       return state.consultant
     }
     return c
   })
-  const localConsultant: B.Atom<Consultant> = B.atom(consultantToShow, editRequest.push)
+  const localConsultant: L.Atom<Consultant> = L.atom(consultantToShow, editRequest.push)
 
   async function saveLocalChanges() {
     const currentConsultant = localConsultant.get()
@@ -156,7 +156,7 @@ function ConsultantCard({ id, consultant, editState }: { id: Id, consultant: B.P
   
   return (
     <div
-      style={B.map(cardState, s => { 
+      style={L.map(cardState, s => { 
         const disabledStyle = (s === "disabled") ? { opacity: 0.5, pointerEvents: "none" as any /* TODO: really weird that this value is not accepted */ } : {}
         const style = {
           ...{
@@ -170,7 +170,7 @@ function ConsultantCard({ id, consultant, editState }: { id: Id, consultant: B.P
         return style
     })}
     >
-      <img alt={B.view(localConsultant, "name")} src="profile-placeholder.png" style={{ maxWidth: "100px" }} />
+      <img alt={L.view(localConsultant, "name")} src="profile-placeholder.png" style={{ maxWidth: "100px" }} />
       <div
         style={{
           display: "flex",
@@ -180,7 +180,7 @@ function ConsultantCard({ id, consultant, editState }: { id: Id, consultant: B.P
         }}
       >
         <div style={{ position: "absolute", top: 0, right: 0 }}>
-          {B.map(B.map(cardState, s => s === "edit"), editing => editing ? (
+          {L.map(L.map(cardState, s => s === "edit"), editing => editing ? (
             <span>
               <SimpleButton
                 {...{
@@ -200,10 +200,10 @@ function ConsultantCard({ id, consultant, editState }: { id: Id, consultant: B.P
             null
           ))}
         </div>
-        <TextInput value={B.view(localConsultant, "name")} style={{ display: "inline-block", minWidth: "10em", border: "none" }} />
+        <TextInput value={L.view(localConsultant, "name")} style={{ display: "inline-block", minWidth: "10em", border: "none" }} />
         <span style={{ marginLeft: "1em", textAlign: "left", width: "100%" }}>
           <Textarea
-            value={B.view(localConsultant, "description")}            
+            value={L.view(localConsultant, "description")}            
             style={{
               height: "100%",
               width: "100%",
@@ -218,7 +218,7 @@ function ConsultantCard({ id, consultant, editState }: { id: Id, consultant: B.P
 }
 
 
-const TextInput = (props: { value: B.Atom<string>, elementName: string } & any) => {
+const TextInput = (props: { value: L.Atom<string>, elementName: string } & any) => {
   return <input {...{ 
           type: "text", 
           onInput: e => { 
@@ -229,7 +229,7 @@ const TextInput = (props: { value: B.Atom<string>, elementName: string } & any) 
         }} />  
 };
 
-const Textarea = (props: { value: B.Atom<string>, elementName: string } & any) => {
+const Textarea = (props: { value: L.Atom<string>, elementName: string } & any) => {
   return <textarea {...{ 
           onInput: e => { 
               props.value.set(e.currentTarget.value)

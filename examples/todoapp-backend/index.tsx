@@ -1,4 +1,4 @@
-import * as B from "lonna"
+import * as L from "lonna"
 import { globalScope } from "lonna";
 
 import { h, mount, ListView } from "../../src/index"
@@ -8,38 +8,38 @@ import { saveChangesToServer, ServerFeedEvent, listenToServerEvents, findIndex }
 type EditState = { state: "view" } | { state: "edit", item: TodoItem } | { state: "saving", item: TodoItem } | { state: "adding", item: TodoItem }
 type Notification = { type: "info" | "warning" | "error"; text: string };
 
-const updates = B.bus<ServerFeedEvent>()
-const saveRequest = B.bus<TodoItem>()
-const cancelRequest = B.bus<void>()
-const editRequest = B.bus<TodoItem>()
-const addRequest = B.bus<TodoItem>()
-const op = B.flatMap((item: TodoItem) => {
-    const fp = B.fromPromise<void, null | TodoItem>(saveChangesToServer(item), 
+const updates = L.bus<ServerFeedEvent>()
+const saveRequest = L.bus<TodoItem>()
+const cancelRequest = L.bus<void>()
+const editRequest = L.bus<TodoItem>()
+const addRequest = L.bus<TodoItem>()
+const op = L.flatMap((item: TodoItem) => {
+    const fp = L.fromPromise<void, null | TodoItem>(saveChangesToServer(item), 
       () => undefined, // this never passes because only changes are monitored
       () => item, 
       error => null
     )
-    return B.changes(fp)
+    return L.changes(fp)
   },
   globalScope
 )
-const saveResult = B.merge(saveRequest, addRequest).pipe(op)
+const saveResult = L.merge(saveRequest, addRequest).pipe(op)
 
-const allItems: B.Property<TodoItem []> = updates.pipe(B.scan([], reducer, globalScope))
-const editState = B.update<EditState>(globalScope, { state: "view" }, 
+const allItems: L.Property<TodoItem []> = updates.pipe(L.scan([], reducer, globalScope))
+const editState = L.update<EditState>(globalScope, { state: "view" }, 
   [addRequest, (_, item) => ({ state: "adding", item})],
   [editRequest, (_, item) => ({ state: "edit", item})],
   [saveRequest, (_, item) => ({ state: "saving", item})],
   [saveResult, (state, success) => (!success && state.state == "saving") ? { state: "edit", item: state.item } : { state: "view"}],
   [cancelRequest, () => ( { state: "view" })]
 )
-const saveFailed = saveResult.pipe(B.filter(success => !success), B.map(() => ({ type: "error", text: "Failed to save"} as Notification)))
-const saveSuccess = saveResult.pipe(B.filter(success => !!success), B.map(() => ({ type: "info", text: "Saved"} as Notification)))
+const saveFailed = saveResult.pipe(L.filter(success => !success), L.map(() => ({ type: "error", text: "Failed to save"} as Notification)))
+const saveSuccess = saveResult.pipe(L.filter(success => !!success), L.map(() => ({ type: "info", text: "Saved"} as Notification)))
 
-const notificationE = B.merge(saveFailed, saveSuccess)
-const notification: B.Property<Notification | null> = notificationE.pipe(
-  B.flatMapLatest((notification: Notification) => B.later(2000, null).pipe(B.toProperty(notification))),
-  B.toProperty(null, globalScope)
+const notificationE = L.merge(saveFailed, saveSuccess)
+const notification: L.Property<Notification | null> = notificationE.pipe(
+  L.flatMapLatest((notification: Notification) => L.later(2000, null).pipe(L.toProperty(notification))),
+  L.toProperty(null, globalScope)
 )
 
 saveResult.forEach(savedTodoItem => {
@@ -92,14 +92,14 @@ ItemList2 uses the "observable" version of ListView. Here the renderObservable f
 Property<TodoItem> and is thus able to observe changes in the item. Now we don't have to replace
 the whole item view when something changes.
 */
-const ItemList = ({ items }: { items: B.Property<TodoItem[]>}) => {
+const ItemList = ({ items }: { items: L.Property<TodoItem[]>}) => {
   return (
     <ul>
       {/* when using this variant of ListView (renderItem) the items
           will be completely replaced with changed (based on the given `equals`) */}
       <ListView 
         observable={items} 
-        renderObservable={(id: number, item: B.Property<TodoItem>) => <li><ItemView id={id} item={item} editState={editState}/></li>}
+        renderObservable={(id: number, item: L.Property<TodoItem>) => <li><ItemView id={id} item={item} editState={editState}/></li>}
         getKey={ item => item.id }
       />
     </ul>
@@ -107,8 +107,8 @@ const ItemList = ({ items }: { items: B.Property<TodoItem[]>}) => {
 };
 
 type ItemState = "view" | "edit" | "disabled";
-const ItemView = ({ id, item, editState }: { id: number, editState: B.Property<EditState>, item: B.Property<TodoItem> }) => {  
-  const itemState: B.Property<ItemState> = B.combine(item, editState, (c, state) => {
+const ItemView = ({ id, item, editState }: { id: number, editState: L.Property<EditState>, item: L.Property<TodoItem> }) => {  
+  const itemState: L.Property<ItemState> = L.combine(item, editState, (c, state) => {
     if (state.state === "edit") {
       if (state.item.id === c.id) {
         return "edit"
@@ -120,13 +120,13 @@ const ItemView = ({ id, item, editState }: { id: number, editState: B.Property<
     }
     return "view"
   })
-  const itemToShow: B.Property<TodoItem> = B.combine(item, editState, (c, state) => {
+  const itemToShow: L.Property<TodoItem> = L.combine(item, editState, (c, state) => {
     if (state.state !== "view" && state.item.id === c.id) {
       return state.item
     }
     return c
   })
-  const localItem: B.Atom<TodoItem> = B.atom(itemToShow, editRequest.push)
+  const localItem: L.Atom<TodoItem> = L.atom(itemToShow, editRequest.push)
 
   async function saveLocalChanges() {
     const currentItem = localItem.get()
@@ -139,22 +139,22 @@ const ItemView = ({ id, item, editState }: { id: number, editState: B.Property<
   
   return (
     <span className={itemState}>
-      <span className="name"><TextInput value={B.view(localItem, "name")} /></span>
-      <Checkbox checked={B.view(localItem, "completed")}/>
+      <span className="name"><TextInput value={L.view(localItem, "name")} /></span>
+      <Checkbox checked={L.view(localItem, "completed")}/>
       {
-        itemState.pipe(B.map(s => s === "edit" ? <span className="controls">
+        L.view(itemState, s => s === "edit" ? <span className="controls">
             <a href="#" onClick={saveLocalChanges}>Save</a>
             <a href="#" onClick={cancelLocalChanges}>Cancel</a>
           </span>
-        : null))
+        : null)
       }
     </span>
   );
 };
 
 const NewItem = () => {
-  const disableNew: B.Property<boolean> = editState.pipe(B.map((state: EditState) => state.state !== "view"));
-  const name = B.atom("")
+  const disableNew: L.Property<boolean> = L.view(editState, state => state.state !== "view");
+  const name = L.atom("")
   const addNew = () => addRequest.push(todoItem(name.get()))
   return (
     <div className="newItem">
@@ -164,7 +164,7 @@ const NewItem = () => {
   );
 };
 
-const TextInput = (props: { value: B.Atom<string> } & any) => {
+const TextInput = (props: { value: L.Atom<string> } & any) => {
   return <input {...{ 
           type: "text", 
           onInput: e => { 
@@ -175,7 +175,7 @@ const TextInput = (props: { value: B.Atom<string> } & any) => {
         }} />  
 };
 
-const Checkbox = (props: { checked: B.Atom<boolean> } & any) => {
+const Checkbox = (props: { checked: L.Atom<boolean> } & any) => {
     return <input {...{ 
             type: "checkbox", 
             onInput: e => { 
@@ -186,8 +186,8 @@ const Checkbox = (props: { checked: B.Atom<boolean> } & any) => {
           }} />  
   };
 
-function NotificationView({ notification }: { notification: B.Property<Notification | null> }) {
-  return <span>{B.map((notification: Notification | null) => {
+function NotificationView({ notification }: { notification: L.Property<Notification | null> }) {
+  return <span>{L.view(notification, notification => {
     if (!notification) return null;
     return (
       <div
@@ -200,11 +200,6 @@ function NotificationView({ notification }: { notification: B.Property<Notificat
         {notification.text}
       </div>
     );  
-  })(notification)}</span>
+  })}</span>
 }  
-
-const JsonView = ({ json }: { json: B.Property<any>}) => {
-  return <pre>{json.pipe(B.map(st => JSON.stringify(st, null, 2)))}</pre>;
-};
-
 mount(<App/>, document.getElementById("root")!)
