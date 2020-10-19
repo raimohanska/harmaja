@@ -4421,9 +4421,9 @@ log-symbols@^2.2.0:
   dependencies:
     chalk "^2.0.1"
 
-lonna@raimohanska/lonna#curried:
+lonna@raimohanska/lonna#f92e62a:
   version "0.1.11"
-  resolved "https://codeload.github.com/raimohanska/lonna/tar.gz/3fe7a17f16db0f0972027a51d072da1dcb379042"
+  resolved "https://codeload.github.com/raimohanska/lonna/tar.gz/f92e62a86b64ed1382ba152befa0e162b4663b14"
 
 loose-envify@^1.0.0:
   version "1.4.0"

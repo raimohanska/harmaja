@@ -130,7 +130,8 @@ const Checkbox = (props: { checked: Atom<boolean> } & any) => {
   };
 
 const JsonView = ({ json }: { json: Rx.Observable<any>}) => {
-  return <pre>{json.pipe(map(st => JSON.stringify(st, null, 2)))}</pre>;
+  const s = json.pipe(map(st => JSON.stringify(st, null, 2)))
+  return <pre>{s}</pre>;
 };
 
 mount(<App/>, document.getElementById("root")!)

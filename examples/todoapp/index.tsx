@@ -125,7 +125,12 @@ const Checkbox = (props: { checked: B.Atom<boolean> } & any) => {
   };
 
 const JsonView = ({ json }: { json: B.Property<any>}) => {
-  return <pre>{json.pipe<B.Property<string>>(B.map(st => JSON.stringify(st, null, 2)))}</pre>;
+  const s = json.pipe(B.map(st => JSON.stringify(st, null, 2)))
+  return <pre>{s}</pre>;
 };
 
 mount(<App/>, document.getElementById("root")!)
+
+function map<A, B>(fn: (a: A) => B): (a: B.Property<A>) => B.Property<B> {
+  return (a: B.Property<A>) => B.map(fn)(a)
+}

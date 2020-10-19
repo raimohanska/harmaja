@@ -80,7 +80,7 @@ export async function saveChangesToServer(
   item: TodoItem
 ): Promise<void> {
   await randomDelay(1000);
-  if (Math.random() < 0.1)
+  if (Math.random() < 0.5)
     throw new Error("Oops, random error occurred on server");
   const index = findIndex(storedItems, c => c.id === item.id);
   if (index < 0) {

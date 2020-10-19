@@ -13,15 +13,17 @@ const saveRequest = B.bus<TodoItem>()
 const cancelRequest = B.bus<void>()
 const editRequest = B.bus<TodoItem>()
 const addRequest = B.bus<TodoItem>()
-
-const saveResult = B.flatMap(item =>
-  B.changes(B.fromPromise(saveChangesToServer(item), 
-    () => undefined, // this never passes because only changes are monitored
-    () => item, 
-    error => null
-  )),
+const op = B.flatMap((item: TodoItem) => {
+    const fp = B.fromPromise<void, null | TodoItem>(saveChangesToServer(item), 
+      () => undefined, // this never passes because only changes are monitored
+      () => item, 
+      error => null
+    )
+    return B.changes(fp)
+  },
   globalScope
-)(B.merge(saveRequest, addRequest))
+)
+const saveResult = B.merge(saveRequest, addRequest).pipe(op)
 
 const allItems: B.Property<TodoItem []> = updates.pipe(B.scan([], reducer, globalScope))
 const editState = B.update<EditState>(globalScope, { state: "view" }, 
@@ -31,23 +33,21 @@ const editState = B.update<EditState>(globalScope, { state: "view" },
   [saveResult, (state, success) => (!success && state.state == "saving") ? { state: "edit", item: state.item } : { state: "view"}],
   [cancelRequest, () => ( { state: "view" })]
 )
-const saveFailed = B.filter(saveResult, success => !success)
-const saveSuccess = B.filter(saveResult, success => !!success)
-const notificationE = B.merge(
-  B.map(saveFailed, () => ({ type: "error", text: "Failed to save"} as Notification)),
-  B.map(saveSuccess, () => ({ type: "info", text: "Saved"}))
-)
-const notification: B.Property<Notification | null> = B.toProperty(
-  B.flatMapLatest(notificationE, notification => B.toProperty(B.later(2000, null), notification)),
-  null, globalScope
-)
+const saveFailed = saveResult.pipe(B.filter(success => !success), B.map(() => ({ type: "error", text: "Failed to save"} as Notification)))
+const saveSuccess = saveResult.pipe(B.filter(success => !!success), B.map(() => ({ type: "info", text: "Saved"} as Notification)))
 
+const notificationE = B.merge(saveFailed, saveSuccess)
+const notification: B.Property<Notification | null> = notificationE.pipe(
+  B.flatMapLatest((notification: Notification) => B.later(2000, null).pipe(B.toProperty(notification))),
+  B.toProperty(null, globalScope)
+)
 
 saveResult.forEach(savedTodoItem => {
   if (savedTodoItem) {
     updates.push({ type: "upsert", items: [ savedTodoItem ]})
   }
 })
+
 listenToServerEvents(event => updates.push(event))
 // Helper function for applying a batch of updates to a list of items
 function applyUpdates(initialItems: TodoItem[], updatedItems: TodoItem[]): TodoItem[] {
@@ -142,18 +142,18 @@ const ItemView = ({ id, item, editState }: { id: number, editState: B.Property<
       <span className="name"><TextInput value={B.view(localItem, "name")} /></span>
       <Checkbox checked={B.view(localItem, "completed")}/>
       {
-        B.map(itemState, s => s === "edit" ? <span className="controls">
+        itemState.pipe(B.map(s => s === "edit" ? <span className="controls">
             <a href="#" onClick={saveLocalChanges}>Save</a>
             <a href="#" onClick={cancelLocalChanges}>Cancel</a>
           </span>
-        : null)
+        : null))
       }
     </span>
   );
 };
 
 const NewItem = () => {
-  const disableNew: B.Property<boolean> = B.map(editState, state => state.state !== "view");
+  const disableNew: B.Property<boolean> = editState.pipe(B.map((state: EditState) => state.state !== "view"));
   const name = B.atom("")
   const addNew = () => addRequest.push(todoItem(name.get()))
   return (
@@ -187,7 +187,7 @@ const Checkbox = (props: { checked: B.Atom<boolean> } & any) => {
   };
 
 function NotificationView({ notification }: { notification: B.Property<Notification | null> }) {
-  return <span>{B.map(notification, notification => {
+  return <span>{B.map((notification: Notification | null) => {
     if (!notification) return null;
     return (
       <div
@@ -200,11 +200,11 @@ function NotificationView({ notification }: { notification: B.Property<Notificat
         {notification.text}
       </div>
     );  
-  })}</span>
+  })(notification)}</span>
 }  
 
 const JsonView = ({ json }: { json: B.Property<any>}) => {
-  return <pre>{B.map(json, st => JSON.stringify(st, null, 2))}</pre>;
+  return <pre>{json.pipe(B.map(st => JSON.stringify(st, null, 2)))}</pre>;
 };
 
 mount(<App/>, document.getElementById("root")!)

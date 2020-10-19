@@ -100,7 +100,7 @@ const Checkbox = (props: { checked: B.Atom<boolean> } & any) => {
   };
 
 const JsonView = ({ json }: { json: B.Property<any>}) => {
-  return <pre>{json.pipe<B.Property<string>>(B.map(st => JSON.stringify(st, null, 2)))}</pre>;
+  return <pre>{json.pipe(B.map(st => JSON.stringify(st, null, 2)))}</pre>;
 };
   
 

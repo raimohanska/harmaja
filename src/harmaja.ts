@@ -1,3 +1,4 @@
+import { mkScope } from "lonna"
 import * as O from "./observable/observables"
 
 export type HarmajaComponent = (props: HarmajaProps) => HarmajaOutput
@@ -320,7 +321,8 @@ export function componentScope(): O.Scope {
     if (!transientState.scope) {
         const unmountE = unmountEvent()
         const mountE = mountEvent()
-        transientState.scope = { subscribe:  (onIn: () => O.Unsub) => {
+        
+        transientState.scope = mkScope((onIn: () => O.Unsub) => {
             let unsub: O.Unsub | null = null
             O.forEach(unmountE, () => { if (unsub) unsub() })
             if (transientState.mountsController) {
@@ -333,7 +335,7 @@ export function componentScope(): O.Scope {
             O.forEach(mountE, () => {
                 unsub = onIn()
             })
-        }}
+        })
     }
     return transientState.scope
 }

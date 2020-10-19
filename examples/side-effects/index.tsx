@@ -2,7 +2,7 @@ import * as B from "lonna"
 
 import { h, mount, componentScope } from "../../src/index"
 
-const scrollPos = B.toStatelessProperty( B.fromEvent(window, "scroll"), () => Math.floor(window.scrollY))
+const scrollPos = B.fromEvent(window, "scroll").pipe(B.toStatelessProperty(() => Math.floor(window.scrollY)))
 
 const randomColor = () => "#" + Math.floor(Math.random()*16777215).toString(16);
 
@@ -30,12 +30,13 @@ const ScrollingThing = () => {
 };
 
 const ScrollPosDisplay = () => {
-  const mapped = B.map(scrollPos, x => { console.log("Scrollpos subscription active", x); return x })
+  const mapped = scrollPos.pipe(B.map((x: number) => { console.log("Scrollpos subscription active", x); return x }))
   // TODO: side-effects story in Readme. Make sure to mention that properties cannot be subscribe to out of scope, but their changes can
   
   // By calling applyScope, the side-effect is only applied while component stays mounted
   // We cannot subscribe here to the Property because it's out of scope and it will fail to produce a current value
-  B.changes(B.applyScope(componentScope(), mapped))
+  
+  mapped.pipe(B.applyScope(componentScope()), B.changes)
     .forEach(value => {
       console.log("Performing side-effects for value", value)
     })
@@ -50,7 +51,7 @@ const App = () => {
   return <div>
     <button onClick={ () => showScroller.modify(x => !x) } style={{ position: "fixed", right: "80px" }}>Toggle visibility</button>
     {
-      B.map(showScroller, show => show ? <ScrollPosDisplay/> : null)
+      B.map(show => show ? <ScrollPosDisplay/> : null)(showScroller)
     }
     <ScrollingThing/>
   </div>

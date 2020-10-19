@@ -4,13 +4,13 @@ import { h, mount, ListView } from "../../src/index"
 const numbers = B.bus<number>()
 
 // TODO: API ergonomics
-const multiplier = B.scan(numbers, 1, (a, b) => a + b, B.globalScope)
+const multiplier = numbers.pipe(B.scan(1, (a, b) => a + b, B.globalScope))
 const interval = B.interval(3000, 1)
-const ticker = B.scan(interval, 1, (a, b) => a + b, B.globalScope)
+const ticker = interval.pipe(B.scan(1, (a, b) => a + b, B.globalScope))
 
 ticker.log("TICK")
 
-const dots: B.Property<number[]> = B.map(multiplier, count => range(1, count))
+const dots: B.Property<number[]> = multiplier.pipe(B.map((count: number) => range(1, count)))
 
 const H1 = ({children} : {children?: any[]}) => {
     return <h1 onClick={() => console.log("Clicked")}>{children}</h1>
@@ -29,21 +29,21 @@ const ReactiveProps = () => {
 
 const TickerWithMultiplier = ({ multiplier, ticker } : { multiplier: number, ticker: B.Property<number>}) => {
     console.log("Recreating with new multiplier", multiplier)
-    return <em>{B.map(ticker, n => n * multiplier)}</em>
+    return <em>{ticker.pipe(B.map((n: number) => n * multiplier))}</em>
 }
 
 const Root = () =>
     <div id="root">
         <ReactiveProps/>
         <Plus bus={numbers}/>   
-        <H1>Hello <b>World { B.map(multiplier, multiplier => <TickerWithMultiplier {...{multiplier, ticker}}/>) }</b>!</H1>
+        <H1>Hello <b>World { multiplier.pipe(B.map((multiplier: number) => <TickerWithMultiplier {...{multiplier, ticker}}/>)) }</b>!</H1>
         Multiplier <Plus bus={numbers}/>{ multiplier }<Minus bus={numbers}/>
         <br/> Naive array handling 
-        { B.map(dots, dots => <span>{ dots.map(n => <span>{B.map(ticker, m => m * n)} </span>) } </span>) }
+        { dots.pipe(B.map((dots: number[]) => <span>{ dots.map((n: number) => <span>{ticker.pipe(B.map((m: number) => m * n))} </span>) } </span>)) }
         <br/> Smart array handling 
         <ListView<number, number> {...{ 
             observable: dots, 
-            renderItem: (n => <span>{B.map(ticker, m => m * n)} </span>)
+            renderItem: (n => <span>{ticker.pipe(B.map((m: number) => m * n))} </span>)
         }}/>
         <br/>Handling nulls { null } { B.constant(null) }
     </div>

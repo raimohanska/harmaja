@@ -11,10 +11,11 @@ type SearchState = { state: "initial" } | { state: "searching", searchString: 
 
 const Search = () => {
     const searchString = B.atom("")
-    const searchStringChange: B.EventStream<string> = B.debounce(B.changes(searchString), 500, componentScope())
-    const searchResult: B.EventStream<string[]> = B.flatMapLatest(searchStringChange, s => B.fromPromise(search(s), () => [], xs => xs, error => []), componentScope())
+    const searchStringChange: B.EventStream<string> = searchString.pipe(B.changes, B.debounce(500, componentScope()))
+    const searchResult: B.EventStream<string[]> = searchStringChange.pipe(B.flatMapLatest<string, string[]>(s => B.fromPromise(search(s), () => [], xs => xs, error => []), componentScope()))
     
-    const state: B.Property<SearchState> = B.update(componentScope(),
+    const state: B.Property<SearchState> = B.update(
+        componentScope(),
         { state: "initial"} as SearchState,
         [searchStringChange, (state, searchString) => ({ state: "searching", searchString })],
         [searchResult, searchString, (state, results, searchString) => ({ state: "done", results, searchString})],
@@ -27,10 +28,11 @@ const Search = () => {
 }
 
 const SearchResults = ({ state } : { state: B.Property<SearchState> }) => {
-    const latestResults: B.Property<string[]> = B.scan(B.changes(state), [], ((results, newState) => 
-        newState.state === "done" ? newState.results : results
-    ), componentScope())
-
+    const latestResults = state.pipe(
+        B.changes, 
+        B.scan([], ((results: string[], newState: SearchState) => newState.state === "done" ? newState.results : results), componentScope())        
+    )
+    
     const message = B.combine(state, latestResults, (s, r) => {
         if (s.state == "done" && r.length === 0) return "Nothing found"
         if (s.state === "searching" && r.length === 0) return "Searching..."
@@ -54,8 +56,8 @@ const SearchResults = ({ state } : { state: B.Property<SearchState> }) => {
 }
 
 const SearchResultsSimplest = ({ state } : { state: B.Property<SearchState> }) => {
-    const currentResults: B.Property<string[]> = B.map(state, s => s.state === "done" ? s.results : [])
-    const message: B.Property<string> = B.map(currentResults, r => r.length === 0 ? "Nothing found" : null)
+    const currentResults: B.Property<string[]> = B.map((s: SearchState) => s.state === "done" ? s.results : [])(state)
+    const message: B.Property<string> = B.map((r: string[]) => r.length === 0 ? "Nothing found" : null)(currentResults)
     
     return <div>
         { message }
@@ -67,12 +69,13 @@ const SearchResultsSimplest = ({ state } : { state: B.Property<SearchState> }) =
 }
 
 const SearchResults2 = ({ state } : { state: B.Property<SearchState> }) => {
-    const currentResults: B.Property<string[]> = B.map(state, s => s.state === "done" ? s.results : [])
-    const message: B.Property<string> = B.map(state, s => {
+    const currentResults: B.Property<string[]> = B.map((s: SearchState) => s.state === "done" ? s.results : [])(state)
+
+    const message: B.Property<string> = B.map((s: SearchState) => {
         if (s.state === "searching") return "Searching..."
         if (s.state === "done" && s.results.length === 0) return "Nothing found."
         return ""
-    })
+    })(state)
     
     return <div>
         { message }
