@@ -9,10 +9,16 @@ const Root = () =>
 
 type SearchState = { state: "initial" } | { state: "searching", searchString: string } | { state: "done", searchString: string, results: string[] }
 
+function searchAsProperty(s: string): L.Property<string[]> {
+    return L.fromPromise(search(s), () => [], xs => xs, error => [])
+}
+
 const Search = () => {
     const searchString = L.atom("")
     const searchStringChange: L.EventStream<string> = searchString.pipe(L.changes, L.debounce(500, componentScope()))
-    const searchResult: L.EventStream<string[]> = searchStringChange.pipe(L.flatMapLatest<string, string[]>(s => L.fromPromise(search(s), () => [], xs => xs, error => []), componentScope()))
+    const searchResult = searchStringChange.pipe(
+        L.flatMapLatest<string, string[]>(searchAsProperty), 
+    )
     
     const state: L.Property<SearchState> = L.update(
         componentScope(),
@@ -29,18 +35,21 @@ const Search = () => {
 
 const SearchResults = ({ state } : { state: L.Property<SearchState> }) => {
     const latestResults = state.pipe(
-        L.changes, 
-        L.scan([], ((results: string[], newState: SearchState) => newState.state === "done" ? newState.results : results), componentScope())        
+        L.changes,                                                  // Changes as EventStream
+        L.scan([], ((results: string[], newState: SearchState) =>   // Start with [], use a Reducer
+          newState.state === "done" ? newState.results : results    // Stick with previous unless "done"
+        )),
+        L.applyScope(componentScope())                              // Keep up-to-date for component lifetime       
     )
     
-    const message = L.combine(state, latestResults, (s, r) => {
+    const message = L.view(state, latestResults, (s, r) => {
         if (s.state == "done" && r.length === 0) return "Nothing found"
         if (s.state === "searching" && r.length === 0) return "Searching..."
         return ""
     })
 
 
-    const style = L.combine(state, latestResults, (s, r) => {
+    const style = L.view(state, latestResults, (s, r) => {
         if (s.state === "searching" && r.length > 0) return { opacity: 0.5 }
         return {}
     })

@@ -237,7 +237,7 @@ My component reloads all the time => make sure you've eliminated duplicates in t
 
 ```typescript
 <div>
-    { B.map(someProperty, thing => thing.state === "success" ? <HugeComponent/> : <ErrorComponent/> }
+    { L.map(someProperty, thing => thing.state === "success" ? <HugeComponent/> : <ErrorComponent/> }
 </div>
 ```
 
@@ -245,7 +245,7 @@ In the above, the nested components will be re-constructed each time `someProper
 
 ```typescript
 <div>
-    { B.map(someProperty, thing => thing.state === "success").skipDuplicates().map(success => success ? <HugeComponent/> : <ErrorComponent/> }
+    { L.map(someProperty, thing => thing.state === "success").skipDuplicates().map(success => success ? <HugeComponent/> : <ErrorComponent/> }
 </div>
 ```
 
@@ -254,7 +254,7 @@ In the above, the nested components will be re-constructed each time `someProper
 When embedding observables in to the DOM, Harmaja will automatically subscribe an unsubscribe to the source observable. So, this is ok:
 
 ```typescript
-const scrollPos = B.toStatelessProperty(B.fromEvent(window, "scroll"), () => Math.floor(window.scrollY))
+const scrollPos = L.toStatelessProperty(L.fromEvent(window, "scroll"), () => Math.floor(window.scrollY))
 
 const ScrollPosDisplay = () => {
   return <div style={{ position: "fixed", right: "20px", background: "black", color: "white", padding: "10px" }}>{ 
@@ -341,13 +341,13 @@ Other interesting examples of Unidirectional data flow include [Elm](https://elm
 In Harmaja, you can implement Unidirectional data flow too. Sticking with the Todo App example, you define your events as [*buses*](https://baconjs.github.io/api3/classes/bus.html):
 
 ```typescript
-import * as B from "lonna"
+import * as L from "lonna"
 
 type AppEvent = { action: "add", name: string } | { action: "remove", id: Id }
-const appEvents = B.bus<AppEvent>()
+const appEvents = L.bus<AppEvent>()
 ```
 
-The bus objects allow you to dispatch an event by calling their `push` method. From the events, the application state can be reduced using [`B.scan`](https://github.com/raimohanska/lonna/blob/master/src/scan.ts) like thus:
+The bus objects allow you to dispatch an event by calling their `push` method. From the events, the application state can be reduced using [`L.scan`](https://github.com/raimohanska/lonna/blob/master/src/scan.ts) like thus:
 
 ```typescript
 const initialItems: TodoItem[] = []
@@ -357,15 +357,18 @@ function reducer(items: TodoItem[], event: AppEvent): TodoItem[] {
     case "remove": return items.filter(i => i.id !== event.id)
   }
 }
-const allItems = B.scan(appEvents, initialItems, reducer, B.globalScope)
+const allItems = appEvents.pipe(L.scan(initialItems, reducer, L.globalScope))
 ```
+
+The `L.globalScope` parameter is used to specify the lifetime of the `allItems` property, i.e. how long it will be kept up-to-date. When using `globalScope` the property updates will never stop.
+When creating statetul Properties within Harmaja components, you can also use `componentScope()` from `import { componentScope } from "harmaja"`, to stop updates after the components has been unmounted.
 
 You can, if you like, then encapsulate all this into something like
 
 ```typescript
 interface TodoStore {
     dispatch: (action: AppEvent) => void
-    items: B.Property<TodoItem[]>
+    items: L.Property<TodoItem[]>
 }
 ```
 
@@ -400,10 +403,10 @@ fact that you can pass reactive properties as props fits the bill very nicely, s
 ```typescript
 import { React, mount } from "../.."
 
-const ItemView = ({ item }: { item: B.Property<TodoItem> }) => {  
+const ItemView = ({ item }: { item: L.Property<TodoItem> }) => {  
   return (
     <span>
-      <span className="name">{B.map(item, i => i.name)}</span>      
+      <span className="name">{L.view(item, i => i.name)}</span>      
     </span>
   );
 };
@@ -414,7 +417,7 @@ in the function signature (how revolutionary!). This rather obviously makes the 
 the function signature you can easily decuce that this component will render a TodoItem and reflect any changes that are effected to that particular TodoItem (because
 the input is a reactive property).
 
-In the implementation, the [`B.map`](https://baconjs.github.io/api3/classes/property.html#map) is used to get a `Property<string>` which 
+In the implementation, the [`L.view`](https://github.com/raimohanska/lonna/blob/master/src/view.ts#L14) is used to get a `Property<string>` which 
 then can be directly embedded into the resulting DOM,
 because Harmaja natively renders Properties. When the value of `name` changes, the updated value will be applied to DOM.
 
@@ -430,7 +433,7 @@ Anyway, let's put the Todo App together right now! To simplify a bit, if were we
 
 ```typescript
 const App = () => {
-    const firstItem: Property<TodoItem> = B.map(allItems, items => items[0])
+    const firstItem: Property<TodoItem> = L.view(allItems, items => items[0])
     return <ItemView item={firstItem}/>
 }
 ```
@@ -456,28 +459,28 @@ detail in the high level "main reducer". Instead I find it an attractive idea to
 Let's try! It's intuitive to start with this:
 
 ```typescript
-updateTodoItem: B.Bus<TodoItem>()
-todoItems: B.Property<TodoItem[]> // impl redacted
+updateTodoItem: L.Bus<TodoItem>()
+todoItems: L.Property<TodoItem[]> // impl redacted
 ```
 
 So instead of having to care about all the possible modifications to items on this level, there's a single `updateTodoItem` event that can be used to perform any update.
 
-As shown earlierly, decomposition works nicely as you can call `item.map(i => i.someField)` to get views into its components parts.
+As shown earlierly, decomposition works nicely as you can call `L.view(item, i => i.someField)` to get views into its components parts.
 Now let's revisit ItemView from the previous section and add a `onUpdate` callback.
 
 ```typescript
 import { React, mount } from "../.."
 
-const ItemView = ({ item, onChange}: { item: B.Property<TodoItem>, onChange: (i: TodoItem) => void }) => {  
+const ItemView = ({ item, onChange}: { item: L.Property<TodoItem>, onChange: (i: TodoItem) => void }) => {  
   const onNameChange = (newName: string) => { /* wat */ }
   return (
     <span>
-      <TextInput text={ B.map(item, i => i.name) } onChange = { onNameChange } />
+      <TextInput text={ L.view(item, i => i.name) } onChange = { onNameChange } />
     </span>
   );
 };
 
-const TextInput = ({value, onChange}: {text: B.Property<string>, onChange: (s: string) => void}) => {
+const TextInput = ({value, onChange}: {text: L.Property<string>, onChange: (s: string) => void}) => {
     return <input value={text} onInput={ e => onChange(e.currentTarget.value) } />
 }
 ```
@@ -526,21 +529,21 @@ To create an Atom in our unidirectional data flow context, we can simply constru
 like so:
 
 ```typescript
-const ItemView = ({ item, onChange}: { item: B.Property<TodoItem>, onChange: (i: TodoItem) => void }) => {  
+const ItemView = ({ item, onChange}: { item: L.Property<TodoItem>, onChange: (i: TodoItem) => void }) => {  
   const itemAtom: Atom<TodoItem> = atom(item, onChange)
   return (
     <span>
-      <TextInput value={B.view(itemAtom, "name")} />
+      <TextInput value={L.view(itemAtom, "name")} />
     </span>
   );
 };
 ```
 
-And that's also the full implementation! I hope this demonstrates the power of the Atom abstraction. The `view` method there is particularly interesting (I redacted methods and the support for array keys for brevity):
+And that's also the full implementation! I hope this demonstrates the power of the Atom abstraction. The [`view`](https://github.com/raimohanska/lonna/blob/master/src/view.ts) method there is particularly interesting (I redacted methods and the support for array keys for brevity):
 
 
 ```typescript
-export interface Atom<A> extends B.Property<A> {
+export interface Atom<A> extends L.Property<A> {
     set(newValue: A): this;
     get(): A    
 }
@@ -548,15 +551,15 @@ export interface Atom<A> extends B.Property<A> {
 function view<K extends keyof A>(a: Atom<A>, key: K): Atom<A[K]>
 ```
 
-Using `view` you can get another atom that gives read-write access to one field of ther TodoItem and done this in a type-safe manner (compiler errors in case you misspelled a field name). 
+The same `view` method that you can use to get a read-only views into `Properties`, can be used to create another atom that gives read-write access to one field of ther TodoItem and done this in a type-safe manner (compiler errors in case you misspelled a field name). 
 
 Finally, we have an abstraction that makes read-write data decomposition a breeze! Adding more editable fields is no longer a chore. And all this still with unidirectional data flow, immutable data and type-safety.
 
-The `view` method is actually based on the Lenses that's a concept been used in the functional programming world for quite a while. Yet, I haven't heard much talk about using Lenses in web application state management except for Calmm.js and before that the [Bacon.Model](https://github.com/baconjs/bacon.model) library. I could rant about lenses all night long but for now, I'll show you the full signature of the `view` method:
+The `view` method is actually based on the Lenses that's a concept been used in the functional programming world for quite a while. Yet, I haven't heard much talk about using Lenses in web application state management except for Calmm.js and before that the [Bacon.Model](https://github.com/baconjs/bacon.model) library. I could rant about lenses all night long but for now, I'll show you the Atom-specific signatures of the [`view`](https://github.com/raimohanska/lonna/blob/master/src/view.ts#L9) method:
 
 ```typescript
 export function view<A, K extends keyof A>(a: Atom<A>, key: K): K extends number ? Atom<A[K] | undefined> : Atom<A[K]>;
-export function view<A, B>(a: Atom<A>, lens: B.Lens<A, B>): Atom<B>;
+export function view<A, B>(a: Atom<A>, lens: L.Lens<A, B>): Atom<B>;
 ```
 
 It reveals two things. First, it supports numbers for accessing array elements. But most importantly, you can create a view to an
@@ -583,7 +586,7 @@ To use our ItemView as a standalone component you can change it to use the Atom 
     const ItemView = ({ item }: { item: Atom<TodoItem> }) => {  
         return (
             <span>
-            <TextInput value={B.view(item, "name")} />
+            <TextInput value={L.view(item, "name")} />
             </span>
         );
     };
@@ -639,9 +642,9 @@ type TodoItem = {
     id: number,
     completed: boolean
 }
-const addItemBus = new B.Bus<TodoItem>();
-const removeItemBus = new B.Bus<TodoItem>();
-const allItems: B.Property<TodoItem[]> = B.update([], 
+const addItemBus = new L.Bus<TodoItem>();
+const removeItemBus = new L.Bus<TodoItem>();
+const allItems: L.Property<TodoItem[]> = L.update(globalScope, [], 
     [addItemBus, (items, item) => items.concat(item)],
     [removeItemBus, (items, item) => items.filter(i => i.id !== item.id)]
 )
@@ -652,13 +655,13 @@ To render the TodoItems represented by the `allItems` property you can use ListV
 ```typescript
 <ListView 
     observable={allItems} 
-    renderObservable={ (item: B.Property<TodoItem>) => (
+    renderObservable={ (item: L.Property<TodoItem>) => (
         <ItemView item={item}/>
     )}
     getKey={(a: TodoItem) => a.id }
 />
 
-const ItemView = ({ item }: { item: B.Property<TodoItem> }) => {
+const ItemView = ({ item }: { item: L.Property<TodoItem> }) => {
     // implement view for individual item
 }
 ```
@@ -693,7 +696,7 @@ so that in your ItemView you can implement removal simply thus:
 ```typescript
 const Item = ({ item, removeItem }: { item: Atom<TodoItem>, removeItem: () => void }) => (
     <span>
-      <span className="name">{B.view(item, "name")}</span>      
+      <span className="name">{L.view(item, "name")}</span>      
       <a onClick={removeItem}>
         remove
       </a>
@@ -707,7 +710,7 @@ To make the name editable, you could now easily use the TextInput component we c
 ```typescript
 const Item = ({ item, removeItem }: { item: Atom<TodoItem>, removeItem: () => void }) => (
     <span>
-      <TextInput value={B.view(item, "name")} />
+      <TextInput value={L.view(item, "name")} />
       <a onClick={removeItem}>
         remove
       </a>
@@ -781,7 +784,7 @@ Let's consider the search example. Starting from SearchResults component, it mig
 ```typescript
 type SearchState = { state: "initial" } | { state: "searching", searchString: string } | { state: "done", results: string[], searchString: string }
 
-const SearchResults = ({ state } : { state: B.Property<SearchState> }) => {
+const SearchResults = ({ state } : { state: L.Property<SearchState> }) => {
     // ?
 }
 
@@ -797,9 +800,9 @@ I didn't want to make this too simple, because simple things are always easy to 
 For starters we might try a simplistic approach:
 
 ```typescript
-const SearchResultsSimplest = ({ state } : { state: B.Property<SearchState> }) => {
-    const currentResults: B.Property<string[] | null = B.map(state, s => s.state === "done" ? s.results : null)
-    const message: B.Property<string> = B.map(currentResults, r => r.length === 0 ? "Nothing found" : null)
+const SearchResultsSimplest = ({ state } : { state: L.Property<SearchState> }) => {
+    const currentResults: L.Property<string[] | null = L.view(state, s => s.state === "done" ? s.results : null)
+    const message: L.Property<string> = L.view(currentResults, r => r.length === 0 ? "Nothing found" : null)
     
     return <div>
         { message }
@@ -811,46 +814,53 @@ const SearchResultsSimplest = ({ state } : { state: B.Property<SearchState> }) =
 }
 ```
 
-The list of result and a message string are derived from the state using [`map`](https://github.com/raimohanska/lonna/blob/master/src/map.ts) (state decomposition in action).
+The list of result and a message string are derived from the state using [`view`](https://github.com/raimohanska/lonna/blob/master/src/view.ts) (state decomposition in action).
 Then we can easily include the "Searching" indicator using the same technique. But showing previous results while 
 searching requires some local state, because that's not incluced in `state`. Fortunately, reactive properties provide
 good tools for this. For instance,
 
-```typescript
-const currentResults: B.Property<string[] | null = state.map(s => s.state === "done" ? s.results : null)
-const latestResults: B.Property<string[]> = currentResults.filter(results => results !== null).startWith([])
+```typescript    
+    const latestResults = state.pipe(
+        L.changes,                                                  // Changes as EventStream
+        L.scan([], ((results: string[], newState: SearchState) =>   // Start with [], use a Reducer
+          newState.state === "done" ? newState.results : results    // Stick with previous unless "done"
+        )),
+        L.applyScope(componentScope())                              // Keep up-to-date for component lifetime
+    )
 ```
-
-Here `latestResults` will reflect `currentResults` except that, using [`filter`](https://baconjs.github.io/api3/classes/property.html#filter), 
-it skips states where there are no results, sticking with the previous results in those situations. The [`startWith([])`](https://baconjs.github.io/api3/classes/property.html#startwith) 
-sets an initial value to be used before any (non-null) value passes the filter.
 
 Then we can determine the message string to show to the user, based on state and currently shown results:
 
 ```typescript
-const message = B.combineWith(state, latestResults, (s, r) => {
+const message = L.view(state, latestResults, (s, r) => {
     if (s.state == "done" && r.length === 0) return "Nothing found"
     if (s.state === "searching" && r.length === 0) return "Searching..."
     return ""
 })
 ```
 
-Here the [`B.combineWith`](https://baconjs.github.io/api3/globals.html#combinewith) method creates a new Property that reflects the latest values from the given two properties (state, latestResults) and
-applies the given mapping function to the values.
+Here's another way of using [`L.view`](https://github.com/raimohanska/lonna/blob/master/src/view.ts) for creating a new Property that reflects the latest values from the given two properties (state, latestResults)
+applying the given mapping function to the values.
 
-The `opacity:0.5` style can be applied similarly using [`B.combineWith`](https://baconjs.github.io/api3/globals.html#combinewith) and the final SearchResults component looks like this:
+The `opacity:0.5` style can be applied similarly using [`L.view`](https://github.com/raimohanska/lonna/blob/master/src/view.ts) and the final SearchResults component looks like this:
 
 ```typescript
-const SearchResults = ({ state } : { state: B.Property<SearchState> }) => {
-    const currentResults: B.Property<string[] | null> = state.map(s => s.state === "done" ? s.results : null)
-    const latestResults: B.Property<string[]> = currentResults.filter(results => results !== null).startWith([])
+const SearchResults = ({ state } : { state: L.Property<SearchState> }) => {
+    const latestResults = state.pipe(
+        L.changes,                                                  // Changes as EventStream
+        L.scan([], ((results: string[], newState: SearchState) =>   // Start with [], use a Reducer
+          newState.state === "done" ? newState.results : results    // Stick with previous unless "done"
+        )),
+        L.applyScope(componentScope())                              // Keep up-to-date for component lifetime       
+    )
 
-    const message = B.combineWith(state, latestResults, (s, r) => {
+    const message = L.view(state, latestResults, (s, r) => {
         if (s.state == "done" && r.length === 0) return "Nothing found"
         if (s.state === "searching" && r.length === 0) return "Searching..."
         return ""
     })
-    const style = B.combineWith(state, latestResults, (s, r) => {
+
+    const style = L.view(state, latestResults, (s, r) => {
         if (s.state === "searching" && r.length > 0) return { opacity: 0.5 }
         return {}
     })
@@ -870,18 +880,24 @@ But this was supposed to be about dealing with asynchronous requests! Let's get 
 
 ```typescript
 declare function search(searchString: string): Promise<string[]> // implement using fetch()
-function searchAsEventStream(searchString: string): B.EventStream<string[]> {
-    return B.fromPromise(search(searchString))
+
+function searchAsProperty(s: string): L.Property<string[]> {
+    return L.fromPromise(search(s), () => [], xs => xs, error => [])
 }
+
 const Search = () => {
-    const searchString = atom("")
-    const searchStringChange: B.EventStream<string> = searchString.changes()
-    const searchResult: B.EventStream<string[]> = searchStringChange.flatMapLatest(searchAsEventStream)
-    const state: B.Property<SearchState> = B.update(
+    const searchString = L.atom("")
+    const searchStringChange: L.EventStream<string> = searchString.pipe(L.changes, L.debounce(500, componentScope()))
+    const searchResult = searchStringChange.pipe(
+        L.flatMapLatest<string, string[]>(searchAsProperty), 
+    )
+    const state: L.Property<SearchState> = L.update(
+        componentScope(),
         { state: "initial"} as SearchState,
         [searchStringChange, (state, searchString) => ({ state: "searching", searchString })],
-        [searchResult, searchString, (state, results, searchString) => ({ state: "done", results, searchString})]
+        [searchResult, searchString, (state, results, searchString) => ({ state: "done", results, searchString})],
     )
+
     return <div>
         <h1>Cobol search</h1>
         <TextInput value={searchString} placeholder="Enter text to start searching"/>
@@ -893,29 +909,28 @@ const Search = () => {
 Lots of interesting details above! First of all, I started with an Atom to store the current `searchString`. Then I plugged
 the earlierly defined `TextInput` in place.
 
-The actual `search` function is dedacted and could be easily implemented using Axios or fetch. I added a simple wrapper `searchAsEventStream`
-that returns search results a `EventStream` instead of a `Promise`. This is easy using [`B.fromPromise`](https://baconjs.github.io/api3/globals.html#frompromise).
+The actual `search` function is redacted and could be easily implemented using Axios or fetch. I added a simple wrapper `searchAsProperty`
+that returns search results a `Property` instead of a `Promise`. This is easy using [`L.fromPromise`](https://github.com/raimohanska/lonna/blob/master/src/frompromise.ts#L16).
 
-The `searchResult` EventStream is created using [`flatMapLatest`](https://baconjs.github.io/api3/classes/eventstream.html#flatmaplatest) 
-which spawns a new stream for each input event using the `searchAsEventStream`
+The `searchResult` EventStream is created using [`flatMapLatest`](https://github.com/raimohanska/lonna/blob/master/src/flatmaplatest.ts) 
+which spawns a new EventStream or Property for each input event using the `searchAsProperty`
 helper and keeps on listening for results from the latest created stream (that's where the "latest" part in the name comes from).
 
-Then I've introduced a reducer, once again using [`B.update`](https://baconjs.github.io/api3/globals.html#update), and come up with the state property. 
+Then I've introduced a reducer, once again using [`L.update`](https://github.com/raimohanska/lonna/blob/master/src/update.ts), and come up with the state property. 
 This setup is now local to the Search component,
 but could be moved into a separate store module if it turned out that it's needed in a larger scope.
 
 One more notice: on the last line of the reducer, I've included an extra parameter, i.e. the searchString property. This is a convenient way
-to plug the latest value of a Property into the equation in a reducer. In each of the patterns in `B.update` you should have one EventStream and
+to plug the latest value of a Property into the equation in a reducer. In each of the patterns in `L.update` you should have one EventStream and
 zero or more Properties. Only the EventStream will trigger the update; Properties are there only so that you can use their latest value in the equation.
 
 One common pattern in searching is throttling (or debouncing). You don't want to send a potentionally expensive query to your server on each keystroke.
-When using Bacon.js, you can choose between [`debounce`](https://baconjs.github.io/api3/classes/eventstream.html#debounce), 
-[`debounceImmediate`](https://baconjs.github.io/api3/classes/eventstream.html#debounceimmediate) and [`throttle`](https://baconjs.github.io/api3/classes/eventstream.html#throttle).
+When using Lonna, you can choose between [`debounce`](https://github.com/raimohanska/lonna/blob/master/src/debounce.ts) and [`throttle`](https://github.com/raimohanska/lonna/blob/master/src/throttle.ts).
 
 To use a 300 millisecond debounce, the change looks like this:
 
 ```typescript
-    const searchStringChange: B.EventStream<string> = searchString.changes().debounce(500)
+    const searchStringChange: L.EventStream<string> = searchString.changes().debounce(300)
 ```
 
 See the full search implementation at [examples/search](examples/search/index.tsx).
@@ -929,10 +944,10 @@ I find quite often myself wanting to have some local state for editing something
 I wrote the following helper for this:
 
 ```typescript
-export function editAtom<A>(source: B.Property<A>): H.Atom<A> {
-    const localValue = H.atom<A | undefined>(undefined)
-    const value = B.combine(source, localValue, (s, l) => l !== undefined ? l : s)
-    return H.atom(value, localValue.set)
+export function editAtom<A>(source: L.Property<A>): L.Atom<A> {
+    const localValue = L.atom<A | undefined>(undefined)
+    const value = L.view(source, localValue, (s, l) => l !== undefined ? l : s)
+    return L.atom(value, localValue.set)
 }
 ```
 
@@ -950,17 +965,7 @@ globalState.set(localState.get())
 ```
 
 The topic is also covered in [examples/todoapp-backend](examples/todoapp-backend/index.tsx).
-
-## Category theory view
-
-TODO this is a nice opportunity to introduce some Category theoretic concepts as well
-
-Functor (Co-variant) for state Decomposition read-only
-Contravariant functor for state Decomposition write-only
-Applicative functor for state Composition
-Profunctors for lenses
-Monads?
-
+´
 ## Motivation and background
 
 For a long time I've been pondering different state management solutions for React. My thinkin in this field is strongly affected byt the fact that I'm pretty deep into Observables and FRP (functional reactive programming) and have authored the Bacon.js library back in the day. I've seen many approaches to frontend state management and haven't been entirely satisfied with any of them. This has lead into spending lots of time considering how I could apply FRP to state management in an "optimal" way.
