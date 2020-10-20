@@ -279,14 +279,15 @@ const ScrollPosDisplay = () => {
 }
 ```
 
-Now this side-effect will continue executing after your component is unmounted. To fix this, you can simply scope it to component lifecycle like this:
+Now this side-effect will continue executing after your component is unmounted. To fix this, you can scope it to component lifecycle like this:
 
 ```typescript
 import { unmountEvent } from "harmaja";
 
+
 const ScrollPosDisplay = () => {
   scrollPos
-    .takeUntil(unmountEvent())
+    .pipe(L.applyScope(componentScope()))
     .forEach( pos => console.log(pos) )
   // ...
 }
