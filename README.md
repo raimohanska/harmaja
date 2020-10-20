@@ -240,15 +240,18 @@ My component reloads all the time => make sure you've eliminated duplicates in t
 
 ```typescript
 <div>
-    { L.map(someProperty, thing => thing.state === "success" ? <HugeComponent/> : <ErrorComponent/> }
+    { L.view(someProperty, thing => thing.state === "success" ? <HugeComponent/> : <ErrorComponent/> }
 </div>
 ```
 
-In the above, the nested components will be re-constructed each time `someProperty` gets a value. To eliminate duplicate values:
+In the above, the nested components will be re-constructed each time `someProperty` gets a value. To eliminate duplicate values, use `view` first to get to the actually discriminating value, only then start constructing components:
 
 ```typescript
 <div>
-    { L.map(someProperty, thing => thing.state === "success").skipDuplicates().map(success => success ? <HugeComponent/> : <ErrorComponent/> }
+    { L.view(
+        L.view(someProperty, t => t.state === "success"), 
+        success => success ? <HugeComponent/> : <ErrorComponent/>
+    )}
 </div>
 ```
 
