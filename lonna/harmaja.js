@@ -202,7 +202,7 @@ var startUpdatingNodes = function (observable) { return function (controller) {
         }
         //console.log("New values", debug(controller.currentElements))
         //console.log(`${debug(oldElements)} replaced by ${debug(controller.currentElements)} in observable`)
-        replaceMany(controller, oldElements, newNodes);
+        replaceAll(controller, oldElements, newNodes);
     });
 }; };
 function isDOMElement(child) {
@@ -275,7 +275,7 @@ function getNodeState(node) {
  */
 export function mount(harmajaElement, root) {
     var rendered = render(harmajaElement);
-    replaceMany(null, [root], rendered);
+    replaceAll(null, [root], rendered);
     return rendered;
 }
 /**
@@ -702,7 +702,7 @@ function replaceNode(controller, index, newNode) {
         callOnMounts(newNode);
     }
 }
-function replaceMany(controller, oldContent, newContent) {
+function replaceAll(controller, oldContent, newContent) {
     var e_12, _a, e_13, _b;
     var oldNodes = toDOMNodes(oldContent);
     var newNodes = toDOMNodes(newContent);
@@ -751,11 +751,12 @@ function replaceMany(controller, oldContent, newContent) {
     }
     //console.log("Replaced " + debug(oldContent) + " with " + debug(newContent))
 }
-function addAfterNode(controller, current, next) {
+function appendNode(controller, next) {
+    var lastNode = controller.currentElements[controller.currentElements.length - 1];
     controller.currentElements.push(next);
     attachController([next], controller);
-    current.after(next);
-    appendedByController(controller, current, next);
+    lastNode.after(next);
+    appendedByController(controller, lastNode, next);
     callOnMounts(next);
 }
 function toDOMNodes(elements) {
@@ -793,13 +794,6 @@ function removeNode(controller, index, oldNode) {
         //console.log("Removed " + debug(oldElement))
     }
 }
-function appendNode(rootElement, child) {
-    var _a;
-    rootElement.appendChild(child);
-    if ((_a = maybeGetNodeState(rootElement)) === null || _a === void 0 ? void 0 : _a.mounted) {
-        callOnMounts(child);
-    }
-}
 export function debug(element) {
     if (element instanceof Array) {
         return element.map(debug).join(",");
@@ -816,11 +810,10 @@ export var LowLevelApi = {
     attachOnMount: attachOnMount,
     attachOnUnmount: attachOnUnmount,
     createController: createController,
-    appendNode: appendNode,
     removeNode: removeNode,
-    addAfterNode: addAfterNode,
+    appendNode: appendNode,
     replaceNode: replaceNode,
-    replaceMany: replaceMany,
+    replaceAll: replaceAll,
     toDOMNodes: toDOMNodes,
     render: render
 };

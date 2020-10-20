@@ -14,7 +14,7 @@ export function ListView(props) {
             if (nextValues.length) {
                 var oldElements = controller.currentElements;
                 var nextElements = nextValues.map(function (x, i) { return renderItem(key(x), nextValues, i); }).flatMap(H.toDOMNodes);
-                H.replaceMany(controller, oldElements, nextElements);
+                H.replaceAll(controller, oldElements, nextElements);
             }
         }
         else {
@@ -25,7 +25,7 @@ export function ListView(props) {
             if (nextValues.length === 0) {
                 var nextElements = [H.createPlaceholder()];
                 var oldElements = controller.currentElements;
-                H.replaceMany(controller, oldElements, nextElements);
+                H.replaceAll(controller, oldElements, nextElements);
             }
             else if (currentValues.length === 0) {
                 for (var i = 0; i < nextValues.length; i++) {
@@ -35,7 +35,7 @@ export function ListView(props) {
                         H.replaceNode(controller, i, newElement);
                     }
                     else {
-                        H.addAfterNode(controller, controller.currentElements[i - 1], newElement);
+                        H.appendNode(controller, newElement);
                     }
                 }
             }
@@ -57,7 +57,7 @@ export function ListView(props) {
                     for (var i = currentValues.length; i < nextValues.length; i++) {
                         var nextItemKey = key(nextValues[i]);
                         var newElement = renderItem(nextItemKey, nextValues, i);
-                        H.addAfterNode(controller, controller.currentElements[i - 1], newElement);
+                        H.appendNode(controller, newElement);
                     }
                 }
                 else if (nextValues.length < currentValues.length) {
