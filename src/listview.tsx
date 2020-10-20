@@ -30,7 +30,7 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
                 const oldElements = controller.currentElements
                 let nextElements = nextValues.map((x, i) => renderItem(key(x), nextValues, i)).flatMap(H.toDOMNodes)            
                 
-                H.replaceMany(controller, oldElements, nextElements)
+                H.replaceAll(controller, oldElements, nextElements)
             }
         } else {
             // Optization idea: different strategy based on count change:
@@ -41,7 +41,7 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
                 let nextElements = [H.createPlaceholder()]
                 const oldElements = controller.currentElements
                 
-                H.replaceMany(controller, oldElements, nextElements)
+                H.replaceAll(controller, oldElements, nextElements)
             } else if (currentValues.length === 0) {         
                 for (let i = 0; i < nextValues.length; i++) {
                     const nextItemKey = key(nextValues[i])
@@ -49,7 +49,7 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
                     if (i == 0) {
                         H.replaceNode(controller, i, newElement)        
                     } else {
-                        H.addAfterNode(controller, controller.currentElements[i - 1], newElement)                        
+                        H.appendNode(controller, newElement)                        
                     }                        
                 }
 
@@ -70,7 +70,7 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
                     for (let i = currentValues.length; i < nextValues.length; i++) {
                         const nextItemKey = key(nextValues[i])
                         const newElement = renderItem(nextItemKey, nextValues, i)
-                        H.addAfterNode(controller, controller.currentElements[i - 1], newElement)
+                        H.appendNode(controller, newElement)
                     }
                 } else if (nextValues.length < currentValues.length) {
                     for (let i = currentValues.length - 1; i >= nextValues.length; i--) {

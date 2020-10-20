@@ -145,7 +145,7 @@ const startUpdatingNodes = (observable: HarmajaObservableChild) => (controller: 
         //console.log("New values", debug(controller.currentElements))
         //console.log(`${debug(oldElements)} replaced by ${debug(controller.currentElements)} in observable`)
         
-        replaceMany(controller, oldElements, newNodes)
+        replaceAll(controller, oldElements, newNodes)
     })
 }
 
@@ -238,7 +238,7 @@ function getNodeState(node: Node): NodeState {
  */
 export function mount(harmajaElement: HarmajaOutput, root: Element): HarmajaStaticOutput {    
     const rendered = render(harmajaElement)
-    replaceMany(null, [root], rendered)
+    replaceAll(null, [root], rendered)
     return rendered
 }
 
@@ -594,7 +594,7 @@ function replaceNode(controller: NodeController, index: number, newNode: DOMNode
     }
 }
 
-function replaceMany(controller: NodeController | null, oldContent: HarmajaStaticOutput, newContent: HarmajaStaticOutput) {
+function replaceAll(controller: NodeController | null, oldContent: HarmajaStaticOutput, newContent: HarmajaStaticOutput) {
     const oldNodes = toDOMNodes(oldContent)
     const newNodes = toDOMNodes(newContent)
     if (controller) {
@@ -621,12 +621,13 @@ function replaceMany(controller: NodeController | null, oldContent: HarmajaStati
     //console.log("Replaced " + debug(oldContent) + " with " + debug(newContent))
 }
 
-function addAfterNode(controller: NodeController, current: ChildNode, next: ChildNode) {
+function appendNode(controller: NodeController, next: ChildNode) {
+    const lastNode = controller.currentElements[controller.currentElements.length - 1]
     controller.currentElements.push(next)
     attachController([next], controller)
-    current.after(next)
+    lastNode.after(next)
 
-    appendedByController(controller, current, next)
+    appendedByController(controller, lastNode, next)
 
     callOnMounts(next)
 }
@@ -654,13 +655,6 @@ function removeNode(controller: NodeController | null, index: number, oldNode: H
     }
 }  
 
-function appendNode(rootElement: DOMNode, child: DOMNode) {
-    rootElement.appendChild(child)
-    if (maybeGetNodeState(rootElement)?.mounted) {
-        callOnMounts(child)
-    }
-}
-
 export function debug(element: HarmajaStaticOutput | Node): string {
     if (element instanceof Array) {
         return element.map(debug).join(",")
@@ -676,11 +670,10 @@ export const LowLevelApi = {
     attachOnMount,
     attachOnUnmount,
     createController,
-    appendNode,
     removeNode,
-    addAfterNode,
+    appendNode,
     replaceNode,
-    replaceMany,
+    replaceAll,
     toDOMNodes,
     render
 }
