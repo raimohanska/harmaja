@@ -74,20 +74,22 @@ You can select the desired Observable library with imports. Currently [Lonna](ht
 
 ### Lonna Observables
 
-To use the default Lonna Observables:
+To use the default Lonna Observables, install `lonna` from NPM and then:
 
 ```
 import { h } from "harmaja";
+import * as L from "lonna";
 ```
 
 Lonna includes Atoms and Lenses in addition to Properties, EventStreams and Buses, so you should use `import { atom, Atom } from "lonna"`.
 
 ### Bacon.js
 
-To use Bacon.js Observables:
+To use Bacon.js Observables, install `baconjs` from NPM and then:
 
 ```
 import { h } from "harmaja/bacon";
+import * as L from "baconjs";
 ```
 
 Bacon.js doesn't include Atoms and Lenses, but Harmaja includes them so you should use `import { atom, Atom } from "harmaja/bacon"`.
@@ -97,10 +99,11 @@ your application is a very bad idea.
 
 ### RxJs
 
-To use RxJs Observables:
+To use RxJs Observables, install `rxjs` from NPM and then:
 
 ```
 import { h } from "harmaja/rxjs";
+import * as Rx from "rxjs";
 ```
 
 RxJs doesn't include Atoms and Lenses, but Harmaja includes them so you should use `import { atom, Atom } from "harmaja/rxjs"`.

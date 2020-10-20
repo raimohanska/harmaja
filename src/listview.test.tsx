@@ -1,8 +1,8 @@
 import { h } from "./index"
 import * as O from "./test-utils"
-import { testRender, mounted, getHtml } from "./test-utils"
+import { testRender, mounted, getHtml, atom } from "./test-utils"
 import { ListView } from "./listview"
-import { observablesImplementationName, observablesThrowError } from "./observable/observables"
+import { observablesImplementationName, observablesThrowError, view } from "./observable/observables"
 
 type Item = { id: number, name: string}
 const testItems: Item[] = [{ id: 1, name: "first" }]
@@ -48,6 +48,19 @@ describe("Listview", () => {
             observable={O.constant([1])}
             renderItem={item => [<li>{item}</li>, <li/>]}
         /></ul>)).toThrow("Only single-element results supported in ListView. Got [object HTMLLIElement],[object HTMLLIElement]")
+    })
+
+    describe("With renderAtom", () => {
+        it("Non-empty -> empty -> Non-empty", () => {
+            const a = atom(testItems)
+            const el = mounted(<ul><ListView
+                atom={a}
+                renderAtom={(key, item) => { 
+                    return <li>{O.map(item, i => i.name)}</li>}}
+                getKey={item => item.id}
+            /></ul>)
+            expect(getHtml(el)).toEqual("<ul><li>first</li></ul>")
+        })    
     })
 
     describe("With renderObservable", () => {
