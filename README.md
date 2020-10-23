@@ -8,7 +8,7 @@ An experimental web frontend framework named after a lighthouse. It maybe easies
 - Dynamic content passed to components as observable properties
 - Directly embed Observables in JSX, resulting to "surgical" DOM updates. No VDOM diffing needed.
 - Written in Typescript. Type-safety considered a high priority.
-- Support [Lonna](https://github.com/raimohanska/lonna) and [Bacon.js](https://baconjs.github.io/) for observables at the moment. You can select the desired library by imports (see below).
+- Support [Lonna](https://github.com/raimohanska/lonna), [Bacon.js](https://baconjs.github.io/) and [RxJs](https://rxjs-dev.firebaseapp.com/) for observables at the moment. You can select the desired library by imports (see below).
 - Strongly inspired by [Calmm.js](https://github.com/calmm-js/documentation/blob/master/introduction-to-calmm.md). If you're familiar with Calmm, you can think of Harmaja as "Calmm, but with types and no React dependency
 
 Published on NPM: https://www.npmjs.com/package/harmaja
