@@ -38,7 +38,9 @@ function reducer(items: TodoItem[], event: AppEvent): TodoItem[] {
     case "add": return items.concat(todoItem(event.name))
     case "remove": return items.filter(i => i.id !== event.id)
     case "update":return items.map(i => i.id === event.item.id ? event.item : i)
-    default: console.warn("Unknown event", event)
+    default: 
+      console.warn("Unknown event", event)
+      return items
   }
 }
 const allItems = appEvents.pipe(L.scan(initialItems, reducer, globalScope))

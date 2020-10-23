@@ -107,8 +107,6 @@ describe("Listview", () => {
         }))
     })
 
-    // TODO renderAtom test
-
     describe("Observable-in-ListView", () => {
         it("Changing item value contents", () => testRender(1, (value, set) => {
             const listView = mounted(<ul><ListView 
