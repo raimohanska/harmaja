@@ -8,8 +8,7 @@ export interface Atom<A> extends B.Property<A> {
     modify(fn: (a: A) => A): this;
     view<K extends keyof A>(key: K): K extends number ? Atom<A[K] | undefined> : Atom<A[K]>,
     view<B>(lens: L.Lens<A, B>): Atom<B>,
-    // TODO: Freezing is a bit hacky. Would be nicer if there was another way
-    // to prevent crashing when an element is removed and should no longer be rendered
+    // freezeUnless is like `filter` for Atoms. Using different name because extending Property which already has an incompatible `filter` method.
     freezeUnless<E extends A>(fn: (a: A) => a is E): Atom<E>
     freezeUnless(fn: (a: A) => boolean): Atom<A>
     eager: boolean
