@@ -612,6 +612,7 @@ function replacedByController(controller, oldNodes, newNodes) {
     var index = controllers.indexOf(controller);
     //console.log(`${debug(oldNodes)} replaced by ${debug(newNodes)} controller ${index} of ${controllers.length}`)
     var parentControllers = controllers.slice(index + 1);
+    // This loop is just about assertion of invariables
     for (var i = 1; i < oldNodes.length; i++) {
         var controllersHere = (getNodeState(oldNodes[i]).controllers || []);
         var indexHere = controllersHere.indexOf(controller);

@@ -1,6 +1,6 @@
 import * as O from "lonna";
 export declare type NativeProperty<T> = O.Property<T>;
-export declare type NativeAtom<T> = O.Property<T>;
+export declare type NativeAtom<T> = O.Atom<T>;
 export declare type NativeEventStream<T> = O.EventStream<T>;
 export declare type Scope = O.Scope;
 export declare type Predicate<A> = (value: A) => boolean;
