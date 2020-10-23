@@ -1,6 +1,6 @@
 {
   "name": "harmaja",
-  "version": "0.11.1",
+  "version": "0.11.2",
   "main": "lonna/index.js",
   "types": "lonna/index.d.ts",
   "license": "MIT",
