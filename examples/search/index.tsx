@@ -80,11 +80,11 @@ const SearchResultsSimplest = ({ state } : { state: L.Property<SearchState> }) =
 const SearchResults2 = ({ state } : { state: L.Property<SearchState> }) => {
     const currentResults: L.Property<string[]> = L.view(state, s => s.state === "done" ? s.results : [])
 
-    const message: L.Property<string> = L.map((s: SearchState) => {
+    const message: L.Property<string> = L.view(state, s => {
         if (s.state === "searching") return "Searching..."
         if (s.state === "done" && s.results.length === 0) return "Nothing found."
         return ""
-    })(state)
+    })
     
     return <div>
         { message }

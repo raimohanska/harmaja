@@ -236,7 +236,7 @@ views into small views of data.
 
 ### Unwanted reloads
 
-My component reloads all the time => make sure you've eliminated duplicates in the Bacon Property that you use for swithing components.
+My component reloads all the time => make sure you've eliminated duplicates in the Property that you use for switching components.
 
 ```typescript
 <div>
@@ -244,12 +244,16 @@ My component reloads all the time => make sure you've eliminated duplicates in t
 </div>
 ```
 
-In the above, the nested components will be re-constructed each time `someProperty` gets a value. To eliminate duplicate values, use `view` first to get to the actually discriminating value, only then start constructing components:
+In the above, the nested components will be re-constructed each time `someProperty` gets a value. To eliminate duplicate values, do your mapping in two steps, first
+extracting the discriminator value and then constructing components, only when
+the discriminator changes:
+
 
 ```typescript
 <div>
     { L.view(
-        L.view(someProperty, t => t.state === "success"), 
+        someProperty,
+        t => t.state === "success",        
         success => success ? <HugeComponent/> : <ErrorComponent/>
     )}
 </div>
