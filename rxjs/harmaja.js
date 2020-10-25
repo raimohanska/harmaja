@@ -217,10 +217,10 @@ function setProp(el, key, value) {
         attachOnMount(el, function () { return refFn_1(el); });
         return;
     }
-    if (key.startsWith("on")) {
+    else if (key.startsWith("on")) {
         key = key.toLowerCase();
     }
-    if (key === "style") {
+    else if (key === "style") {
         var styles = Object.entries(value)
             .filter(function (_a) {
             var _b = __read(_a, 2), key = _b[0], value = _b[1];
@@ -233,8 +233,11 @@ function setProp(el, key, value) {
             .join("\n");
         el.setAttribute("style", styles);
     }
+    else if (key === "className") {
+        el.setAttribute("class", value);
+    }
     else {
-        el[key] = value;
+        el.setAttribute(key, value);
     }
 }
 function toKebabCase(inputString) {
