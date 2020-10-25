@@ -440,29 +440,6 @@ declare global {
     type AnimationEventHandler<T = Element> = EventHandler<AnimationEvent>;
     type TransitionEventHandler<T = Element> = EventHandler<TransitionEvent>;
 
-    //
-    // Props / DOM Attributes
-    // ----------------------------------------------------------------------
-
-    /**
-     * @deprecated. This was used to allow clients to pass `ref` and `key`
-     * to `createElement`, which is no longer necessary due to intersection
-     * types. If you need to declare a props object before passing it to
-     * `createElement` or a factory, use `ClassAttributes<T>`:
-     *
-     * ```ts
-     * var b: Button | null;
-     * var props: ButtonProps & ClassAttributes<Button> = {
-     *     ref: b => button = b, // ok!
-     *     label: "I'm a Button"
-     * };
-     * ```
-     */
-    interface Props<T> {
-        children?: ChildrenType;
-        ref?: LegacyRef<T>;
-    }
-
     interface HTMLProps<T> extends AllHTMLAttributes<T>, ClassAttributes<T> {
     }
 
@@ -1647,18 +1624,16 @@ declare global {
         document: Document;
     }
 
-    type RefCallback<T> = { bivarianceHack(instance: T | null): void }["bivarianceHack"];
+    type RefCallback<T> = { bivarianceHack(instance: T): void }["bivarianceHack"];
 
     type Ref<T> = RefCallback<T> | null;
-    type LegacyRef<T> = string | Ref<T>;        
+    
     interface Attributes {
         
     }
-    interface RefAttributes<T> extends Attributes {
-        ref?: Ref<T>;
-    }
+
     interface ClassAttributes<T> extends Attributes {
-        ref?: LegacyRef<T>;
+        ref?: Ref<T>;
     }
         
 

@@ -23,7 +23,7 @@ describe("Harmaja", () => {
         expect(reffed).toEqual(null)
         mount(el, body())
         expect(reffed).toEqual(span)
-        expect(() => <span id="x" ref="not-a-function"/>).toThrow("Expecting ref prop to be a function, got not-a-function")
+        expect(() => <span id="x" ref={"not-a-function" as any}/>).toThrow("Expecting ref prop to be a function, got not-a-function")
     })
 
     it("Creating elements with JSX", () => {
