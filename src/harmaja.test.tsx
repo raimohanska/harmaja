@@ -26,6 +26,12 @@ describe("Harmaja", () => {
         expect(() => <span id="x" ref="not-a-function"/>).toThrow("Expecting ref prop to be a function, got not-a-function")
     })
 
+    it("Supports assigning standard and nonstandard attributes", () => {
+        let span = <span draggable={true} data-test="my-test-id">Hello</span>
+        mount(span, body())
+        expect(renderAsString(span)).toEqual('<span draggable="true" data-test="my-test-id">Hello</span>')
+    })
+
     it("Creating elements with JSX", () => {
         const el = <h1>yes</h1>
         expect(renderAsString(el)).toEqual("<h1>yes</h1>")
