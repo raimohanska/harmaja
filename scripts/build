@@ -21,10 +21,10 @@ fi
 rm -fr dist
 scripts/switch-observables $OBS
 
-json_replace tsconfig.json outDir $OBS
+json_replace tsconfig.build.json outDir $OBS
 
 yarn tsc
 yarn test
 
-json_replace tsconfig.json outDir dist
+json_replace tsconfig.build.json outDir dist
 scripts/switch-observables lonna
