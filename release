@@ -1,4 +1,6 @@
-#!/usr/bin/env bash -e
+#!/usr/bin/env bash
+
+set -e
 
 version=$1
 if [ -z $version ]; then
@@ -19,7 +21,7 @@ yarn install
 yarn test
 
 echo "3. Setting version info to descriptor files"
-sed -i "" 's/\("version".*:.*\)".*"/\1"'$version'"/' $files
+sed -i"" 's/\("version".*:.*\)".*"/\1"'$version'"/' $files
 
 exit 0
 

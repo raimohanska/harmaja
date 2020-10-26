@@ -1,10 +1,12 @@
-#!/usr/bin/env bash -e
+#!/usr/bin/env bash
+
+set -e
 
 function json_replace() {
     FILE=$1
     FIELD=$2
     VALUE=$3
-    sed -i "" 's/\("'$FIELD'".*:.*\)".*"/\1"'$VALUE'"/' $FILE
+    sed -i"" 's/\("'$FIELD'".*:.*\)".*"/\1"'$VALUE'"/' $FILE
 }
 
 OBS=$1
