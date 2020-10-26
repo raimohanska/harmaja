@@ -51,7 +51,7 @@ describe("Listview", () => {
     })
 
     describe("With renderAtom", () => {
-        it("Non-empty -> empty -> Non-empty", () => {
+        it("Works", () => {
             const a = atom(testItems)
             const el = mounted(<ul><ListView
                 atom={a}
@@ -60,7 +60,23 @@ describe("Listview", () => {
                 getKey={item => item.id}
             /></ul>)
             expect(getHtml(el)).toEqual("<ul><li>first</li></ul>")
-        })    
+        })
+
+        it("remove() works", () => {
+            const a = atom(testItems2)
+            let removeCallback: (() => void) | null = null
+            const el = mounted(<ul><ListView
+                atom={a}
+                renderAtom={(key, item, remove) => {
+                    if (key === 2) removeCallback = remove
+                    return <li>{O.map(item, i => i.name)}</li>}}
+                getKey={item => item.id}
+            /></ul>)
+            expect(getHtml(el)).toEqual("<ul><li>first</li><li>second</li></ul>")
+            expect(removeCallback).not.toBeNull()
+            removeCallback!()
+            expect(getHtml(el)).toEqual("<ul><li>first</li></ul>")
+        })
     })
 
     describe("With renderObservable", () => {

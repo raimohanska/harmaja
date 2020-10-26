@@ -41,13 +41,15 @@ function findKey<A, K>(getKey: (value: A) => K, expected: K): O.Lens<A[], A | un
             return index >= 0 ? root[index] : undefined
         },
         set(root, value) {
-            // This peculiar lens ignores undefined
-            if (value === undefined) return root
             index = findIndex(root, test, index)
-            return index >= 0
-                ? [...root.slice(0, index), value, ...root.slice(index + 1)]
-                : root
-
+            if (index === -1) return root
+            if (value === undefined) {
+                // This peculiar lens deletes the item when undefined is written
+                const result = root.slice(0)
+                result.splice(index, 1)
+                return result
+            }
+            return [...root.slice(0, index), value, ...root.slice(index + 1)]
         }
     }
 }
@@ -99,6 +101,7 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
     const key2item = new Map<K, Item>()
 
     // If the list is empty, we render a placeholder. It doesn't have a key.
+    // TODO: Could currentItems be just Text | K[] ???
     let currentItems: Text | Item[] = H.createPlaceholder()
 
     return H.createController([currentItems], controller => O.forEach(observable, (nextValues: A[]) => {
@@ -187,6 +190,6 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
             const filtered = O.filter(mapped, item => item !== undefined) as O.Property<A>
             return props.renderObservable(k, filtered as O.NativeProperty<A>)
         }
-        return props.renderItem(values[index])            
+        return props.renderItem(values[index])
     }
 }
