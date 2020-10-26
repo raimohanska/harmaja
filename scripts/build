@@ -1,10 +1,12 @@
-#!/usr/bin/env bash -e
+#!/usr/bin/env bash
+
+set -e
 
 function json_replace() {
     FILE=$1
     FIELD=$2
     VALUE=$3
-    sed -i "" 's/\("'$FIELD'".*:.*\)".*"/\1"'$VALUE'"/' $FILE
+    sed -i"" 's/\("'$FIELD'".*:.*\)".*"/\1"'$VALUE'"/' $FILE
 }
 
 OBS=$1
@@ -21,10 +23,10 @@ fi
 rm -fr dist
 scripts/switch-observables $OBS
 
-json_replace tsconfig.json outDir $OBS
+json_replace tsconfig.build.json outDir $OBS
 
 yarn tsc
 yarn test
 
-json_replace tsconfig.json outDir dist
+json_replace tsconfig.build.json outDir dist
 scripts/switch-observables lonna

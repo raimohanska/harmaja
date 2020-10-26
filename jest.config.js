@@ -1,5 +1,10 @@
 module.exports = {
   roots: ['<rootDir>/src'],
+  globals: {
+    'ts-jest': {
+      tsConfig: 'tsconfig.build.json'
+    }
+  },
   transform: {
     '^.+\\.tsx?$': 'ts-jest',
   },

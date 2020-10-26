@@ -1,5 +1,7 @@
 node_modules
 node_modules
 .cache
-dist/examples
-
+/rxjs
+/bacon
+/lonna
+/dist

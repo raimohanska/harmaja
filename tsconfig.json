@@ -19,12 +19,6 @@
     "jsxFactory": "h",
     "jsxFragmentFactory": "Fragment",
     "allowJs": false,
-    "downlevelIteration": true,
-    "outDir": "dist",
-    "declaration": true,
-    "sourceMap": true
-  },
-  "include": [
-    "src/index.ts"
-  ]
+    "downlevelIteration": true
+  }
 }
