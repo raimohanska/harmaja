@@ -1,11 +1,13 @@
 import * as Rx from "rxjs"
 import * as RxOps from "rxjs/operators"
 import * as A from "./atom"
+import * as L from "./lens"
 
 // Re-export native observable types for external usage
 export type NativeProperty<T> = Rx.Observable<T>
 export type NativeAtom<T> = A.Atom<T>
 export type NativeEventStream<T> = Rx.Observable<T>
+export type Lens<A, B> = L.Lens<A, B>
 export type Scope = {}
 
 // Local narrow interfaces used internally

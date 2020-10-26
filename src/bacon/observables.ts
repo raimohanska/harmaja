@@ -1,11 +1,13 @@
 import * as O from "baconjs"
 import * as A from "./atom"
+import * as L from "./lens"
 import { getCurrentValue } from "./currentvalue"
 
 // Re-export native observable types for external usage
 export type NativeProperty<T> = O.Property<T>
 export type NativeAtom<T> = O.Property<T>
 export type NativeEventStream<T> = O.EventStream<T>
+export type Lens<A, B> = L.Lens<A, B>
 export type Scope = {}
 
 // Local narrow interfaces used internally

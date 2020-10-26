@@ -1,4 +1,3 @@
-import { Lens } from "lonna"
 import * as O from "./observable/observables"
 import { DOMNode, HarmajaOutput, HarmajaStaticOutput, LowLevelApi as H } from "./harmaja"
 
@@ -28,7 +27,7 @@ function findIndex<A>(xs: A[], test: (value: A) => boolean, hint: number): numbe
     return -1
 }
 
-function findKey<A, K>(getKey: (value: A) => K, expected: K): Lens<A[], A | undefined> {
+function findKey<A, K>(getKey: (value: A) => K, expected: K): O.Lens<A[], A | undefined> {
     const test = (x: A) => getKey(x) === expected
 
     // Cache the previous index. When items are moved they tend to end up near
