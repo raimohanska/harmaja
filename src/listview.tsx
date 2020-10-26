@@ -2,18 +2,50 @@ import { Lens } from "lonna"
 import * as O from "./observable/observables"
 import { DOMNode, HarmajaOutput, HarmajaStaticOutput, LowLevelApi as H } from "./harmaja"
 
+function clamp(x: number, min: number, max: number) {
+    if (x < min) return min
+    if (x > max) return max
+    return x
+}
+
+// Find starting from hint
+function findIndex<A>(xs: A[], test: (value: A) => boolean, hint: number): number {
+    const len = xs.length
+    let u = clamp(hint, 0, len - 1)
+    let d = u - 1
+    for (; 0 <= d && u < len; ++u, --d) {
+        if (test(xs[u])) return u
+        if (test(xs[d])) return d
+    }
+    for (; u < len; ++u) {
+        if (test(xs[u])) return u
+    }
+    for (; 0 <= d; --d) {
+        if (test(xs[d])) return d
+    }
+
+    // Not found
+    return -1
+}
+
 function findKey<A, K>(getKey: (value: A) => K, expected: K): Lens<A[], A | undefined> {
+    const test = (x: A) => getKey(x) === expected
+
+    // Cache the previous index. When items are moved they tend to end up near
+    // the previous index, it makes the search faster to start from the previous
+    // index and move down and up from there.
     let index: number = -1
+
     return {
         get(root) {
-            index = root.findIndex(elem => getKey(elem) === expected)
+            index = findIndex(root, test, index)
             return index >= 0 ? root[index] : undefined
         },
         set(root, value) {
             // This peculiar lens ignores undefined
             if (value === undefined) return root
-            index = root.findIndex(elem => getKey(elem) === expected)
-            return index !== -1
+            index = findIndex(root, test, index)
+            return index >= 0
                 ? [...root.slice(0, index), value, ...root.slice(index + 1)]
                 : root
 
