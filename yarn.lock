@@ -4421,10 +4421,10 @@ log-symbols@^2.2.0:
   dependencies:
     chalk "^2.0.1"
 
-lonna@^0.2.1:
-  version "0.2.1"
-  resolved "https://registry.yarnpkg.com/lonna/-/lonna-0.2.1.tgz#ab58bdf930d0c4d4d6002eec88098e20446dc3a4"
-  integrity sha512-zeOTdJY+tgAwWxBAIIVjyXlOlgRMaYf1PjI1FkwGEbNyPE/q4Pw1qNJ/zUO6A7qOvdTi4qdgKzabdBTUTmfBzQ==
+lonna@^0.2.6:
+  version "0.2.6"
+  resolved "https://registry.yarnpkg.com/lonna/-/lonna-0.2.6.tgz#e4f40416dfc427c31ef36e932442b1bdb89c8f2e"
+  integrity sha512-3SKwY51ag4EIyWmvhNaP5l6ot4nUdgwCtDbYsxpBxK/M+Gnjp+LAe8jwmCU5tT98QsS1lQQkpCl8dKJ8rZDn5Q==
 
 loose-envify@^1.0.0:
   version "1.4.0"
