@@ -83,8 +83,7 @@ describe("Listview", () => {
         it("Non-empty -> empty -> Non-empty", () => testRender(testItems, (value, set) => {
             const el = mounted(<ul><ListView
                 observable={value}
-                renderObservable={(key, item) => { 
-                    return <li>{O.map(item, i => i.name)}</li>}}
+                renderObservable={(_, item) => <li>{O.map(item, i => i.name)}</li>}
                 getKey={item => item.id}
             /></ul>)
             expect(getHtml(el)).toEqual("<ul><li>first</li></ul>")

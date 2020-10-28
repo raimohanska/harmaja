@@ -1,16 +1,12 @@
 import * as O from "./observable/observables"
-import { DOMNode, HarmajaOutput, HarmajaStaticOutput, LowLevelApi as H } from "./harmaja"
-
-function clamp(x: number, min: number, max: number) {
-    if (x < min) return min
-    if (x > max) return max
-    return x
-}
+import { DOMNode, HarmajaOutput, HarmajaStaticOutput, LowLevelApi as H, debug } from "./harmaja"
 
 // Find starting from hint
 function findIndex<A>(xs: A[], test: (value: A) => boolean, hint: number): number {
     const len = xs.length
-    let u = clamp(hint, 0, len - 1)
+    let u = hint
+    if (u >= len) u = len - 1
+    if (u < 0) u = 0
     let d = u - 1
     for (; 0 <= d && u < len; ++u, --d) {
         if (test(xs[u])) return u
@@ -116,6 +112,11 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
         let result = nextN === currN && Array.isArray(currentItems) ? currentItems : Array<Item>(nextN)
         const createdNodes: ChildNode[] = []
         const deletedNodes: ChildNode[] = []
+
+        if (!Array.isArray(currentItems)) {
+            // Placeholder is going to be deleted
+            deletedNodes.push(currentItems)
+        }
 
         const nextKeys = nextValues.map(key)
 

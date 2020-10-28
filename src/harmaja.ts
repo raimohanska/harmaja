@@ -137,7 +137,7 @@ function render(child: HarmajaChild | HarmajaOutput): HarmajaStaticOutput {
 
 const startUpdatingNodes = (observable: HarmajaObservableChild) => (controller: NodeController): Callback => {
     return O.forEach(observable, (nextChildren: HarmajaChildOrChildren) => {
-        let oldElements = controller.currentElements.slice()  
+        let oldElements = controller.currentElements.slice()
         let newNodes = flattenChildren(nextChildren).flatMap(render).flatMap(toDOMNodes)                
         if (newNodes.length === 0) {
             newNodes = [createPlaceholder()]
@@ -449,7 +449,7 @@ function createController(elements: ChildNode[], bootstrap: NodeControllerFn, op
     return elements
 }
 
-function attachController(elements: ChildNode[], controller: NodeController, bootstrap?: (controller: NodeController) => Callback) {
+function attachController(elements: ChildNode[], controller: NodeController, bootstrap?: (controller: NodeController) => Callback, skipAttachControllerUnsub?: boolean) {
     for (let i = 0; i < elements.length; i++) {
         let el = elements[i]
         const state = getNodeState(el)    
@@ -470,14 +470,14 @@ function attachController(elements: ChildNode[], controller: NodeController, boo
                     throw Error("Unexpected: Component already mounted")
                 } else {
                     attachOnMount(el, () => {
-                        const unsub = bootstrap(controller)                        
+                        const unsub = bootstrap(controller)
                         controller.unsub = unsub
                         el = controller.currentElements[0] // may have changed in bootstrap!
                         attachOnUnmount(el, controller.unsub)
                     })
                 }
             }
-            if (controller.unsub) {
+            if (controller.unsub && !skipAttachControllerUnsub) {
                 attachOnUnmount(el, controller.unsub)
             }
         }
@@ -631,11 +631,16 @@ function replaceAllInPlace(controller: NodeController, oldNodes: ChildNode[], ne
     const oldFirst = controller.currentElements[0]
     controller.currentElements = newNodes
     detachController(deletedNodes, controller)
-    attachController(createdNodes, controller)
+    attachController(createdNodes, controller, undefined, true)
 
-    if (controller.unsub && deletedNodes.includes(oldFirst)) {
-        // Move controller unsub to onUnmount of the new first node
-        attachOnUnmount(newNodes[0], controller.unsub)
+    if (controller.unsub) {
+        // Make sure newNodes[0] still calls controller.unsub on unmount
+        if (deletedNodes.includes(oldFirst)) {
+            attachOnUnmount(newNodes[0], controller.unsub)
+        } else if (newNodes[0] !== oldNodes[0]) {
+            detachOnUnmount(oldNodes[0], controller.unsub)
+            attachOnUnmount(newNodes[0], controller.unsub)
+        }
     }
 
     // oldNodes[0] may be the controller's initial text node, which hasn't been
