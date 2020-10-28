@@ -50,6 +50,9 @@ export function view<A, K extends keyof A>(a: any, key: number): any {
     if (A.isAtom(a)) {
         return a.view(key as any)
     } else if (a instanceof O.Property) {
+        if (L.isLens(key)) {
+            return a.map(key.get)
+        }
         return a.map(x => x[key])
     } else {
         throw Error("Unknown observable: " + a)

@@ -47,10 +47,13 @@ export function forEach<V>(x: Observable<V>, fn: (value: V) => void): Unsub {
 
 export function view<A, K extends keyof A>(a: Atom<A>, key: number): Atom<A[K] | undefined>;
 export function view<A, K extends keyof A>(a: Property<A>, key: number): Property<A[K] | undefined>;
-export function view<A, K extends keyof A>(a: any, key: number): any {
+export function view<A, K extends keyof A>(a: any, key: any): any {
     if (A.isAtom(a)) {
         return a.view(key as any)
     } else if (a instanceof Rx.Observable) {
+        if (L.isLens(key)) {
+            return a.pipe(RxOps.map(key.get))
+        }
         return a.pipe(RxOps.map(x => x[key]))
     } else {
         throw Error("Unknown observable: " + a)
