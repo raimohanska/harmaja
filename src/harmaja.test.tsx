@@ -26,6 +26,25 @@ describe("Harmaja", () => {
         expect(() => <span id="x" ref={"not-a-function" as any}/>).toThrow("Expecting ref prop to be a function, got not-a-function")
     })
 
+    it("Supports assigning standard and nonstandard attributes", () => {
+        let span = <span draggable={true} data-test="my-test-id">Hello</span>
+        mount(span, body())
+        expect(renderAsString(span)).toEqual('<span draggable="true" data-test="my-test-id">Hello</span>')
+    })
+
+    it("Event handlers get registered", () => {
+        let calls = 0
+        let span = <span onClick={() => {calls++ }}>Hello</span>
+
+        const mountedSpan = mount(span, body()) as HTMLSpanElement
+
+        expect(calls).toEqual(0)
+
+        mountedSpan.click()
+
+        expect(calls).toEqual(1)
+    })
+
     it("Creating elements with JSX", () => {
         const el = <h1>yes</h1>
         expect(renderAsString(el)).toEqual("<h1>yes</h1>")

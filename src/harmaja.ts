@@ -162,17 +162,23 @@ function setProp(el: Element, key: string, value: any) {
         attachOnMount(el, () => refFn(el))
         return
     }
+
     if (key.startsWith("on")) {
-        key = key.toLowerCase()
-    }           
-    if (key === "style") {
+        key = key.toLowerCase();
+        (el as any)[key] = value
+    }
+    else if (key === "style") {
         const styles = Object.entries(value)
             .filter(([key, value]) => key !== "")
             .map(([key, value]) => `${toKebabCase(key)}: ${value};`)
             .join("\n")
         el.setAttribute("style", styles)
-    } else {
-        (el as any)[key] = value;
+    }
+    else if (key === "className") {
+        el.setAttribute("class", value)
+    }
+    else {
+        el.setAttribute(key, value)
     }
 }
 
