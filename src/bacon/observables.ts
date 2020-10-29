@@ -4,7 +4,7 @@ import { getCurrentValue } from "./currentvalue"
 
 // Re-export native observable types for external usage
 export type NativeProperty<T> = O.Property<T>
-export type NativeAtom<T> = O.Property<T>
+export type NativeAtom<T> = A.Atom<T>
 export type NativeEventStream<T> = O.EventStream<T>
 export type Scope = {}
 
