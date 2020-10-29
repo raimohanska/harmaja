@@ -67,11 +67,16 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
     const observable: O.Property<A[]> = ("atom" in props) ? props.atom : props.observable
     const { getKey: key = ((x: A): K => x as any) } = props    
     const options = {
+        // Called when a child controller replaces one of the items on this list
+        // Case: some of the children on the list are Observables and can replace their content, in
+        // which case the ListView needs to be informed to stay up-to-date
         onReplace: (oldNodes: DOMNode[], newNodes: DOMNode[]) => {
             if (!Array.isArray(currentItems)) {
                 // No children
                 throw new Error("Child node replace without having any children!")
             }
+            // Assertion: the replaced item must be a single node, replaced by another single node
+            // ListView does not support items what consist of multiple nodes
             const oldNode = getSingleNodeOrFail(oldNodes)
             const newNode = getSingleNodeOrFail(newNodes)
 
@@ -102,14 +107,14 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
 
     return H.createController([currentItems], controller => O.forEach(observable, (nextValues: A[]) => {
         const currN = Array.isArray(currentItems) ? currentItems.length : 0
-        const nextN = nextValues.length
+        const resultN = nextValues.length
 
-        if (currN === 0 && nextN === 0) {
+        if (currN === 0 && resultN === 0) {
             // Nothing to do
             return
         }
 
-        let result = nextN === currN && Array.isArray(currentItems) ? currentItems : Array<Item>(nextN)
+        let resultItems = resultN === currN && Array.isArray(currentItems) ? currentItems : Array<Item>(resultN)
         const createdNodes: ChildNode[] = []
         const deletedNodes: ChildNode[] = []
 
@@ -120,7 +125,7 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
 
         const nextKeys = nextValues.map(key)
 
-        for (let i = 0; i < nextN; ++i) {
+        for (let i = 0; i < resultN; ++i) {
             const k = nextKeys[i]
             let item = key2item.get(k)
             if (item === undefined) {
@@ -129,30 +134,32 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
                 item = { key: k, node, index: i }
                 key2item.set(k, item)
             }
-            if (!result[i] || result[i].key !== item.key) {
+            if (!resultItems[i] || resultItems[i].key !== item.key) {
                 item.index = i
-                if (result === currentItems) {
+                if (resultItems === currentItems) {
                     // Copy on write
-                    result = currentItems.slice(0)
+                    resultItems = currentItems.slice(0)
                 }
-                result[i] = item
+                resultItems[i] = item
             }
         }
-        if (result !== currentItems) {
-            key2item.forEach((info) => {
-                const i = info.index
-                if (!result[i] || result[info.index].key !== info.key) {
-                    deletedNodes.push(info.node)
-                    key2item.delete(info.key)
+        if (resultItems !== currentItems) {
+            // Detect removed items, update key2item mapping to reflect deletion
+            key2item.forEach((item) => {
+                const i = item.index
+                if (!resultItems[i] || resultItems[item.index].key !== item.key) {
+                    deletedNodes.push(item.node)
+                    key2item.delete(item.key)
                 }
             })
 
             const oldNodes = Array.isArray(currentItems)
                 ? currentItems.map(item => item.node)
                 : [currentItems]  // <-- placeholder
-            if (nextN > 0) {
-                const newNodes = result.map(item => item.node)
-                currentItems = result
+                
+            if (resultN > 0) {
+                const newNodes = resultItems.map(item => item.node)
+                currentItems = resultItems
                 H.replaceAllInPlace(controller, oldNodes, newNodes, createdNodes, deletedNodes)
             } else {
                 const newNodes = [H.createPlaceholder()]
