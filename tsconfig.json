@@ -20,5 +20,6 @@
     "jsxFragmentFactory": "Fragment",
     "allowJs": false,
     "downlevelIteration": true
-  }
+  },
+  "exclude": ["dist", "baconjs", "lonna", "rxjs"]
 }
