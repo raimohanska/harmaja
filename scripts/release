@@ -1,6 +1,4 @@
-#!/usr/bin/env bash
-
-set -e
+#!/usr/bin/env bash -e
 
 version=$1
 if [ -z $version ]; then
@@ -22,7 +20,7 @@ yarn build
 yarn test
 
 echo "3. Setting version info to descriptor files"
-sed -i"" 's/\("version".*:.*\)".*"/\1"'$version'"/' $files
+sed -i "" 's/\("version".*:.*\)".*"/\1"'$version'"/' $files
 
 echo "4. Commit and tag"
 git add .
