@@ -177,7 +177,9 @@ function setProp(el: Element, key: string, value: any) {
     else if (key === "className") {
         el.setAttribute("class", value)
     }
-    else {
+    else if (key in el) {
+        (el as any)[key] = value
+    } else {
         el.setAttribute(key, value)
     }
 }

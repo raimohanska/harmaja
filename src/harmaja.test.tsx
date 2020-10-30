@@ -45,6 +45,19 @@ describe("Harmaja", () => {
         expect(calls).toEqual(1)
     })
 
+    it("Boolean props like disabled work", () => {
+        let calls = 0
+        let button = <button disabled={true} onClick={() => {calls++ }} />
+
+        const mountedButton = mount(button, body()) as HTMLButtonElement
+
+        expect(calls).toEqual(0)
+
+        mountedButton.click()
+
+        expect(calls).toEqual(0)
+    })
+
     it("Creating elements with JSX", () => {
         const el = <h1>yes</h1>
         expect(renderAsString(el)).toEqual("<h1>yes</h1>")
