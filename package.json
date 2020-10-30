@@ -21,6 +21,12 @@
   "engines": {
     "node": ">13.0"
   },
+  "files": [
+    "lonna",
+    "bacon",
+    "rxjs",
+    "src"
+  ],
   "scripts": {
     "example-first": "parcel --out-dir dist/examples examples/first/index.html",
     "example-search": "parcel --out-dir dist/examples examples/search/index.html",
