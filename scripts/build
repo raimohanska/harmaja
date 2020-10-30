@@ -1,4 +1,5 @@
-#!/usr/bin/env bash -e
+#!/usr/bin/env bash
+set -euo pipefail
 
 OBS=$1
 if [ -z $OBS ]; then

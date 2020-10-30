@@ -1,4 +1,4 @@
-#!/usr/bin/env bash -e
+#!/usr/bin/env bash
+set -euo pipefail
 
 cat package.json|grep version|sed 's/.*:.*"\(.*\)".*/\1/'|head -1
-

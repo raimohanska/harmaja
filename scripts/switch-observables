@@ -1,16 +1,17 @@
-#!/usr/bin/env bash -e
+#!/usr/bin/env bash
+set -euo pipefail
 
 function json_replace() {
     FILE=$1
     FIELD=$2
     VALUE=$3
-    sed -i "" 's/\("'$FIELD'".*:.*\)".*"/\1"'$VALUE'"/' $FILE
+    perl -pi -e 's/("'$FIELD'".*:.*)".*"/\1"'$VALUE'"/' $FILE
 }
 
 OBS=$1 
 echo Switching to $OBS observables
 
-git checkout src/observable
-sed -i "" 's/lonna/'$OBS'/' src/observable/*
+git checkout tsconfig.build.json src/observable
+perl -pi -e 's/lonna/'$OBS'/' src/observable/*
 
 json_replace tsconfig.build.json outDir $OBS
