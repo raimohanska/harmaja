@@ -1,7 +1,16 @@
 #!/usr/bin/env bash -e
 
+function json_replace() {
+    FILE=$1
+    FIELD=$2
+    VALUE=$3
+    sed -i "" 's/\("'$FIELD'".*:.*\)".*"/\1"'$VALUE'"/' $FILE
+}
+
 OBS=$1 
 echo Switching to $OBS observables
 
 git checkout src/observable
 sed -i "" 's/lonna/'$OBS'/' src/observable/*
+
+json_replace tsconfig.build.json outDir $OBS
