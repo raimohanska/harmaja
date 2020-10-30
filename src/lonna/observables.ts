@@ -4,6 +4,7 @@ import * as O from "lonna"
 export type NativeProperty<T> = O.Property<T>
 export type NativeAtom<T> = O.Atom<T>
 export type NativeEventStream<T> = O.EventStream<T>
+export type Lens<A, B> = O.Lens<A, B>
 export type Scope = O.Scope
 
 // Local narrow interfaces used internally

@@ -1,11 +1,13 @@
 import * as Rx from "rxjs"
 import * as RxOps from "rxjs/operators"
 import * as A from "./atom"
+import * as L from "./lens"
 
 // Re-export native observable types for external usage
 export type NativeProperty<T> = Rx.Observable<T>
 export type NativeAtom<T> = A.Atom<T>
 export type NativeEventStream<T> = Rx.Observable<T>
+export type Lens<A, B> = L.Lens<A, B>
 export type Scope = {}
 
 // Local narrow interfaces used internally
@@ -45,11 +47,15 @@ export function forEach<V>(x: Observable<V>, fn: (value: V) => void): Unsub {
 
 export function view<A, K extends keyof A>(a: Atom<A>, key: number): Atom<A[K] | undefined>;
 export function view<A, K extends keyof A>(a: Property<A>, key: number): Property<A[K] | undefined>;
-export function view<A, K extends keyof A>(a: any, key: number): any {
+export function view<A, K extends keyof A>(a: any, key: any): any {
     if (A.isAtom(a)) {
         return a.view(key as any)
     } else if (isProperty(a)) {
-        return (a as Rx.Observable<A>).pipe(RxOps.map((x: any) => x[key]))
+        const obs = (a as Rx.Observable<A>)
+        if (L.isLens(key)) {
+            return obs.pipe(RxOps.map(key.get))
+        }
+        return obs.pipe(RxOps.map(x => x[key]))
     } else {
         throw Error("Unknown observable: " + a)
     }

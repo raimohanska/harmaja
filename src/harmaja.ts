@@ -137,7 +137,7 @@ function render(child: HarmajaChild | HarmajaOutput): HarmajaStaticOutput {
 
 const startUpdatingNodes = (observable: HarmajaObservableChild) => (controller: NodeController): Callback => {
     return O.forEach(observable, (nextChildren: HarmajaChildOrChildren) => {
-        let oldElements = controller.currentElements.slice()  
+        let oldElements = controller.currentElements.slice()
         let newNodes = flattenChildren(nextChildren).flatMap(render).flatMap(toDOMNodes)                
         if (newNodes.length === 0) {
             newNodes = [createPlaceholder()]
@@ -360,7 +360,7 @@ export function callOnMounts(element: Node) {
     
     state.mounted = true
     if (state.onMounts) {
-        for (const sub of state.onMounts as Callback[]) {
+        for (const sub of state.onMounts) {
             sub()
         }
     }
@@ -374,12 +374,12 @@ export function callOnMounts(element: Node) {
 function callOnUnmounts(element: Node) {
     //console.log("callOnUnmounts " + debug(element))
     let state = getNodeState(element)
-    if (!state.mounted) {        
+    if (!state.mounted) {
         return
     }
 
     if (state.onUnmounts) {
-        for (const unsub of state.onUnmounts as Callback[]) {
+        for (const unsub of state.onUnmounts) {
             //console.log("Calling unsub in " + debug(element))
             unsub()
         }
@@ -455,7 +455,7 @@ function createController(elements: ChildNode[], bootstrap: NodeControllerFn, op
     return elements
 }
 
-function attachController(elements: ChildNode[], controller: NodeController, bootstrap?: (controller: NodeController) => Callback) {
+function attachController(elements: ChildNode[], controller: NodeController, bootstrap?: (controller: NodeController) => Callback, skipAttachControllerUnsub?: boolean) {
     for (let i = 0; i < elements.length; i++) {
         let el = elements[i]
         const state = getNodeState(el)    
@@ -476,14 +476,14 @@ function attachController(elements: ChildNode[], controller: NodeController, boo
                     throw Error("Unexpected: Component already mounted")
                 } else {
                     attachOnMount(el, () => {
-                        const unsub = bootstrap(controller)                        
+                        const unsub = bootstrap(controller)
                         controller.unsub = unsub
-                        el = controller.currentElements[0] // may have changed in bootstrap!                        
+                        el = controller.currentElements[0] // may have changed in bootstrap!
                         attachOnUnmount(el, controller.unsub)
                     })
                 }
             }
-            if (controller.unsub) {
+            if (controller.unsub && !skipAttachControllerUnsub) {
                 attachOnUnmount(el, controller.unsub)
             }
         }
@@ -630,6 +630,38 @@ function replaceAll(controller: NodeController | null, oldContent: HarmajaStatic
     //console.log("Replaced " + debug(oldContent) + " with " + debug(newContent))
 }
 
+function replaceAllInPlace(controller: NodeController, oldNodes: ChildNode[], newNodes: ChildNode[], createdNodes: ChildNode[], deletedNodes: ChildNode[]) {
+    if (oldNodes.length === 0) throw new Error("Cannot replace zero nodes")
+    if (newNodes.length === 0) throw new Error("Cannot replace with zero nodes")
+
+    const oldFirst = controller.currentElements[0]
+    controller.currentElements = newNodes
+    detachController(deletedNodes, controller)
+    attachController(createdNodes, controller, undefined, true)
+
+    if (controller.unsub) {
+        // Make sure newNodes[0] still calls controller.unsub on unmount
+        if (deletedNodes.includes(oldFirst)) {
+            attachOnUnmount(newNodes[0], controller.unsub)
+        } else if (newNodes[0] !== oldNodes[0]) {
+            detachOnUnmount(oldNodes[0], controller.unsub)
+            attachOnUnmount(newNodes[0], controller.unsub)
+        }
+    }
+
+    // oldNodes[0] may be the controller's initial text node, which hasn't been
+    // added to DOM before the first render. Thus `parentElement?`.
+    oldNodes[0].parentElement?.replaceChild(newNodes[0], oldNodes[0])
+    deletedNodes.forEach(node => node.remove())
+    for (let i = 1; i < newNodes.length; i++) {
+        newNodes[i - 1].after(newNodes[i])
+    }
+
+    replacedByController(controller, oldNodes, newNodes)
+    deletedNodes.forEach(callOnUnmounts)
+    createdNodes.forEach(callOnMounts)
+}
+
 function appendNode(controller: NodeController, next: ChildNode) {
     const lastNode = controller.currentElements[controller.currentElements.length - 1]
     controller.currentElements.push(next)
@@ -666,7 +698,7 @@ function removeNode(controller: NodeController | null, index: number, oldNode: H
 
 export function debug(element: HarmajaStaticOutput | Node): string {
     if (element instanceof Array) {
-        return element.map(debug).join(",")
+        return element.map(debug).join(",") || "[]"
     } else if (element instanceof Element) {
         return element.outerHTML;
     } else {
@@ -683,6 +715,7 @@ export const LowLevelApi = {
     appendNode,
     replaceNode,
     replaceAll,
+    replaceAllInPlace,
     toDOMNodes,
     render
 }

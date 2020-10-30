@@ -3,6 +3,10 @@ export interface Lens<A, B> {
     set(root: A, newValue: B): A
 }
 
+export function isLens(x: any): x is Lens<any, any> {
+  return typeof x === 'object' && typeof x.get === 'function' && typeof x.set === 'function'
+}
+
 export function prop<A, K extends keyof A>(key: K): Lens<A, A[K]> {
     return {
         get: (root: A) => (root as any)[key],

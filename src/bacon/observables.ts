@@ -1,11 +1,13 @@
 import * as O from "baconjs"
 import * as A from "./atom"
+import * as L from "./lens"
 import { getCurrentValue } from "./currentvalue"
 
 // Re-export native observable types for external usage
 export type NativeProperty<T> = O.Property<T>
 export type NativeAtom<T> = A.Atom<T>
 export type NativeEventStream<T> = O.EventStream<T>
+export type Lens<A, B> = L.Lens<A, B>
 export type Scope = {}
 
 // Local narrow interfaces used internally
@@ -48,6 +50,9 @@ export function view<A, K extends keyof A>(a: any, key: number): any {
     if (A.isAtom(a)) {
         return a.view(key as any)
     } else if (a instanceof O.Property) {
+        if (L.isLens(key)) {
+            return a.map(key.get)
+        }
         return a.map(x => x[key])
     } else {
         throw Error("Unknown observable: " + a)
