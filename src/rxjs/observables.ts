@@ -55,7 +55,7 @@ export function view<A, K extends keyof A>(a: any, key: any): any {
         if (L.isLens(key)) {
             return obs.pipe(RxOps.map(key.get))
         }
-        return obs.pipe(RxOps.map(x => x[key]))
+        return obs.pipe(RxOps.map((x: any) => x[key]))
     } else {
         throw Error("Unknown observable: " + a)
     }
