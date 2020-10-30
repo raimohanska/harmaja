@@ -1,7 +1,7 @@
 import * as Rx from "rxjs"
 import { map, scan, distinctUntilChanged, filter, tap, startWith } from "rxjs/operators"
 import * as L from "./lens"
-import { getCurrentValue } from "./observables"
+import { getCurrentValue, isProperty } from "./observables"
 
 export interface Atom<A> extends Rx.Observable<A> {
     set(newValue: A): this;
@@ -79,7 +79,7 @@ export function atom<A>(x: any, y?: any): Atom<A> {
 }
 
 export function isAtom<A>(x: any): x is Atom<A> {
-    return !!((x instanceof Rx.Observable) && (x as any).get && ((x as any).freezeUnless))
+    return isProperty(x) && !!((x as any).get && ((x as any).freezeUnless))
 }
 
 // Note: actually mutates the given observable into an Atom!

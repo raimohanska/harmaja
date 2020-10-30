@@ -37,7 +37,7 @@ export function set<A>(atom: Atom<A>, value: A) {
 }
 
 export function isProperty(x: any): x is Property<any> {
-    return x instanceof Rx.Observable
+    return !!(x && x.subscribe && x.forEach)
 }
 export function forEach<V>(x: Observable<V>, fn: (value: V) => void): Unsub {
     return _forEach(x as Rx.Observable<V>, fn)
@@ -48,8 +48,8 @@ export function view<A, K extends keyof A>(a: Property<A>, key: number): Propert
 export function view<A, K extends keyof A>(a: any, key: number): any {
     if (A.isAtom(a)) {
         return a.view(key as any)
-    } else if (a instanceof Rx.Observable) {
-        return a.pipe(RxOps.map(x => x[key]))
+    } else if (isProperty(a)) {
+        return (a as Rx.Observable<A>).pipe(RxOps.map((x: any) => x[key]))
     } else {
         throw Error("Unknown observable: " + a)
     }
@@ -60,8 +60,8 @@ export function filter<A>(a: Property<A>, fn: Predicate<A>): Property<A>;
 export function filter<A>(a: any, fn: Predicate<A>): any {
     if (A.isAtom(a)) {
         return a.freezeUnless(fn as any)
-    } else if (a instanceof Rx.Observable) {
-        return a.pipe(RxOps.filter(fn))
+    } else if (isProperty(a)) {
+        return (a as Rx.Observable<A>).pipe(RxOps.filter(fn))
     } else {
         throw Error("Unknown observable: " + a)
     }

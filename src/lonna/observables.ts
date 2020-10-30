@@ -34,7 +34,7 @@ export function set<A>(atom: Atom<A>, value: A) {
 }
 
 export function isProperty(x: any): x is Property<any> {
-    return x instanceof O.Property
+    return O.isProperty(x)
 }
 export function forEach<V>(x: Observable<V>, fn: (value: V) => void): Unsub {
     return (x as O.Observable<any>).forEach(fn)
