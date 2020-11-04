@@ -114,6 +114,11 @@ describe("Harmaja", () => {
         */
     })
 
+    it("Supports React-style short circuiting", () => {
+        expect(renderAsString(<h1>{true && <p>asdf</p>}</h1>)).toEqual(`<h1><p>asdf</p></h1>`)
+        expect(renderAsString(<h1>{false && <p>asdf</p>}</h1>)).toEqual(`<h1></h1>`)
+    })
+
     describe("Components", () => {
         it("Renders component children", () => {
             const C1 = ({children}:{children?:any}) => <div>{children}</div>
