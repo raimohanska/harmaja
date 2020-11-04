@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-version=$1
+version=${1:-}
 if [ -z $version ]; then
   currentversion=`scripts/version`
   echo "Enter release version (current is $currentversion):"
   read version
 fi
+
 export DIST_VERSION=$version
 
 files="package.json"
