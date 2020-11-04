@@ -123,7 +123,7 @@ function render(child: HarmajaChild | HarmajaOutput): HarmajaStaticOutput {
     if (typeof child === "string" || typeof child === "number") {
         return document.createTextNode(child.toString())
     }
-    if (child === null) {
+    if (child === null || child === false) {
         return createPlaceholder()
     }
     if (O.isProperty(child)) {
