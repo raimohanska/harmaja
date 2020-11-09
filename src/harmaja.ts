@@ -176,11 +176,20 @@ function setProp(el: Element, key: string, value: any) {
     }
     else if (key === "className") {
         el.setAttribute("class", value)
-    }
-    else if (key in el) {
-        (el as any)[key] = value
-    } else {
+    } else if (!(key in el)) {
         el.setAttribute(key, value)
+    } else {
+        let current = el
+        let descriptor: PropertyDescriptor | undefined = undefined
+        while (current && !descriptor) {
+            descriptor = Object.getOwnPropertyDescriptor(current, key)
+            current = Object.getPrototypeOf(current)
+        }
+        if (!descriptor || (!descriptor.writable && !descriptor.set)) {
+            el.setAttribute(key, value)
+        } else {
+            (el as any)[key] = value
+        }
     }
 }
 

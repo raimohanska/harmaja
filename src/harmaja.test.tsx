@@ -45,6 +45,19 @@ describe("Harmaja", () => {
         expect(calls).toEqual(1)
     })
 
+    it("Can assign readonly props like select.form", () => {
+        const formAndSelect = <div><form id="test-form"></form><select form="test-form" /></div>
+
+        const mountedParentDiv = mount(formAndSelect, body()) as HTMLDivElement
+
+        const form = mountedParentDiv.querySelector("form")!
+        const select = mountedParentDiv.querySelector("select")!
+
+        expect(select.form).toBe(form)
+
+        expect(renderAsString(formAndSelect)).toEqual('<div><form id="test-form"></form><select form="test-form"></select></div>')
+    })
+
     it("Boolean props like disabled work", () => {
         let calls = 0
         let button = <button disabled={true} onClick={() => {calls++ }} />
