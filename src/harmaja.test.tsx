@@ -58,6 +58,20 @@ describe("Harmaja", () => {
         expect(calls).toEqual(0)
     })
 
+    it("Registers dblclick handler properly -- JSX attribute name is onDoubleClick, native property is ondblclick", () => {
+        let calls = 0
+        let button = <button disabled={true} onDoubleClick={() => {calls++ }} />
+
+        const mountedButton = mount(button, body()) as HTMLButtonElement
+
+        expect(calls).toEqual(0)
+
+        const clickEvent  = document.createEvent("MouseEvents")
+        clickEvent.initEvent("dblclick")
+        mountedButton.dispatchEvent(clickEvent)
+        expect(calls).toEqual(1)
+    })
+
     it("Creating elements with JSX", () => {
         const el = <h1>yes</h1>
         expect(renderAsString(el)).toEqual("<h1>yes</h1>")

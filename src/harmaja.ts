@@ -165,6 +165,7 @@ function setProp(el: Element, key: string, value: any) {
 
     if (key.startsWith("on")) {
         key = key.toLowerCase();
+        key = key === "ondoubleclick" ? "ondblclick" : key;
         (el as any)[key] = value
     }
     else if (key === "style") {
