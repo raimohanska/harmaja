@@ -652,10 +652,17 @@ function replaceAllInPlace(controller: NodeController, oldNodes: ChildNode[], ne
 
     // oldNodes[0] may be the controller's initial text node, which hasn't been
     // added to DOM before the first render. Thus `parentElement?`.
-    oldNodes[0].parentElement?.replaceChild(newNodes[0], oldNodes[0])
+    if (newNodes[0] !== oldNodes[0]) {
+        oldNodes[0].parentElement?.replaceChild(newNodes[0], oldNodes[0])
+    }
     deletedNodes.forEach(node => node.remove())
+    
     for (let i = 1; i < newNodes.length; i++) {
-        newNodes[i - 1].after(newNodes[i])
+        const thisOne = newNodes[i - 1]
+        const nextOne = newNodes[i]
+        if (thisOne.nextSibling !== nextOne) {
+            thisOne.after(nextOne)
+        }
     }
 
     replacedByController(controller, oldNodes, newNodes)

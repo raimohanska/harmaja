@@ -37,6 +37,7 @@
     "example-side-effects": "parcel --out-dir dist/examples examples/side-effects/index.html",
     "example-todoapp-rxjs": "parcel --out-dir dist/examples examples/todoapp-rxjs/index.html",
     "example-todoapp-atoms-rxjs": "parcel --out-dir dist/examples examples/todoapp-atoms-rxjs/index.html",
+    "example-list-focus": "parcel --out-dir dist/examples examples/list-focus/index.html",
     "tsc": "tsc -p tsconfig.build.json",
     "tsc:watch": "yarn tsc --watch",
     "build": "scripts/build lonna && scripts/build bacon && scripts/build rxjs",
