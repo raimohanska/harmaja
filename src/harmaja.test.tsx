@@ -89,6 +89,10 @@ describe("Harmaja", () => {
         expect(getHtml(el)).toEqual("<h1>no</h1>")
         set("definitely")
         expect(getHtml(el)).toEqual("<h1>definitely</h1>")
+        set("")
+        expect(getHtml(el)).toEqual("<h1></h1>")
+        set("back")
+        expect(getHtml(el)).toEqual("<h1>back</h1>")
         return el
     }))
 
