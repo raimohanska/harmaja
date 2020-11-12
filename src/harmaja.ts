@@ -604,9 +604,27 @@ function replaceNode(controller: NodeController, index: number, newNode: DOMNode
     }
 }
 
+function identicalNodes(oldNodes: ChildNode[], newNodes: ChildNode[]) {
+    if (oldNodes.length !== newNodes.length) {
+        return false
+    }
+    for (let i = 0; i < oldNodes.length; i++) {
+        if (!(oldNodes[i] instanceof Text && newNodes[i] instanceof Text && 
+            oldNodes[i].textContent &&
+            oldNodes[i].textContent === newNodes[i].textContent)
+        ) {
+            return false
+        }        
+    }
+    return true
+}
+
 function replaceAll(controller: NodeController | null, oldContent: HarmajaStaticOutput, newContent: HarmajaStaticOutput) {
     const oldNodes = toDOMNodes(oldContent)
     const newNodes = toDOMNodes(newContent)
+    if (identicalNodes(oldNodes, newNodes)) {
+        return
+    }
     if (controller) {
         controller.currentElements = newNodes
         detachController(oldNodes, controller)
