@@ -1,3 +1,5 @@
+<img src="logo/harmaja-logo.svg" width="200">
+
 # Harmaja
 
 An experimental web frontend framework named after a lighthouse. It maybe easiest to describe it in contrast to React. 
