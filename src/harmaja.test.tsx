@@ -285,7 +285,7 @@ describe("Harmaja", () => {
         expect(getHtml(c)).toEqual(`<span contenteditable="true">new</span>`)
         el!.textContent = ""
         expect(getHtml(c)).toEqual(`<span contenteditable="true"></span>`)
-        value.set("qwer")
-        expect(getHtml(c)).toEqual(`<span contenteditable="true">qwer</span>`)
+        value.set("BOOM")
+        expect(getHtml(c)).toEqual(`<span contenteditable="true">BOOM</span>`)
     })
 })
