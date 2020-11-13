@@ -91,7 +91,11 @@ function flattenChildren(child: HarmajaChildOrChildren): HarmajaChild[] {
 
 function renderElement(type: string, props: HarmajaProps, children: HarmajaChild[]): DOMNode {
     const el = document.createElement(type)
+    let contentEditable = false
     for (let [key, value] of Object.entries(props || {})) {
+        if (key === "contentEditable") {
+            contentEditable = true
+        }
         if (O.isProperty(value)) {      
             attachOnMount(el, () => {
                 const unsub = O.forEach(value, nextValue => {
@@ -103,9 +107,34 @@ function renderElement(type: string, props: HarmajaProps, children: HarmajaChild
             setProp(el, key, value)        
         }
     }
-    
-    (children || []).map(render).flatMap(toDOMNodes).forEach(childElement => el.appendChild(childElement))
+    if (contentEditable) {
+        addContentEditableController(el, children)
+    } else {
+        (children || []).map(render).flatMap(toDOMNodes).forEach(node => el.appendChild(node))
+    }
     return el
+}
+
+function addContentEditableController(el: HTMLElement, children: HarmajaChild[]) {
+    if (!children || children.length != 1) {
+        throw Error("contentEditable elements expected to contain exactly one child")
+    }
+    const child = children[0]
+    if (!O.isProperty(child)) {
+        throw Error("contentEditable element must have an Observable<string> as child")
+    }
+    const observable = child as O.Property<string>
+
+    createController([el], (controller: NodeController): Callback => {
+        return O.forEach(observable, (nextValue) => {
+            if (typeof nextValue !== "string") {
+                throw Error(`Value for contentEditable is not string: ${nextValue} is a ${typeof nextValue}.`)
+            }
+            if (nextValue !== el.textContent) {
+                el.textContent = nextValue
+            }
+        })
+    })    
 }
 
 function createPlaceholder() {

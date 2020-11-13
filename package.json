@@ -28,6 +28,7 @@
     "src"
   ],
   "scripts": {
+    "example-content-editable": "parcel --out-dir dist/examples examples/content-editable/index.html",
     "example-first": "parcel --out-dir dist/examples examples/first/index.html",
     "example-search": "parcel --out-dir dist/examples examples/search/index.html",
     "example-todoapp": "parcel --out-dir dist/examples examples/todoapp/index.html",

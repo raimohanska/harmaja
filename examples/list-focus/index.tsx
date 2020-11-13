@@ -16,11 +16,3 @@ const Root = () =>
     </div>
 
 mount(<Root/>, document.getElementById("root")!)
-
-function range(low: number, high: number) {
-    const nums: number[] = []
-    for (let i = low; i <= high; i++) {
-        nums.push(i)
-    }
-    return nums
-}
