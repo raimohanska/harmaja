@@ -6,7 +6,7 @@ const scrollPos = L.fromEvent(window, "scroll").pipe(L.toStatelessProperty(() =>
 
 const randomColor = () => "#" + Math.floor(Math.random()*16777215).toString(16);
 
-const Item = ({ text }: { text: L.Property<string> }) => {
+const Item = ({ text }: { text: L.Property<string> | string }) => {
   return <div style={{ background: randomColor(), minHeight: "100px" }}>{ text }</div>
 }
 

@@ -14,16 +14,16 @@ const cancelRequest = L.bus<void>()
 const editRequest = L.bus<Consultant>()
 const addRequest = L.bus<Consultant>()
 
-const saveResult = L.flatMap(L.merge(saveRequest, addRequest), consultant =>
+const saveResult = L.merge(saveRequest, addRequest).pipe(L.flatMap((consultant: Consultant) =>
   L.changes(L.fromPromise<void, Consultant | null>(saveChangesToServer(consultant), 
-    () => undefined, // this never passes because only changes are monitored
+    () => null, // this never passes because only changes are monitored
     () => consultant, 
     error => null
   )),
   globalScope
-)
+));
 
-const consultants: L.Property<Consultant []> = L.scan(updates, initialConsultants, reducer, globalScope)
+const consultants: L.Property<Consultant []> = updates.pipe(L.scan(initialConsultants, reducer, globalScope))
 const editState = L.update<EditState>(globalScope, { state: "view" }, 
   [addRequest, (_, consultant) => ({ state: "adding", consultant})],
   [editRequest, (_, consultant) => ({ state: "edit", consultant})],
@@ -31,15 +31,15 @@ const editState = L.update<EditState>(globalScope, { state: "view" },
   [saveResult, (state, success) => (!success && state.state == "saving") ? { state: "edit", consultant: state.consultant } : { state: "view"}],
   [cancelRequest, () => ( { state: "view" })]
 )
-const saveFailed = L.filter(saveResult, success => !success)
-const saveSuccess = L.filter(saveResult, success => !!success)
-const notificationE = L.merge(
-  L.map(saveFailed, () => ({ type: "error", text: "Failed to save"} as Notification)),
-  L.map(saveSuccess, () => ({ type: "info", text: "Saved"}))
+const saveFailed = saveResult.pipe(L.filter(success => !success))
+const saveSuccess = saveResult.pipe(L.filter(success => !!success))
+const notificationE: L.EventStreamSeed<Notification> = L.merge(
+  L.view(saveFailed, () => ({ type: "error", text: "Failed to save"} as Notification)),
+  L.view(saveSuccess, () => ({ type: "info", text: "Saved"} as Notification))
 )
-const notification: L.Property<Notification | null> = L.toProperty(
-  L.flatMapLatest(notificationE, notification => L.toProperty(L.later(2000, null), notification)),
-  null, globalScope
+const notification: L.Property<Notification | null> = notificationE.pipe(
+  L.flatMapLatest((notification: Notification | null) => L.later(2000, null).pipe(L.toProperty(notification))),
+  L.toProperty(null, globalScope)
 )
 
 saveResult.forEach(savedConsultant => {
@@ -78,7 +78,7 @@ function reducer(consultants: Consultant[], event: ServerFeedEvent) {
 
 
 export default function App() {
-  const disableNew = L.map(editState, state => state.state !== "view");
+  const disableNew = L.view(editState, state => state.state !== "view");
   
   return (
     <div className="App">
@@ -106,7 +106,7 @@ export default function App() {
 }
 
 function NotificationView({ notification }: { notification: L.Property<Notification | null> }) {
-  return <span>{L.map(notification, notification => {
+  return <span>{L.view(notification, notification => {
     if (!notification) return null;
     return (
       <div
@@ -156,7 +156,7 @@ function ConsultantCard({ id, consultant, editState }: { id: Id, consultant: L.P
   
   return (
     <div
-      style={L.map(cardState, s => { 
+      style={L.view(cardState, s => { 
         const disabledStyle = (s === "disabled") ? { opacity: 0.5, pointerEvents: "none" as any /* TODO: really weird that this value is not accepted */ } : {}
         const style = {
           ...{
@@ -180,7 +180,7 @@ function ConsultantCard({ id, consultant, editState }: { id: Id, consultant: L.P
         }}
       >
         <div style={{ position: "absolute", top: 0, right: 0 }}>
-          {L.map(L.map(cardState, s => s === "edit"), editing => editing ? (
+          {L.view(L.view(cardState, s => s === "edit"), editing => editing ? (
             <span>
               <SimpleButton
                 {...{

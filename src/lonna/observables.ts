@@ -50,7 +50,7 @@ export function view<A, K extends keyof A>(a: Atom<A> | Property<A>, key: number
 export function filter<A>(prop: Atom<A>, fn: Predicate<A>): Atom<A>;
 export function filter<A>(prop: Property<A>, fn: Predicate<A>): Property<A>;
 export function filter<A>(prop: Property<A> | Property<A>, fn: Predicate<A>): any {
-    return O.filter(fn, O.autoScope)(prop as any)
+    return O.filter(fn, O.autoScope())(prop as any)
 }
 
 export const observablesThrowError = true
