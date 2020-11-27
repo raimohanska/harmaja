@@ -24,9 +24,9 @@ that many topics here are subjective and I'm presenting my own views of the day.
 
 ## Key concepts
 
-[*Reactive Property*](https://baconjs.github.io/api3/classes/property.html) (also known as a signal or a behaviour) is an object that encapsulates a changing value. Please check out the [Bacon.js intro](https://baconjs.github.io/api3/index.html) if you're not familiar with the concept. In Harmaja, reactive properties are the main way of storing and passing application state.
+[*Reactive Property*](https://github.com/raimohanska/lonna/blob/master/src/abstractions.ts#L126) (also known as a signal or a behaviour) is an object that encapsulates a changing value. Please check out the [Bacon.js intro](https://baconjs.github.io/api3/index.html) if you're not familiar with the concept. In Harmaja, reactive properties are the main way of storing and passing application state.
 
-[*EventStream*](https://baconjs.github.io/api3/classes/eventstream.html) represents a stream of events that you can observe by calling its `forEach` method. In Bacon.js a *Bus* is an EventStream that allows you to `push` events to the stream as well as observe events. In Harmaja, buses are used for conveying distinct events from the UI to state reducers.
+[*EventStream*](https://github.com/raimohanska/lonna/blob/master/src/abstractions.ts#L131) represents a stream of events that you can observe by calling its `forEach` method. A [*Bus*](https://github.com/raimohanska/lonna/blob/master/src/abstractions.ts#L145) is an EventStream that allows you to `push` events to the stream as well as observe events. In Harmaja, buses are used for conveying distinct events from the UI to state reducers.
 
 [*Bus*](https://github.com/raimohanska/lonna/blob/master/src/bus.ts#L5) is an EventStream that allows you to [push](https://github.com/raimohanska/lonna/blob/master/src/bus.ts#L16) new events into it. It is used in Harmaja for defining events that originate from the UI. Typically, an `onClick` or similar handler function pushes a new value into a Bus.
 
@@ -34,7 +34,7 @@ that many topics here are subjective and I'm presenting my own views of the day.
 
 *State decomposition* means selecting a part or a slice of a bigger state object. This may be familiar to you from Redux, where you `mapStateToProps` or `useSelector` for making your component *react* to changes in some parts of the application state. In Harmaja, you use reactive properties or Atoms for representing state and then select parts of it for your component using [`map`](https://github.com/raimohanska/lonna/blob/master/src/map.ts#L5) or [`view`](https://github.com/raimohanska/lonna/blob/master/src/view.ts#L7), the latter providing a read-write interface.
 
-*State composition* is the opposite of the above (but will co-operate nicely) and means that you can compose state from different sources. This is also a familiar concept from Redux, if you have ever composed reducers. For example, you can use [`Bacon.combineWith`](https://baconjs.github.io/api3/globals.html#combinewith) to compose two state atoms into a composite state Property.
+*State composition* is the opposite of the above (but will co-operate nicely) and means that you can compose state from different sources. This is also a familiar concept from Redux, if you have ever composed reducers. For example, you can use [`combine`](https://github.com/raimohanska/lonna/blob/master/src/combine.ts#L30) to compose two state atoms into a composite state Property.
 
 You can very well combine the above concepts so that you start with several state Atoms and EventStreams, then compose them all into a single "megablob" Property and finally decompose from there to deliver the essential parts of each of your components.
 
@@ -70,7 +70,7 @@ mount(<App/>, document.getElementById("root")!)
 
 ## Observable Library Selection
 
-You can select the desired Observable library with imports. Currently [Lonna](https://github.com/raimohanska/lonna) and [Bacon.js](https://baconjs.github.io/) are supported but I'm planning to include at least RxJs soon.
+You can select the desired Observable library with imports. Currently [Lonna](https://github.com/raimohanska/lonna), [Bacon.js](https://baconjs.github.io/) and RxJs are supported.
 
 ### Lonna Observables
 
@@ -191,7 +191,7 @@ Then you can render the items using ListView thus:
 
 What ListView does here is that it observes `items` for changes and renders each item using the `renderer` function.
 When the list of items changes (something is replaced, added or removed) it uses the given `getKey` function to determine 
-whether to replace individual item views. Each item view gets a `Bacon.Property<A>` so that they can update when the content 
+whether to replace individual item views. Each item view gets a `Property<A>` so that they can update when the content 
 in that particular item is changed. See an example at [examples/todoapp](examples/todoapp/index.ts).
 
 #### Read-write view to an Atom
@@ -349,7 +349,7 @@ Other interesting examples of Unidirectional data flow include [Elm](https://elm
 
 ## Unidirectional data flow with Harmaja
 
-In Harmaja, you can implement Unidirectional data flow too. Sticking with the Todo App example, you define your events as [*buses*](https://baconjs.github.io/api3/classes/bus.html):
+In Harmaja, you can implement Unidirectional data flow too. Sticking with the Todo App example, you define your events as [*buses*](https://github.com/raimohanska/lonna/blob/master/src/abstractions.ts#L145):
 
 ```typescript
 import * as L from "lonna"
@@ -524,7 +524,7 @@ Yet, it's far from elegant especially if you've ever worked with Atoms and Lense
 ## Welcome to the Atom Age
 
 So you're into decomposing read-write access into data. This is where atoms come handy. 
-An `Atom<A>` simply represents a two-way interface to data by extending [`Bacon.Property<A>`](https://baconjs.github.io/api3/classes/property.html) and adding 
+An `Atom<A>` simply represents a two-way interface to data by extending [`Property<A>`](https://github.com/raimohanska/lonna/blob/master/src/abstractions.ts#L126) and adding 
 a `set: (newValue: A)` method for changing the value. Let's try it by changing our TextInput to
 
 ```typescript
@@ -769,13 +769,8 @@ perform cleanup later.
 When Harmaja replaces any DOM node, it recursively seeks all attached *unsubs* in the node and its children and calls them to free
 resources related to the removed nodes.
 
-In addition, all observables passed as props to Harmaja components are automatically scoped to component lifecycle. Practically
-Harmaja checks for props that are EventStreams or Properties (but not Buses or Atoms) and instead of passing the `observable` as-is,
-it passes [`observable.takeUntil(unmountEvent())`](https://baconjs.github.io/api3/classes/property.html#takeuntil) to the component constructor.
-
 The only case where you need to be more careful is when your subscribing from a component directly to an external/global source,
-as this is not something that Harmaja can magically manage. When doing this you can use either the `unmountEvent()` eventstream
-or the `onUnmount` callback to make sure your subscriptions don't exceed component lifetime.
+as this is not something that Harmaja can magically manage. TODO: Using scope
 
 ## Promises and async requests
 
