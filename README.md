@@ -762,15 +762,12 @@ As told above, components in Harmaja are functions that are treated as construct
 is actually a native [HTMLElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement).
 
 When you embed observables into the DOM, Harmaja creates a placeholder node (empty text node) into the DOM tree and replaces it with
-the real content when the observable yields a value. If the value is yielded synchronously, the placeholder is unnecessary and is not created. 
-Whenever it subscribes to an observable, it attachs the resultant *unsub* function to the created DOM node so that it can
-perform cleanup later. 
+the real content when the observable yields a value. Whenever it subscribes to an observable, it attachs the resultant *unsub* function to the created DOM node so that it can perform cleanup later. 
 
 When Harmaja replaces any DOM node, it recursively seeks all attached *unsubs* in the node and its children and calls them to free
 resources related to the removed nodes.
 
-The only case where you need to be more careful is when your subscribing from a component directly to an external/global source,
-as this is not something that Harmaja can magically manage. TODO: Using scope
+See [Dangling Subscriptions](https://github.com/raimohanska/harmaja/blob/master/README.md#dangling-subscriptions) for dealing with side-effects and scoping observables into component lifetime (which will ensure that resources are freed after component is unmounted).
 
 ## Promises and async requests
 
