@@ -4421,10 +4421,12 @@ log-symbols@^2.2.0:
   dependencies:
     chalk "^2.0.1"
 
-lonna@^0.5:
-  version "0.5.0"
-  resolved "https://registry.yarnpkg.com/lonna/-/lonna-0.5.0.tgz#8e85467d6eda9beb763bb6dacb05440507c3bc25"
-  integrity sha512-tLp3eN1N84dqnRLEFhXN7SiJzZiH4kw3Qa03YEw0ufkXZDCq1OusQ6yoioHrZ8fSTbIqEheorEjUT7Gy0sPeKw==
+lonna@^0.6:
+  version "0.6.0"
+  resolved "https://registry.yarnpkg.com/lonna/-/lonna-0.6.0.tgz#2e33fd8d41be3c109203dc72d0fcc28688cdb5a6"
+  integrity sha512-5/Cmikl48NuMIOs7RKX6q1a9X5Ym60JcF0bq0JvHsRqa35T22mErtFbNrXvdFRWt/bkUa+5cLD7YhAP6egy4Ig==
+  dependencies:
+    optics-ts "^1.2.0"
 
 loose-envify@^1.0.0:
   version "1.4.0"
@@ -4892,6 +4894,11 @@ opn@^5.1.0:
   integrity sha512-PqHpggC9bLV0VeWcdKhkpxY+3JTzetLSqTCWL/z/tFIbI6G8JCjondXklT1JinczLz2Xib62sSp0T/gKT4KksA==
   dependencies:
     is-wsl "^1.1.0"
+
+optics-ts@^1.2.0:
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/optics-ts/-/optics-ts-1.2.0.tgz#d8db012c4bb01be0504f9515ee6ee3df62329620"
+  integrity sha512-YItI8h9IPjO3gWzcWlakJhrtzSQu0MJmkWTap89l45dVjaxHDqpJcfJX8VUNrRVoIXEt1Dx2WckdWoU2GYtnvg==
 
 optionator@^0.8.1:
   version "0.8.3"
