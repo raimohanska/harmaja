@@ -536,7 +536,7 @@ const TextInput = ({value}: {text: Atom<string>}) => {
 
 This is the full implementation. Because Atom encapsulates both the view to the data (by being a Property) 
 and the callback for data update (through the `set` method), it can often be the sole prop an "editor" component needs. 
-To create an Atom in our unidirectional data flow context, we can simply construct it from a `Property` and a `set` function
+To create an Atom in our unidirectional data flow context, we can construct an "dependent atom" from a `Property` and a `set` function
 like so:
 
 ```typescript
