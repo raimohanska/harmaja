@@ -115,8 +115,11 @@ function renderElement(type: string, props: HarmajaProps, children: HarmajaChild
 }
 
 function addContentEditableController(el: HTMLElement, children: HarmajaChild[]) {
-    if (!children || children.length != 1) {
-        throw Error("contentEditable elements expected to contain exactly one child")
+    if (!children || children.length == 0) {
+        return
+    }
+    if (children.length != 1) {
+        throw Error("contentEditable elements expected to contain zero to one child")
     }
     const child = children[0]
     if (!O.isProperty(child)) {

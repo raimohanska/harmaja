@@ -274,18 +274,30 @@ describe("Harmaja", () => {
         return el as any
     }))
 
-    it("Elements with contentEditable", () => {
-        const value = O.atom("asdf")
-        let el: HTMLSpanElement | null = null 
-        const c = mounted(<span ref={e => el = e} contentEditable={true}>{value}</span>)
-        expect(getHtml(c)).toEqual(`<span contenteditable="true">asdf</span>`)
-        value.set("qwer")
-        expect(getHtml(c)).toEqual(`<span contenteditable="true">qwer</span>`)
-        el!.textContent = "new"
-        expect(getHtml(c)).toEqual(`<span contenteditable="true">new</span>`)
-        el!.textContent = ""
-        expect(getHtml(c)).toEqual(`<span contenteditable="true"></span>`)
-        value.set("BOOM")
-        expect(getHtml(c)).toEqual(`<span contenteditable="true">BOOM</span>`)
+    describe("Elements with contentEditable", () => {
+        it("With Observable inside", () => {
+            const value = O.atom("asdf")
+            let el: HTMLSpanElement | null = null 
+            const c = mounted(<span ref={e => el = e} contentEditable={true}>{value}</span>)
+            expect(getHtml(c)).toEqual(`<span contenteditable="true">asdf</span>`)
+            value.set("qwer")
+            expect(getHtml(c)).toEqual(`<span contenteditable="true">qwer</span>`)
+            el!.textContent = "new"
+            expect(getHtml(c)).toEqual(`<span contenteditable="true">new</span>`)
+            el!.textContent = ""
+            expect(getHtml(c)).toEqual(`<span contenteditable="true"></span>`)
+            value.set("BOOM")
+            expect(getHtml(c)).toEqual(`<span contenteditable="true">BOOM</span>`)
+        })
+        it("With more stuff inside", () => {
+            const value = O.atom("asdf")
+            expect(() => mounted(<span contentEditable={true}>{value}moreStuff</span>)).toThrow("contentEditable elements expected to contain zero to one child")            
+        })
+        it("With empty body", () => {
+            const c = mounted(<span contentEditable={true}></span>)
+            expect(getHtml(c)).toEqual(`<span contenteditable="true"></span>`)
+        })
     })
+
+
 })
