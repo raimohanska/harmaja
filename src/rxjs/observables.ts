@@ -47,8 +47,12 @@ export function forEach<V>(x: Observable<V>, fn: (value: V) => void): Unsub {
 
 export function view<A, K extends keyof A>(a: Atom<A>, key: number): Atom<A[K] | undefined>;
 export function view<A, K extends keyof A>(a: Property<A>, key: number): Property<A[K] | undefined>;
+export function view<A, B>(a: Property<A>, fn: (a: A) => B): Property<B>;
 export function view<A, K extends keyof A>(a: any, key: any): any {
-    if (A.isAtom(a)) {
+    if (typeof key === "function") {
+        const obs = (a as Rx.Observable<A>)
+        return obs.pipe(RxOps.map(key), RxOps.distinctUntilChanged())
+    } else if (A.isAtom(a)) {
         return a.view(key as any)
     } else if (isProperty(a)) {
         const obs = (a as Rx.Observable<A>)
@@ -106,5 +110,4 @@ export function getCurrentValue<A>(observable: Rx.Observable<A>): A {
   return currentV;
 };
 
-export const observablesThrowError = false
-export const observablesImplementationName = "RxJs"
+export const observablesImplementationName: string = "RxJs"

@@ -2,45 +2,91 @@ import { h } from "./index"
 import * as O from "./test-utils"
 import { testRender, mounted, getHtml, atom } from "./test-utils"
 import { ListView } from "./listview"
-import { observablesImplementationName, observablesThrowError, view } from "./observable/observables"
+import { observablesImplementationName } from "./observable/observables"
 
 type Item = { id: number, name: string}
-const testItems: Item[] = [{ id: 1, name: "first" }]
-const testItems2: Item[] = [{ id: 1, name: "first" }, { id: 2, name: "second" }]
-const testItems3: Item[] = [{ id: 2, name: "second" }]
+const firstItem = { id: 1, name: "first" }
+const secondItem = { id: 2, name: "second" }
+const testItems: Item[] = [firstItem]
+const testItems2: Item[] = [firstItem, secondItem]
+const testItems3: Item[] = [secondItem]
+const isRx = observablesImplementationName === "RxJs"
 
 describe("Listview", () => {
-    it("With renderItem", () => testRender(testItems, (value, set) => {
-        const el = mounted(<ul><ListView
-            observable={value}
-            renderItem={item => <li>{item.name}</li>}
-        /></ul>)
-        expect(getHtml(el)).toEqual("<ul><li>first</li></ul>")
-        set([])
-        expect(getHtml(el)).toEqual("<ul></ul>")
-        
-        set(testItems)
-        expect(getHtml(el)).toEqual("<ul><li>first</li></ul>")
+    describe("With renderItem", () => {
+        it("Without getKey", () => testRender(testItems, (value, set) => {
+            let renderedIds: number[] = [];
+            const el = mounted(<ul><ListView
+                observable={value}
+                renderItem={item => { 
+                    renderedIds.push(item.id)
+                    return <li>{item.name}</li> 
+                }}
+            /></ul>)
+            expect(getHtml(el)).toEqual("<ul><li>first</li></ul>")
+            expect(renderedIds).toEqual([1])
+            set([])
+            expect(getHtml(el)).toEqual("<ul></ul>")
+            
+            set(testItems)
+            expect(getHtml(el)).toEqual("<ul><li>first</li></ul>")
+            expect(renderedIds).toEqual([1, 1])
+    
+            set(testItems2)
+            expect(getHtml(el)).toEqual("<ul><li>first</li><li>second</li></ul>")
+            if (!isRx) expect(renderedIds).toEqual([1, 1, 2])
+    
+            set([])
+            expect(getHtml(el)).toEqual("<ul></ul>")
+    
+            set(testItems)
+            expect(getHtml(el)).toEqual("<ul><li>first</li></ul>")
+            if (!isRx) expect(renderedIds).toEqual([1, 1, 2, 1])
+    
+            set([])
+            expect(getHtml(el)).toEqual("<ul></ul>")
+    
+            set(testItems2)
+            expect(getHtml(el)).toEqual("<ul><li>first</li><li>second</li></ul>")
+            if (!isRx) expect(renderedIds).toEqual([1, 1, 2, 1, 1, 2])
 
-        set(testItems2)
-        expect(getHtml(el)).toEqual("<ul><li>first</li><li>second</li></ul>")
+            set([{ id: 1, name: "first-modified" }, secondItem])
+            expect(getHtml(el)).toEqual("<ul><li>first-modified</li><li>second</li></ul>")            
+            if (!isRx) expect(renderedIds).toEqual([1, 1, 2, 1, 1, 2, 1])
+            return el
+        }))
+        it("With getKey", () => testRender(testItems, (value, set) => {
+            let renderIds: number[] = [];
+            const el = mounted(<ul><ListView
+                observable={value}
+                renderItem={item => { 
+                    renderIds.push(item.id)
+                    return <li>{item.name}</li> 
+                }}
+                getKey={item => item.id}
+            /></ul>)      
+            
+            expect(getHtml(el)).toEqual("<ul><li>first</li></ul>")
+            expect(renderIds).toEqual([1])
 
-        set([])
-        expect(getHtml(el)).toEqual("<ul></ul>")
+            set(testItems2)
+            expect(getHtml(el)).toEqual("<ul><li>first</li><li>second</li></ul>")
+            if (!isRx) expect(renderIds).toEqual([1, 2])
 
-        set(testItems)
-        expect(getHtml(el)).toEqual("<ul><li>first</li></ul>")
+            set([{ id: 1, name: "first-modified" }, secondItem])            
+            expect(getHtml(el)).toEqual("<ul><li>first-modified</li><li>second</li></ul>")            
+            if (!isRx) expect(renderIds).toEqual([1, 2, 1])
 
-        set([])
-        expect(getHtml(el)).toEqual("<ul></ul>")
+            set([secondItem])            
+            expect(getHtml(el)).toEqual("<ul><li>second</li></ul>")            
+            if (!isRx) expect(renderIds).toEqual([1, 2, 1])
 
-        set(testItems2)
-        expect(getHtml(el)).toEqual("<ul><li>first</li><li>second</li></ul>")
-        return el
-    }))
+            return el
+        }))
+    })
 
     it("Allows only single-node items on list", () => {        
-        if (!observablesThrowError) {
+        if (observablesImplementationName === "RxJs") {
             console.log(`Skipping test because Observables cannot throw errors with ${observablesImplementationName}`)
             return
         }
@@ -211,7 +257,7 @@ describe("Listview", () => {
         }))
 
         it("Allows only single-node items", () => {
-            if (!observablesThrowError) {
+            if (observablesImplementationName === "RxJs") {
                 console.log(`Skipping test because Observables cannot throw errors with ${observablesImplementationName}`)
                 return
             }    

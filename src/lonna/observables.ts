@@ -43,8 +43,9 @@ export function forEach<V>(x: Observable<V>, fn: (value: V) => void): Unsub {
 
 export function view<A, K extends keyof A>(a: Atom<A>, key: number): Atom<A[K] | undefined>;
 export function view<A, K extends keyof A>(a: Property<A>, key: number): Property<A[K] | undefined>;
-export function view<A, K extends keyof A>(a: Atom<A> | Property<A>, key: number): any {
-    return O.view(a as any, key as any)
+export function view<A, B>(a: Property<A>, fn: (a: A) => B): Property<B>;
+export function view<A, K extends keyof A>(a: any, key: any): any {
+    return O.view(a, key)
 }
 
 export function filter<A>(prop: Atom<A>, fn: Predicate<A>): Atom<A>;
@@ -53,5 +54,4 @@ export function filter<A>(prop: Property<A> | Property<A>, fn: Predicate<A>): a
     return O.filter(fn, O.autoScope())(prop as any)
 }
 
-export const observablesThrowError = true
-export const observablesImplementationName = "Lonna"
+export const observablesImplementationName: string = "Lonna"

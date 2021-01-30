@@ -661,6 +661,8 @@ const allItems: L.Property<TodoItem[]> = L.update(globalScope, [],
 )
 ```
 
+### Rendering read-only arrays 
+
 To render the TodoItems represented by the `allItems` property you can use ListView thus:
 
 ```typescript
@@ -682,6 +684,8 @@ When the list of items changes (something is replaced, added or removed) it uses
 whether to replace individual item views. With the given `getKey` implementation it replaces views only when the `id` field doesn't match, 
 i.e. the view no longer represents the same item. Each item view gets a `Property<TodoItem>` so that they can update when the content 
 in that particular TodoItem is changed. See full implementation in [examples/todoapp](examples/todoapp/index.ts).
+
+### Rendering read-write arrays using Atoms
 
 ListView also supports read-write access using `Atom`. So if you have
 
@@ -731,6 +735,8 @@ const Item = ({ item, removeItem }: { item: Atom<TodoItem>, removeItem: () => v
 
 See the full atomic implementation of TodoApp in [examples/todoapp-atom](examples/todoapp-atoms/index.ts).
 
+### Rendering read-only arrays as static views
+
 There's a third variation of TextView still, for read-only views:
 
 ```typescript
@@ -741,7 +747,9 @@ There's a third variation of TextView still, for read-only views:
 ```
 
 So if you provide `renderItem` instead of `renderObservable` or `renderAtom`, you can use a view that renders a plain TodoItem. 
-This means that the item view cannot react to changes in the item data and simply renders the static data it is given. 
+This means that the item view cannot react to changes in the item data and simply renders the static data it is given. So, when an item's content changes, the item view will be replaced by ListView.
+
+You can optimize this variant a bit by supplying a `getKey` function to avoid full repaints when an item is added or removed.
 
 ## Component lifecycle
 

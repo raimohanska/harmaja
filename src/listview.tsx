@@ -65,7 +65,9 @@ export type ListViewProps<A, K = A> = {
 }
 export function ListView<A, K>(props: ListViewProps<A, K>) {
     const observable: O.Property<A[]> = ("atom" in props) ? props.atom : props.observable
-    const { getKey: key = ((x: A): K => x as any) } = props    
+    const { getKey = defaultKey } = props    
+    const itemRenderer = getItemRenderer(props, getKey)
+
     const options = {
         onReplace: (oldNodes: DOMNode[], newNodes: DOMNode[]) => {
             if (!Array.isArray(currentItems)) {
@@ -118,7 +120,7 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
             deletedNodes.push(currentItems)
         }
 
-        const nextKeys = nextValues.map(key)
+        const nextKeys = nextValues.map(getKey)
 
         for (let i = 0; i < nextN; ++i) {
             const k = nextKeys[i]
@@ -173,24 +175,38 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
         return rendered
     }
     function renderItem(key: K, values: A[], index: number): ChildNode {
-        const result = renderItemRaw(key, values, index)
+        const result = itemRenderer(key, values, index)
         let rendered = H.render(result)        
         return getSingleNodeOrFail(rendered)
     }
-    function renderItemRaw(k: K, values: A[], index: number) {
-        if ("renderAtom" in props) {
-            const lens = findKey(key, k)
+}
+
+type RenderItem<A, K> = (key: K, values: A[], index: number) => HarmajaOutput
+
+function getItemRenderer<A, K>(props: ListViewProps<A, K>, getKey: (a: A) => K): RenderItem<A, K> {
+    if ("renderAtom" in props) {
+        return (k, values, index) => {
+            const lens = findKey(getKey, k)
             const nullableAtom = O.view(props.atom as O.Atom<A[]>, lens as any) // cast to ensure non-usage of native methods
             const nonNullableAtom = O.filter(nullableAtom, a => a !== undefined) as O.Atom<A>
             const removeItem = () => O.set(nullableAtom, undefined)
             return props.renderAtom(k, nonNullableAtom as O.NativeAtom<A>, removeItem)
         }
-        if ("renderObservable" in props) {
-            const lens = findKey(key, k)
-            const mapped = O.view(observable as O.Property<A[]>, lens as any) // cast to ensure non-usage of native methods
+    } else if ("renderObservable" in props) {
+        return (k, values, index) => {
+            const lens = findKey(getKey, k)
+            const mapped = O.view(props.observable as O.Property<A[]>, lens as any) // cast to ensure non-usage of native methods
             const filtered = O.filter(mapped, item => item !== undefined) as O.Property<A>
-            return props.renderObservable(k, filtered as O.NativeProperty<A>)
+            return props.renderObservable(k, filtered as O.NativeProperty<A>)            
         }
-        return props.renderItem(values[index])
+    } else {
+        const renderObservable = (key: K, x: O.NativeProperty<A>): HarmajaOutput => {
+            return O.view(x, props.renderItem)
+        }
+        return getItemRenderer({ ...props, renderObservable }, getKey)
     }
+}
+
+function defaultKey<A, K>(a: A): K {
+    return a as any
 }

@@ -46,14 +46,17 @@ export function forEach<V>(x: Observable<V>, fn: (value: V) => void): Unsub {
 
 export function view<A, K extends keyof A>(a: Atom<A>, key: number): Atom<A[K] | undefined>;
 export function view<A, K extends keyof A>(a: Property<A>, key: number): Property<A[K] | undefined>;
-export function view<A, K extends keyof A>(a: any, key: number): any {
-    if (A.isAtom(a)) {
+export function view<A, B>(a: Property<A>, fn: (a: A) => B): Property<B>;
+export function view<A, K extends keyof A>(a: any, key: any): any {
+    if (typeof key === "function") {
+        return a.map(key).skipDuplicates()
+    } else if (A.isAtom(a)) {
         return a.view(key as any)
     } else if (a instanceof O.Property) {
         if (L.isLens(key)) {
-            return a.map(key.get)
+            return a.map(key.get).skipDuplicates()
         }
-        return a.map(x => x[key])
+        return a.map(x => x[key]).skipDuplicates()
     } else {
         throw Error("Unknown observable: " + a)
     }
@@ -71,6 +74,4 @@ export function filter<A>(a: any, fn: Predicate<A>): any {
     }
 }
 
-
-export const observablesThrowError = true
-export const observablesImplementationName = "Bacon.js"
+export const observablesImplementationName: string = "Bacon.js"
