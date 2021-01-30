@@ -3,6 +3,8 @@ import * as O from "./test-utils"
 import { testRender, mounted, getHtml, atom } from "./test-utils"
 import { ListView } from "./listview"
 import { observablesImplementationName } from "./observable/observables"
+import * as L from "lonna"
+import { componentScope } from "./harmaja"
 
 type Item = { id: number, name: string}
 const firstItem = { id: 1, name: "first" }
@@ -371,3 +373,5 @@ describe("Listview", () => {
         }))
     })
 })
+
+

@@ -2,14 +2,28 @@ import * as O from "baconjs"
 import * as A from "./atom"
 import * as L from "./lens"
 import { getCurrentValue } from "./currentvalue"
+import { endEvent } from "baconjs/types/event"
 
 // Re-export native observable types for external usage
 export type NativeProperty<T> = O.Property<T>
 export type NativeAtom<T> = A.Atom<T>
 export type NativeEventStream<T> = O.EventStream<T>
 export type Lens<A, B> = L.Lens<A, B>
-export type Scope = {}
+export type Scope = {
+    start(): void;
+    end(): void;
+}
+const mockScope = {
+    start() {},
+    end() {}
+}
+export function createScope() {
+    return mockScope
+}
 
+export function mkScope(scopeFn: Function) {
+    return mockScope
+}
 // Local narrow interfaces used internally
 export type Predicate<A> = (value: A) => boolean
 export type Observable<T> = {}
@@ -62,9 +76,9 @@ export function view<A, K extends keyof A>(a: any, key: any): any {
     }
 }
 
-export function filter<A>(a: Atom<A>, fn: Predicate<A>): Atom<A>;
-export function filter<A>(a: Property<A>, fn: Predicate<A>): Property<A>;
-export function filter<A>(a: any, fn: Predicate<A>): any {
+export function filter<A>(a: Atom<A>, fn: Predicate<A>, scope: Scope): Atom<A>;
+export function filter<A>(a: Property<A>, fn: Predicate<A>, scope: Scope): Property<A>;
+export function filter<A>(a: any, fn: Predicate<A>, scope: Scope): any {
     if (A.isAtom(a)) {
         return a.freezeUnless(fn as any)
     } else if (a instanceof O.Property) {

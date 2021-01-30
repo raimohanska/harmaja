@@ -1,5 +1,6 @@
 import * as O from "./observable/observables"
-import { DOMNode, HarmajaOutput, HarmajaStaticOutput, LowLevelApi as H, debug } from "./harmaja"
+import { DOMNode, HarmajaOutput, HarmajaStaticOutput, LowLevelApi as H, NodeController } from "./harmaja"
+
 
 // Find starting from hint
 function findIndex<A>(xs: A[], test: (value: A) => boolean, hint: number): number {
@@ -66,7 +67,8 @@ export type ListViewProps<A, K = A> = {
 export function ListView<A, K>(props: ListViewProps<A, K>) {
     const observable: O.Property<A[]> = ("atom" in props) ? props.atom : props.observable
     const { getKey = defaultKey } = props    
-    const itemRenderer = getItemRenderer(props, getKey)
+    const scope = O.createScope()
+    const itemRenderer = getItemRenderer(props, getKey, scope)
 
     const options = {
         onReplace: (oldNodes: DOMNode[], newNodes: DOMNode[]) => {
@@ -102,7 +104,7 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
     // TODO: Could currentItems be just Text | K[] ???
     let currentItems: Text | Item[] = H.createPlaceholder()
 
-    return H.createController([currentItems], controller => O.forEach(observable, (nextValues: A[]) => {
+    const handleValues = (controller: NodeController, nextValues: A[]) => {
         const currN = Array.isArray(currentItems) ? currentItems.length : 0
         const nextN = nextValues.length
 
@@ -162,7 +164,16 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
                 H.replaceAllInPlace(controller, oldNodes, newNodes, newNodes, deletedNodes)
             }
         }
-    }), options)
+    }    
+    
+    return H.createController([currentItems], controller => {
+        scope.start()    
+        const unsub = O.forEach(observable, (values: A[]) => handleValues(controller, values))
+        return () => {
+            unsub()
+            scope.end()
+        }
+    }, options)
     
     function getSingleNodeOrFail(rendered: HarmajaStaticOutput): ChildNode {
         if (rendered instanceof Array) {
@@ -183,12 +194,12 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
 
 type RenderItem<A, K> = (key: K, values: A[], index: number) => HarmajaOutput
 
-function getItemRenderer<A, K>(props: ListViewProps<A, K>, getKey: (a: A) => K): RenderItem<A, K> {
+function getItemRenderer<A, K>(props: ListViewProps<A, K>, getKey: (a: A) => K, scope: O.Scope): RenderItem<A, K> {
     if ("renderAtom" in props) {
         return (k, values, index) => {
             const lens = findKey(getKey, k)
             const nullableAtom = O.view(props.atom as O.Atom<A[]>, lens as any) // cast to ensure non-usage of native methods
-            const nonNullableAtom = O.filter(nullableAtom, a => a !== undefined) as O.Atom<A>
+            const nonNullableAtom = O.filter(nullableAtom, a => a !== undefined, scope) as O.Atom<A>
             const removeItem = () => O.set(nullableAtom, undefined)
             return props.renderAtom(k, nonNullableAtom as O.NativeAtom<A>, removeItem)
         }
@@ -196,14 +207,14 @@ function getItemRenderer<A, K>(props: ListViewProps<A, K>, getKey: (a: A) => K):
         return (k, values, index) => {
             const lens = findKey(getKey, k)
             const mapped = O.view(props.observable as O.Property<A[]>, lens as any) // cast to ensure non-usage of native methods
-            const filtered = O.filter(mapped, item => item !== undefined) as O.Property<A>
+            const filtered = O.filter(mapped, item => item !== undefined, scope) as O.Property<A>
             return props.renderObservable(k, filtered as O.NativeProperty<A>)            
         }
     } else {
         const renderObservable = (key: K, x: O.NativeProperty<A>): HarmajaOutput => {
             return O.view(x, props.renderItem)
         }
-        return getItemRenderer({ ...props, renderObservable }, getKey)
+        return getItemRenderer({ ...props, renderObservable }, getKey, scope)
     }
 }
 
