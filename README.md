@@ -299,6 +299,20 @@ const ScrollPosDisplay = () => {
 
 And you're good to go! See the full example at [examples/side-effects](examples/side-effects/index.tsx).
 
+### The pitfall with componentScope()
+
+When you apply `componentScope()` to an observable as above, 
+
+ When you create stateful Properties or Atoms (i.e. ones that are based on Properties but add some local state, such as filter),
+you need to specify a Scope that defines the lifetime of this Property/Atom. 
+
+Harmaja `componentScope` is very suitable, as it will activate the Property on component mount and deactivate on unmount. 
+The gotcha here is that when running the component constructor, the stateful Property is not in scope yet 
+(component is not mounted, and we should not activate before mount, or we get a resource leak). 
+
+So, you can subscribe to stateful Properties in the constructor, but you cannot `get` their value yet. 
+If you do, the `get()` call will throw an error saying "not in scope yet".   
+
 ## Examples
 
 Part of my process has been validating my work with some examples I've previously used for the comparison of different React state management solutions. Here I quickly list some examples, but I beg you to read the full story below, which will visit each of these examples in a problem context instead of just throwing a bucket of code in your face.
