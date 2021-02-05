@@ -12,6 +12,7 @@
     "jest": "^26.4.0",
     "lonna": "^0.7.6",
     "parcel-bundler": "^1.12.4",
+    "prettier": "^2.2.1",
     "rxjs": "^6.6.3",
     "ts-jest": "^26.2.0",
     "typescript": "^4"
@@ -44,6 +45,8 @@
     "build": "scripts/build lonna && scripts/build bacon && scripts/build rxjs",
     "test": "jest",
     "test:watch": "jest --watchAll",
-    "switch": "scripts/switch-observables $1"
+    "switch": "scripts/switch-observables $1",
+    "lint": "prettier --check \"**/*.{json,md,ts}\"",
+    "lint:fix": "prettier --write '**/*.{json,md,ts}'"
   }
 }
