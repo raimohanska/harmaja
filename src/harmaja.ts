@@ -21,13 +21,20 @@ export interface HarmajaDynamicOutput extends O.Property<HarmajaOutput> {}
 export type DOMNode = ChildNode
 
 let transientStateStack: TransientState[] = []
-type TransientState = {
-    mountCallbacks?: Callback[]
-    mountE?: O.EventStream<void>
-    unmountCallbacks?: Callback[]
-    unmountE?: O.EventStream<void>
-    scope?: O.Scope
+type TransientState = { 
+    mountCallbacks: Callback[], 
+    mountE?: O.EventStream<void>,
+    unmountCallbacks: Callback[], 
+    unmountE?: O.EventStream<void>,
+    scope?: O.Scope,
     mountsController?: NodeController
+}
+
+function emptyTransientState(): TransientState {
+    return {
+        mountCallbacks: [],
+        unmountCallbacks: [],
+    }
 }
 
 /**
@@ -46,8 +53,8 @@ export function createElement(
     }
     if (typeof type == "function") {
         const constructor = type as HarmajaComponent
-        transientStateStack.push({})
-        const result = constructor({ ...props, children: flattenedChildren })
+        transientStateStack.push(emptyTransientState())
+        const result = constructor({...props, children: flattenedChildren})
         const transientState = transientStateStack.pop()!
         if (O.isProperty(result)) {
             return createController(
@@ -97,15 +104,13 @@ const handleMounts = (transientState: TransientState) => (
     if (transientState.scope) {
         transientState.mountsController = controller
     }
-    if (transientState.mountCallbacks)
-        for (const callback of transientState.mountCallbacks) {
+    for (const callback of transientState.mountCallbacks) {
+        callback()                
+    }
+    return () => {
+        for (const callback of transientState.unmountCallbacks) {
             callback()
         }
-    return () => {
-        if (transientState.unmountCallbacks)
-            for (const callback of transientState.unmountCallbacks) {
-                callback()
-            }
     }
 }
 
@@ -373,7 +378,6 @@ export function unmount(harmajaElement: HarmajaOutput) {
  */
 export function onMount(callback: Callback) {
     const transientState = getTransientState("onMount")
-    if (!transientState.mountCallbacks) transientState.mountCallbacks = []
     transientState.mountCallbacks.push(callback)
 }
 
@@ -383,7 +387,6 @@ export function onMount(callback: Callback) {
  */
 export function onUnmount(callback: Callback) {
     const transientState = getTransientState("onUnmount")
-    if (!transientState.unmountCallbacks) transientState.unmountCallbacks = []
     transientState.unmountCallbacks.push(callback)
 }
 
