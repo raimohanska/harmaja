@@ -21,12 +21,12 @@ export interface HarmajaDynamicOutput extends O.Property<HarmajaOutput> {}
 export type DOMNode = ChildNode
 
 let transientStateStack: TransientState[] = []
-type TransientState = { 
-    mountCallbacks: Callback[], 
-    mountE?: O.EventStream<void>,
-    unmountCallbacks: Callback[], 
-    unmountE?: O.EventStream<void>,
-    scope?: O.Scope,
+type TransientState = {
+    mountCallbacks: Callback[]
+    mountE?: O.EventStream<void>
+    unmountCallbacks: Callback[]
+    unmountE?: O.EventStream<void>
+    scope?: O.Scope
     mountsController?: NodeController
 }
 
@@ -64,7 +64,7 @@ export function createElement(
     if (typeof type == "function") {
         const constructor = type as HarmajaComponent
         transientStateStack.push(emptyTransientState())
-        const result = constructor({...props, children: flattenedChildren})
+        const result = constructor({ ...props, children: flattenedChildren })
         const transientState = transientStateStack.pop()!
         if (O.isProperty(result)) {
             return createController(
@@ -115,7 +115,7 @@ const handleMounts = (transientState: TransientState) => (
         transientState.mountsController = controller
     }
     for (const callback of transientState.mountCallbacks) {
-        callback()                
+        callback()
     }
     return () => {
         for (const callback of transientState.unmountCallbacks) {
@@ -164,7 +164,7 @@ function renderElement(
     if (contentEditable) {
         addContentEditableController(el, children)
     } else {
-        ;(children || EMPTY_ARRAY)
+        ;(children || EMPTY_ARRAY)
             .map(render)
             .flatMap(toDOMNodes)
             .forEach((node) => el.appendChild(node))
@@ -272,13 +272,13 @@ function setProp(el: Element, key: string, value: any) {
     }
 
     if (key.startsWith("on")) {
-        key = key.toLowerCase();
-        key = key === "ondoubleclick" ? "ondblclick" : key;
-        (el as any)[key] = value
+        key = key.toLowerCase()
+        key = key === "ondoubleclick" ? "ondblclick" : key
+        ;(el as any)[key] = value
     } else if (key === "style") {
         const styles = Object.keys(value)
-            .filter(key => key !== "")
-            .map(key => `${toKebabCase(key)}: ${value[key]};`)
+            .filter((key) => key !== "")
+            .map((key) => `${toKebabCase(key)}: ${value[key]};`)
             .join("\n")
         el.setAttribute("style", styles)
     } else if (key === "className") {
@@ -318,7 +318,7 @@ type NodeState = {
     mounted: boolean
     unmounted: boolean
     onUnmounts: Callback[]
-    onMounts: Callback[],
+    onMounts: Callback[]
     controllers: NodeController[]
 }
 
@@ -346,7 +346,7 @@ function getNodeState(node: Node): NodeState {
             unmounted: false,
             onMounts: EMPTY_ARRAY,
             onUnmounts: EMPTY_ARRAY,
-            controllers: EMPTY_ARRAY
+            controllers: EMPTY_ARRAY,
         }
         nodeAny.__h = state
     }
@@ -396,7 +396,8 @@ export function unmount(harmajaElement: HarmajaOutput) {
  */
 export function onMount(callback: Callback) {
     const transientState = getTransientState("onMount")
-    if (transientState.mountCallbacks === EMPTY_ARRAY) transientState.mountCallbacks = []
+    if (transientState.mountCallbacks === EMPTY_ARRAY)
+        transientState.mountCallbacks = []
     transientState.mountCallbacks.push(callback)
 }
 
@@ -406,7 +407,8 @@ export function onMount(callback: Callback) {
  */
 export function onUnmount(callback: Callback) {
     const transientState = getTransientState("onUnmount")
-    if (transientState.unmountCallbacks === EMPTY_ARRAY) transientState.unmountCallbacks = []
+    if (transientState.unmountCallbacks === EMPTY_ARRAY)
+        transientState.unmountCallbacks = []
     transientState.unmountCallbacks.push(callback)
 }
 
@@ -586,8 +588,8 @@ function attachController(
 ) {
     for (let i = 0; i < elements.length; i++) {
         let el = elements[i]
-        const state = getNodeState(el)    
-        // Checking for double controllers    
+        const state = getNodeState(el)
+        // Checking for double controllers
         if (state.controllers === EMPTY_ARRAY) {
             state.controllers = [controller]
             //console.log("Attach first controller to " + debug(el) + " (now with " + state.controllers.length + ")")
@@ -662,8 +664,8 @@ function replacedByController(
 ) {
     if (!controller) return
     // Controllers are in leaf-to-root order (because leaf controllers are added first)
-    const controllers = getNodeState(oldNodes[0]).controllers 
-    const index = controllers.indexOf(controller)    
+    const controllers = getNodeState(oldNodes[0]).controllers
+    const index = controllers.indexOf(controller)
     //console.log(`${debug(oldNodes)} replaced by ${debug(newNodes)} controller ${index} of ${controllers.length}`)
     const parentControllers = controllers.slice(index + 1)
     // This loop is just about assertion of invariables
@@ -700,7 +702,7 @@ function appendedByController(
     if (!controller) return
     // Controllers are in leaf-to-root order (because leaf controllers are added first)
     const controllers = getNodeState(cursorNode).controllers
-    const index = controllers.indexOf(controller)    
+    const index = controllers.indexOf(controller)
     if (index < 0) {
         throw new Error(
             `Controller ${controller} not found in ${debug(cursorNode)}`
@@ -709,8 +711,10 @@ function appendedByController(
     //console.log(`${debug(newNode)} added after ${debug(cursorNode)} by controller ${index} of ${controllers.length}`)
     const parentControllers = controllers.slice(index + 1)
     // We need to replace the upper controllers
-    for (let parentController of parentControllers) {   
-        const indexForCursor = parentController.currentElements.indexOf(cursorNode)
+    for (let parentController of parentControllers) {
+        const indexForCursor = parentController.currentElements.indexOf(
+            cursorNode
+        )
         if (indexForCursor < 0) {
             throw new Error(
                 `Element ${debug(
