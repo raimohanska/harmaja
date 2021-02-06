@@ -24,6 +24,8 @@ that many topics here are subjective and I'm presenting my own views of the day.
 
 ## Key concepts
 
+[![Join the chat at https://gitter.im/harmaja/harmaja](https://badges.gitter.im/harmaja/harmaja.svg)](https://gitter.im/harmaja/harmaja?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 [_Reactive Property_](https://github.com/raimohanska/lonna/blob/master/src/abstractions.ts#L126) (also known as a signal or a behaviour) is an object that encapsulates a changing value. Please check out the [Bacon.js intro](https://baconjs.github.io/api3/index.html) if you're not familiar with the concept. In Harmaja, reactive properties are the main way of storing and passing application state.
 
 [_EventStream_](https://github.com/raimohanska/lonna/blob/master/src/abstractions.ts#L131) represents a stream of events that you can observe by calling its `forEach` method. A [_Bus_](https://github.com/raimohanska/lonna/blob/master/src/abstractions.ts#L145) is an EventStream that allows you to `push` events to the stream as well as observe events. In Harmaja, buses are used for conveying distinct events from the UI to state reducers.
