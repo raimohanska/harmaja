@@ -22,12 +22,23 @@ export type DOMNode = ChildNode
 
 let transientStateStack: TransientState[] = []
 type TransientState = {
-    mountCallbacks?: Callback[]
-    mountE?: O.EventStream<void>
-    unmountCallbacks?: Callback[]
-    unmountE?: O.EventStream<void>
-    scope?: O.Scope
-    mountsController?: NodeController
+    mountCallbacks: Callback[] | undefined
+    mountE: O.EventStream<void> | undefined
+    unmountCallbacks: Callback[] | undefined
+    unmountE: O.EventStream<void> | undefined
+    scope: O.Scope | undefined
+    mountsController: NodeController | undefined
+}
+
+function emptyTransientState(): TransientState {
+    return {
+        mountCallbacks: undefined,
+        mountE: undefined,
+        unmountCallbacks: undefined,
+        unmountE: undefined,
+        scope: undefined,
+        mountsController: undefined,
+    }
 }
 
 /**
@@ -46,7 +57,7 @@ export function createElement(
     }
     if (typeof type == "function") {
         const constructor = type as HarmajaComponent
-        transientStateStack.push({})
+        transientStateStack.push(emptyTransientState())
         const result = constructor({ ...props, children: flattenedChildren })
         const transientState = transientStateStack.pop()!
         if (O.isProperty(result)) {
