@@ -23,11 +23,11 @@ export type DOMNode = ChildNode
 let transientStateStack: TransientState[] = []
 type TransientState = {
     mountCallbacks: Callback[]
-    mountE?: O.EventStream<void>
+    mountE: O.EventStream<void> | undefined
     unmountCallbacks: Callback[]
-    unmountE?: O.EventStream<void>
-    scope?: O.Scope
-    mountsController?: NodeController
+    unmountE: O.EventStream<void> | undefined
+    scope: O.Scope | undefined
+    mountsController: NodeController | undefined
 }
 
 // If we need an empty object or empty array for no-oping purposes,
@@ -43,7 +43,11 @@ Object.freeze(EMPTY_ARRAY)
 function emptyTransientState(): TransientState {
     return {
         mountCallbacks: EMPTY_ARRAY as Callback[],
+        mountE: undefined,
         unmountCallbacks: EMPTY_ARRAY as Callback[],
+        unmountE: undefined,
+        scope: undefined,
+        mountsController: undefined,
     }
 }
 
