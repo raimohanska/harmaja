@@ -1,5 +1,7 @@
 <h1><img alt="Harmaja" src="logo/harmaja-logo.svg" width="200"></h1>
 
+[![Join the chat at https://gitter.im/harmaja](https://badges.gitter.im/harmaja.svg)](https://gitter.im/harmaja/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 An experimental web frontend framework named after a lighthouse. It maybe easiest to describe it in contrast to React.
 
 -   Uses JSX syntax just like React
