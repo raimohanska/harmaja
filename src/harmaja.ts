@@ -51,7 +51,7 @@ export function createElement(
         const transientState = transientStateStack.pop()!
         if (O.isProperty(result)) {
             return createController(
-                [createPlaceholder()],
+                [placeholders.create()],
                 composeControllers(
                     handleMounts(transientState),
                     startUpdatingNodes(result as HarmajaObservableChild)
@@ -192,13 +192,20 @@ function addContentEditableController(
     )
 }
 
-function createPlaceholder() {
-    const placeholder = document.createTextNode("")
-    ;(placeholder as any)._h_id = counter++
-    return placeholder
-}
+const placeholders = (function () {
+    let counter = 1
 
-let counter = 1
+    return {
+        create: (): Text => {
+            const placeholder = document.createTextNode("")
+            ;(placeholder as any)._h_id = counter++
+            return placeholder
+        },
+        isPlaceholder: (node: Node): boolean =>
+            (node as any)._h_id !== undefined,
+        getId: (node: Node): number | undefined => (node as any)._h_id,
+    }
+})()
 
 function render(child: HarmajaChild | HarmajaOutput): HarmajaStaticOutput {
     if (child instanceof Array) {
@@ -208,11 +215,11 @@ function render(child: HarmajaChild | HarmajaOutput): HarmajaStaticOutput {
         return document.createTextNode(child.toString())
     }
     if (child === null || child === false) {
-        return createPlaceholder()
+        return placeholders.create()
     }
     if (O.isProperty(child)) {
         return createController(
-            [createPlaceholder()],
+            [placeholders.create()],
             startUpdatingNodes(child as HarmajaObservableChild)
         )
     }
@@ -231,7 +238,7 @@ const startUpdatingNodes = (observable: HarmajaObservableChild) => (
             .flatMap(render)
             .flatMap(toDOMNodes)
         if (newNodes.length === 0) {
-            newNodes = [createPlaceholder()]
+            newNodes = [placeholders.create()]
         }
         //console.log("New values", debug(controller.currentElements))
         //console.log(`${debug(oldElements)} replaced by ${debug(controller.currentElements)} in observable`)
@@ -895,15 +902,15 @@ export function debug(element: HarmajaStaticOutput | Node): string {
     } else {
         return (
             element.textContent ||
-            ((element as any)._h_id != undefined
-                ? `<placeholder ${(element as any)._h_id}>`
+            (placeholders.isPlaceholder(element)
+                ? `<placeholder ${placeholders.getId(element)}>`
                 : "<empty text node>")
         )
     }
 }
 
 export const LowLevelApi = {
-    createPlaceholder,
+    createPlaceholder: placeholders.create,
     attachOnMount,
     attachOnUnmount,
     createController,
