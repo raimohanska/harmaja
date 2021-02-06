@@ -7,7 +7,7 @@
   "devDependencies": {
     "@types/jest": "^26.0.10",
     "babel-jest": "^26.3.0",
-    "baconjs": "^3.0.15",
+    "baconjs": "^3.0.17",
     "csstype": "^3.0.2",
     "jest": "^26.4.0",
     "lonna": "^0.7.6",
