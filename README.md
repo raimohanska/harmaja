@@ -2,14 +2,14 @@
 
 An experimental web frontend framework named after a lighthouse. It maybe easiest to describe it in contrast to React.
 
-- Uses JSX syntax just like React
-- Function components only
-- Component function is treated like a _constructor_, i.e. called just once per component lifecycle
-- Dynamic content passed to components as observable properties
-- Directly embed Observables in JSX, resulting to "surgical" DOM updates. No VDOM diffing needed.
-- Written in Typescript. Type-safety considered a high priority.
-- Support [Lonna](https://github.com/raimohanska/lonna), [Bacon.js](https://baconjs.github.io/) and [RxJs](https://rxjs-dev.firebaseapp.com/) for observables at the moment. You can select the desired library by imports (see below).
-- Strongly inspired by [Calmm.js](https://github.com/calmm-js/documentation/blob/master/introduction-to-calmm.md). If you're familiar with Calmm, you can think of Harmaja as "Calmm, but with types and no React dependency
+-   Uses JSX syntax just like React
+-   Function components only
+-   Component function is treated like a _constructor_, i.e. called just once per component lifecycle
+-   Dynamic content passed to components as observable properties
+-   Directly embed Observables in JSX, resulting to "surgical" DOM updates. No VDOM diffing needed.
+-   Written in Typescript. Type-safety considered a high priority.
+-   Support [Lonna](https://github.com/raimohanska/lonna), [Bacon.js](https://baconjs.github.io/) and [RxJs](https://rxjs-dev.firebaseapp.com/) for observables at the moment. You can select the desired library by imports (see below).
+-   Strongly inspired by [Calmm.js](https://github.com/calmm-js/documentation/blob/master/introduction-to-calmm.md). If you're familiar with Calmm, you can think of Harmaja as "Calmm, but with types and no React dependency
 
 Published on NPM: https://www.npmjs.com/package/harmaja
 
@@ -46,26 +46,26 @@ Tweak your tsconfig.json for the custom JSX factory.
 
 ```json
 {
-  "compilerOptions": {
+    "compilerOptions": {
+        // ...
+        "jsx": "react",
+        "jsxFactory": "h"
+    }
     // ...
-    "jsx": "react",
-    "jsxFactory": "h"
-  }
-  // ...
 }
 ```
 
 In your component code you'll need to import the `h` function from Harmaja like this, so that the TypeScript compiler can use it for creating DOM nodes when you use JSX.
 
 ```typescript
-import { h } from 'harmaja'
+import { h } from "harmaja"
 ```
 
 Then you can start using JSX, creating your application components and mounting them to the DOM.
 
 ```typescript
 const App = () => <h1>yes</h1>
-mount(<App />, document.getElementById('root')!)
+mount(<App />, document.getElementById("root")!)
 ```
 
 ## Observable Library Selection
@@ -119,13 +119,13 @@ Here's a brief API description. Read the chapters below for examples and "philos
 
 ```typescript
 import {
-  mount,
-  mountEvent,
-  onMount,
-  onUnmount,
-  unmount,
-  unmountEvent,
-} from 'harmaja'
+    mount,
+    mountEvent,
+    onMount,
+    onUnmount,
+    unmount,
+    unmountEvent,
+} from "harmaja"
 ```
 
 Methods documented [here](dist/harmaja.d.ts).
@@ -140,8 +140,8 @@ mounted on the DOM.
 For instance:
 
 ```typescript
-<span id="x" ref={(el: HTMLSpanElement) => alert('Mounted ' + el)}>
-  Hello
+<span id="x" ref={(el: HTMLSpanElement) => alert("Mounted " + el)}>
+    Hello
 </span>
 ```
 
@@ -151,29 +151,29 @@ Harmaja supports JSX Fragments. This feature requires TypeScript 4 or higher. In
 
 ```json
 {
-  "compilerOptions": {
+    "compilerOptions": {
+        // ...
+        "jsx": "react",
+        "jsxFactory": "h",
+        "jsxFragmentFactory": "Fragment"
+    }
     // ...
-    "jsx": "react",
-    "jsxFactory": "h",
-    "jsxFragmentFactory": "Fragment"
-  }
-  // ...
 }
 ```
 
 Then in your component code:
 
 ```typescript
-import { h, Fragment } from 'harmaja'
+import { h, Fragment } from "harmaja"
 const App = () => (
-  <h1>
-    <>
-      <span>hello</span>
-      <span>world</span>
-    </>
-  </h1>
+    <h1>
+        <>
+            <span>hello</span>
+            <span>world</span>
+        </>
+    </h1>
 )
-mount(<App />, document.getElementById('root')!)
+mount(<App />, document.getElementById("root")!)
 ```
 
 There are larger examples [here](examples).
@@ -181,7 +181,7 @@ There are larger examples [here](examples).
 ### ListView
 
 ```typescript
-import { ListView } from 'harmaja'
+import { ListView } from "harmaja"
 ```
 
 ListView implements an efficient view into read-only and read-write list data. It supports three different variants. If you have
@@ -198,9 +198,9 @@ Then you can render the items using ListView thus:
 
 ```typescript
 <ListView
-  observable={items}
-  renderObservable={renderObservable}
-  getKey={getKey}
+    observable={items}
+    renderObservable={renderObservable}
+    getKey={getKey}
 />
 ```
 
@@ -234,12 +234,12 @@ There's a third variation of TextView still, for read-only views:
 
 ```typescript
 <ListView
-  observable={items}
-  renderItem={(item: TodoItem) => (
-    <li>
-      <Item item={item} />
-    </li>
-  )}
+    observable={items}
+    renderItem={(item: TodoItem) => (
+        <li>
+            <Item item={item} />
+        </li>
+    )}
 />
 ```
 
@@ -264,11 +264,11 @@ the discriminator changes:
 
 ```typescript
 <div>
-  {L.view(
-    someProperty,
-    (t) => t.state === 'success',
-    (success) => (success ? <HugeComponent /> : <ErrorComponent />)
-  )}
+    {L.view(
+        someProperty,
+        (t) => t.state === "success",
+        (success) => (success ? <HugeComponent /> : <ErrorComponent />)
+    )}
 </div>
 ```
 
@@ -277,26 +277,26 @@ the discriminator changes:
 When embedding observables in to the DOM, Harmaja will automatically subscribe an unsubscribe to the source observable. So, this is ok:
 
 ```typescript
-const scrollPos = L.toStatelessProperty(L.fromEvent(window, 'scroll'), () =>
-  Math.floor(window.scrollY)
+const scrollPos = L.toStatelessProperty(L.fromEvent(window, "scroll"), () =>
+    Math.floor(window.scrollY)
 )
 
 const ScrollPosDisplay = () => {
-  return (
-    <div
-      style={{
-        position: 'fixed',
-        right: '20px',
-        background: 'black',
-        color: 'white',
-        padding: '10px',
-      }}
-    >
-      {
-        scrollPos /* This is ok! Harmaja will unsubscribe if the component is unmounted */
-      }
-    </div>
-  )
+    return (
+        <div
+            style={{
+                position: "fixed",
+                right: "20px",
+                background: "black",
+                color: "white",
+                padding: "10px",
+            }}
+        >
+            {
+                scrollPos /* This is ok! Harmaja will unsubscribe if the component is unmounted */
+            }
+        </div>
+    )
 }
 ```
 
@@ -305,21 +305,21 @@ to add some side-effect to scrollPos, like:
 
 ```typescript
 const ScrollPosDisplay = () => {
-  scrollPos.forEach((pos) => console.log(pos))
-  // ...
+    scrollPos.forEach((pos) => console.log(pos))
+    // ...
 }
 ```
 
 Now this side-effect will continue executing after your component is unmounted. To fix this, you can scope it to component lifecycle like this:
 
 ```typescript
-import { unmountEvent } from 'harmaja'
+import { unmountEvent } from "harmaja"
 
 const ScrollPosDisplay = () => {
-  scrollPos
-    .pipe(L.applyScope(componentScope()))
-    .forEach((pos) => console.log(pos))
-  // ...
+    scrollPos
+        .pipe(L.applyScope(componentScope()))
+        .forEach((pos) => console.log(pos))
+    // ...
 }
 ```
 
@@ -343,11 +343,11 @@ If you do, the `get()` call will throw an error saying "not in scope yet".
 
 Part of my process has been validating my work with some examples I've previously used for the comparison of different React state management solutions. Here I quickly list some examples, but I beg you to read the full story below, which will visit each of these examples in a problem context instead of just throwing a bucket of code in your face.
 
-- Todo App with Unidirectional data flow: [examples/todoapp](examples/todoapp/index.tsx). I've added some annotations. In this example, application state is reduced from different events (add/remove/complete todo item).
+-   Todo App with Unidirectional data flow: [examples/todoapp](examples/todoapp/index.tsx). I've added some annotations. In this example, application state is reduced from different events (add/remove/complete todo item).
 
-- Todo App with Atoms: [examples/todoapp-atoms](examples/todoapp-atoms/index.tsx). It's rather less verbose, because with Atoms, you can decompose and manipulate substate directly using `atom.set` instead using events and reducers.
+-   Todo App with Atoms: [examples/todoapp-atoms](examples/todoapp-atoms/index.tsx). It's rather less verbose, because with Atoms, you can decompose and manipulate substate directly using `atom.set` instead using events and reducers.
 
-- Finally a bit more involved example featuring a "CRM": [examples/consultants](examples/consultants/index.tsx). It features some harder problems like dealing with asynchronous (and randomly failing!) server calls as well as edit/save/cancel.
+-   Finally a bit more involved example featuring a "CRM": [examples/consultants](examples/consultants/index.tsx). It features some harder problems like dealing with asynchronous (and randomly failing!) server calls as well as edit/save/cancel.
 
 Examples covered also in the chapters below, with some context.
 
@@ -359,12 +359,12 @@ In Typescript, you could represent these concepts in the context of a Todo App l
 
 ```typescript
 type Item = {}
-type Event = { type: 'add'; item: Item } | { type: 'remove'; item: Item }
+type Event = { type: "add"; item: Item } | { type: "remove"; item: Item }
 type State = { items: Item[] }
 type Reducer = (currentState: State, event: Event) => State
 interface Store {
-  dispatch(event: Event)
-  subscribe(observer: (event: Event) => void)
+    dispatch(event: Event)
+    subscribe(observer: (event: Event) => void)
 }
 ```
 
@@ -372,18 +372,18 @@ In this scenario, UI components will `subscribe` to changes in the `Store` and `
 
 The benefits are (to many, nowadays) obvious. These come from the top of my mind.
 
-- Reasoning about state changes is straightforward, as only reducers change state. You can statically backtrack all possible causes of a change to a particular part of application state.
-- The immutable global state object makes persisting and restoring application state easier, and makes it possible to create and audit trail of all events and state history. It also makes it easier to pass the application state for browser-side hydration after a server-side render.
-- Generally, reasoning about application logic is easier if there is a pattern, instead of a patchwork of ad hoc solutions
+-   Reasoning about state changes is straightforward, as only reducers change state. You can statically backtrack all possible causes of a change to a particular part of application state.
+-   The immutable global state object makes persisting and restoring application state easier, and makes it possible to create and audit trail of all events and state history. It also makes it easier to pass the application state for browser-side hydration after a server-side render.
+-   Generally, reasoning about application logic is easier if there is a pattern, instead of a patchwork of ad hoc solutions
 
 Implementations such as Redux allow components to _react_ to a select part of global state (instead of all changes) to avoid expensive updates. With React hooks, you can conveniently just `useSelector(state => pick interesting parts)` and you're done.
 
 It's not a silver bullet though. Especially when using a single global store with React / Redux
 
-- There is no solution for local or scoped state. Sometimes you need scoped state that applies, for instance, to the checkout process of your web store. Or to widely used components such as an address selector. Or for storing pending changes to, say, user preferences before applying them to the global state.
-- This leads to either using React local state or some "corner" of the global state for these transient pieces of state
-- Refactoring state from local to global is tedious and error-prone because you use an entirely different mechanism for each
-- You cannot encapsulate functionalities (store checkout) into self-sustaining components because they are dependent on reducers which lively somewhere else completely
+-   There is no solution for local or scoped state. Sometimes you need scoped state that applies, for instance, to the checkout process of your web store. Or to widely used components such as an address selector. Or for storing pending changes to, say, user preferences before applying them to the global state.
+-   This leads to either using React local state or some "corner" of the global state for these transient pieces of state
+-   Refactoring state from local to global is tedious and error-prone because you use an entirely different mechanism for each
+-   You cannot encapsulate functionalities (store checkout) into self-sustaining components because they are dependent on reducers which lively somewhere else completely
 
 Other interesting examples of Unidirectional data flow include [Elm](https://elm-lang.org/) and [Cycle.js](https://cycle.js.org/).
 
@@ -392,9 +392,9 @@ Other interesting examples of Unidirectional data flow include [Elm](https://elm
 In Harmaja, you can implement Unidirectional data flow too. Sticking with the Todo App example, you define your events as [_buses_](https://github.com/raimohanska/lonna/blob/master/src/abstractions.ts#L145):
 
 ```typescript
-import * as L from 'lonna'
+import * as L from "lonna"
 
-type AppEvent = { action: 'add'; name: string } | { action: 'remove'; id: Id }
+type AppEvent = { action: "add"; name: string } | { action: "remove"; id: Id }
 const appEvents = L.bus<AppEvent>()
 ```
 
@@ -403,12 +403,12 @@ The bus objects allow you to dispatch an event by calling their `push` method. F
 ```typescript
 const initialItems: TodoItem[] = []
 function reducer(items: TodoItem[], event: AppEvent): TodoItem[] {
-  switch (event.action) {
-    case 'add':
-      return items.concat(todoItem(event.name))
-    case 'remove':
-      return items.filter((i) => i.id !== event.id)
-  }
+    switch (event.action) {
+        case "add":
+            return items.concat(todoItem(event.name))
+        case "remove":
+            return items.filter((i) => i.id !== event.id)
+    }
 }
 const allItems = appEvents.pipe(L.scan(initialItems, reducer, L.globalScope))
 ```
@@ -420,8 +420,8 @@ You can, if you like, then encapsulate all this into something like
 
 ```typescript
 interface TodoStore {
-  dispatch: (action: AppEvent) => void
-  items: L.Property<TodoItem[]>
+    dispatch: (action: AppEvent) => void
+    items: L.Property<TodoItem[]>
 }
 ```
 
@@ -438,8 +438,8 @@ prevent resource leak. You can `import { componentScope } from "harmaja"`.
 
 In unidirectional data flow setups, there's always a way to reflect the store state in your UI. For instance,
 
-- In [react-redux](https://github.com/reduxjs/react-redux) you can use the `useSelector` hook for extracting the parts of global state your component needs
-- In Elm and Cycle.js the whole state is always rendered from the root and you trust the framework to be effient in VDOM diffing
+-   In [react-redux](https://github.com/reduxjs/react-redux) you can use the `useSelector` hook for extracting the parts of global state your component needs
+-   In Elm and Cycle.js the whole state is always rendered from the root and you trust the framework to be effient in VDOM diffing
 
 Pretty soon after React started gaining popularity, my colleagues at Reaktor (and I later) started using a "Bacon megablob" architecture where events and the "store" are
 defined exactly as in the previous chapter, using Buses and a state Property. Thanks to React's relatively good performance with VDOM and diffing,
@@ -454,14 +454,14 @@ Now if we consider the case of Harmaja, the situation is different from any Reac
 fact that you can pass reactive properties as props fits the bill very nicely, so in the case of a TodoItem view, you can
 
 ```typescript
-import { React, mount } from '../..'
+import { React, mount } from "../.."
 
 const ItemView = ({ item }: { item: L.Property<TodoItem> }) => {
-  return (
-    <span>
-      <span className="name">{L.view(item, (i) => i.name)}</span>
-    </span>
-  )
+    return (
+        <span>
+            <span className="name">{L.view(item, (i) => i.name)}</span>
+        </span>
+    )
 }
 ```
 
@@ -486,15 +486,15 @@ Anyway, let's put the Todo App together right now! To simplify a bit, if were we
 
 ```typescript
 const App = () => {
-  const firstItem: Property<TodoItem> = L.view(allItems, (items) => items[0])
-  return <ItemView item={firstItem} />
+    const firstItem: Property<TodoItem> = L.view(allItems, (items) => items[0])
+    return <ItemView item={firstItem} />
 }
 ```
 
 Then you can mount it and it'll start reacting to changes in the store:
 
 ```typescript
-mount(<App />, document.getElementById('root')!)
+mount(<App />, document.getElementById("root")!)
 ```
 
 Although I prefer components that get all of their required inputs in their constructor (this is called dependency injection), there's nothing to prevent you from
@@ -521,33 +521,38 @@ As shown earlierly, decomposition works nicely as you can call `L.view(item, i =
 Now let's revisit ItemView from the previous section and add a `onUpdate` callback.
 
 ```typescript
-import { React, mount } from '../..'
+import { React, mount } from "../.."
 
 const ItemView = ({
-  item,
-  onChange,
+    item,
+    onChange,
 }: {
-  item: L.Property<TodoItem>
-  onChange: (i: TodoItem) => void
+    item: L.Property<TodoItem>
+    onChange: (i: TodoItem) => void
 }) => {
-  const onNameChange = (newName: string) => {
-    /* wat */
-  }
-  return (
-    <span>
-      <TextInput text={L.view(item, (i) => i.name)} onChange={onNameChange} />
-    </span>
-  )
+    const onNameChange = (newName: string) => {
+        /* wat */
+    }
+    return (
+        <span>
+            <TextInput
+                text={L.view(item, (i) => i.name)}
+                onChange={onNameChange}
+            />
+        </span>
+    )
 }
 
 const TextInput = ({
-  value,
-  onChange,
+    value,
+    onChange,
 }: {
-  text: L.Property<string>
-  onChange: (s: string) => void
+    text: L.Property<string>
+    onChange: (s: string) => void
 }) => {
-  return <input value={text} onInput={(e) => onChange(e.currentTarget.value)} />
+    return (
+        <input value={text} onInput={(e) => onChange(e.currentTarget.value)} />
+    )
 }
 ```
 
@@ -567,7 +572,7 @@ being able to render observables synchronously, and which it generously exports 
 
 ```typescript
 const onNameChange = (newName: string) => {
-  onChange({ ...getCurrentValue(item), name: newName })
+    onChange({ ...getCurrentValue(item), name: newName })
 }
 ```
 
@@ -583,9 +588,11 @@ An `Atom<A>` simply represents a two-way interface to data by extending [`Proper
 a `set: (newValue: A)` method for changing the value. Let's try it by changing our TextInput to
 
 ```typescript
-import { Atom, atom } from 'lonna'
+import { Atom, atom } from "lonna"
 const TextInput = ({ value }: { text: Atom<string> }) => {
-  return <input value={text} onInput={(e) => text.set(e.currentTarget.value)} />
+    return (
+        <input value={text} onInput={(e) => text.set(e.currentTarget.value)} />
+    )
 }
 ```
 
@@ -596,18 +603,18 @@ like so:
 
 ```typescript
 const ItemView = ({
-  item,
-  onChange,
+    item,
+    onChange,
 }: {
-  item: L.Property<TodoItem>
-  onChange: (i: TodoItem) => void
+    item: L.Property<TodoItem>
+    onChange: (i: TodoItem) => void
 }) => {
-  const itemAtom: Atom<TodoItem> = atom(item, onChange)
-  return (
-    <span>
-      <TextInput value={L.view(itemAtom, 'name')} />
-    </span>
-  )
+    const itemAtom: Atom<TodoItem> = atom(item, onChange)
+    return (
+        <span>
+            <TextInput value={L.view(itemAtom, "name")} />
+        </span>
+    )
 }
 ```
 
@@ -615,8 +622,8 @@ And that's also the full implementation! I hope this demonstrates the power of t
 
 ```typescript
 export interface Atom<A> extends L.Property<A> {
-  set(newValue: A): this
-  get(): A
+    set(newValue: A): this
+    get(): A
 }
 
 function view<K extends keyof A>(a: Atom<A>, key: K): Atom<A[K]>
@@ -630,8 +637,8 @@ The `view` method is actually based on the Lenses that's a concept been used in 
 
 ```typescript
 export function view<A, K extends keyof A>(
-  a: Atom<A>,
-  key: K
+    a: Atom<A>,
+    key: K
 ): K extends number ? Atom<A[K] | undefined> : Atom<A[K]>
 export function view<A, B>(a: Atom<A>, lens: L.Lens<A, B>): Atom<B>
 ```
@@ -641,8 +648,8 @@ Atom with an arbitrary Lens. Which a really simple abstraction:
 
 ```typescript
 export interface Lens<A, B> {
-  get(root: A): B
-  set(root: A, newValue: B): A
+    get(root: A): B
+    set(root: A, newValue: B): A
 }
 ```
 
@@ -658,11 +665,11 @@ To use our ItemView as a standalone component you can change it to use the Atom 
 
 ```typescript
 const ItemView = ({ item }: { item: Atom<TodoItem> }) => {
-  return (
-    <span>
-      <TextInput value={L.view(item, 'name')} />
-    </span>
-  )
+    return (
+        <span>
+            <TextInput value={L.view(item, "name")} />
+        </span>
+    )
 }
 ```
 
@@ -670,12 +677,12 @@ and use it in your App like this:
 
 ```typescript
 const App = () => {
-  const item: Atom<TodoItem> = atom({
-    id: 1,
-    name: 'do stuff',
-    completed: false,
-  })
-  return <ItemView item={item} />
+    const item: Atom<TodoItem> = atom({
+        id: 1,
+        name: "do stuff",
+        completed: false,
+    })
+    return <ItemView item={item} />
 }
 ```
 
@@ -688,7 +695,7 @@ use Atoms, you can define them locally or accept them as props. You can even add
 
 ```typescript
 const ItemView = ({ item }: { item: Atom<TodoItem> = atom(emptyTodoItem) }) => {
-  ///
+    ///
 }
 ```
 
@@ -716,17 +723,17 @@ Imagine again you're building a Todo App again (who isnt'!) and you have the sam
 
 ```typescript
 type TodoItem = {
-  name: string
-  id: number
-  completed: boolean
+    name: string
+    id: number
+    completed: boolean
 }
 const addItemBus = new L.Bus<TodoItem>()
 const removeItemBus = new L.Bus<TodoItem>()
 const allItems: L.Property<TodoItem[]> = L.update(
-  globalScope,
-  [],
-  [addItemBus, (items, item) => items.concat(item)],
-  [removeItemBus, (items, item) => items.filter((i) => i.id !== item.id)]
+    globalScope,
+    [],
+    [addItemBus, (items, item) => items.concat(item)],
+    [removeItemBus, (items, item) => items.filter((i) => i.id !== item.id)]
 )
 ```
 
@@ -736,13 +743,13 @@ To render the TodoItems represented by the `allItems` property you can use ListV
 
 ```typescript
 ;<ListView
-  observable={allItems}
-  renderObservable={(item: L.Property<TodoItem>) => <ItemView item={item} />}
-  getKey={(a: TodoItem) => a.id}
+    observable={allItems}
+    renderObservable={(item: L.Property<TodoItem>) => <ItemView item={item} />}
+    getKey={(a: TodoItem) => a.id}
 />
 
 const ItemView = ({ item }: { item: L.Property<TodoItem> }) => {
-  // implement view for individual item
+    // implement view for individual item
 }
 ```
 
@@ -764,15 +771,15 @@ You can have read-write access to the items by using ListView thus:
 
 ```typescript
 <ListView
-  atom={items}
-  renderAtom={(item, removeItem) => {
-    return (
-      <li>
-        <ItemView {...{ item, removeItem }} />
-      </li>
-    )
-  }}
-  getKey={(a) => a.id}
+    atom={items}
+    renderAtom={(item, removeItem) => {
+        return (
+            <li>
+                <ItemView {...{ item, removeItem }} />
+            </li>
+        )
+    }}
+    getKey={(a) => a.id}
 />
 ```
 
@@ -781,16 +788,16 @@ so that in your ItemView you can implement removal simply thus:
 
 ```typescript
 const Item = ({
-  item,
-  removeItem,
+    item,
+    removeItem,
 }: {
-  item: Atom<TodoItem>
-  removeItem: () => void
+    item: Atom<TodoItem>
+    removeItem: () => void
 }) => (
-  <span>
-    <span className="name">{L.view(item, 'name')}</span>
-    <a onClick={removeItem}>remove</a>
-  </span>
+    <span>
+        <span className="name">{L.view(item, "name")}</span>
+        <a onClick={removeItem}>remove</a>
+    </span>
 )
 ```
 
@@ -799,16 +806,16 @@ To make the name editable, you could now easily use the TextInput component we c
 
 ```typescript
 const Item = ({
-  item,
-  removeItem,
+    item,
+    removeItem,
 }: {
-  item: Atom<TodoItem>
-  removeItem: () => void
+    item: Atom<TodoItem>
+    removeItem: () => void
 }) => (
-  <span>
-    <TextInput value={L.view(item, 'name')} />
-    <a onClick={removeItem}>remove</a>
-  </span>
+    <span>
+        <TextInput value={L.view(item, "name")} />
+        <a onClick={removeItem}>remove</a>
+    </span>
 )
 ```
 
@@ -820,12 +827,12 @@ There's a third variation of TextView still, for read-only views:
 
 ```typescript
 <ListView
-  observable={items}
-  renderItem={(item: TodoItem) => (
-    <li>
-      <Item item={item} />
-    </li>
-  )}
+    observable={items}
+    renderItem={(item: TodoItem) => (
+        <li>
+            <Item item={item} />
+        </li>
+    )}
 />
 ```
 
@@ -865,9 +872,9 @@ See [Dangling Subscriptions](https://github.com/raimohanska/harmaja/blob/master/
 I don't think a state management solution is complete until it has a strategy for dealing with asynchronous requests, typically
 with Promises. Common scenarios include
 
-- Fetching extra data from server when mounting a component. Gets more complicated if you need to re-fetch in case some componnent prop changes
-- Fetching data in response to a user action, i.e. the search scenario. This boils down the first scenario if you have a SearchResults component that fetches data in response to changed query string
-- Storing changed data to server. Complexity arises from the need to disable UI controls while saving, handling errors gracefully etc. Bonus points for considering whether this is a local or a global activity - and where should the transient state be stored.
+-   Fetching extra data from server when mounting a component. Gets more complicated if you need to re-fetch in case some componnent prop changes
+-   Fetching data in response to a user action, i.e. the search scenario. This boils down the first scenario if you have a SearchResults component that fetches data in response to changed query string
+-   Storing changed data to server. Complexity arises from the need to disable UI controls while saving, handling errors gracefully etc. Bonus points for considering whether this is a local or a global activity - and where should the transient state be stored.
 
 In Harmaja, reactive Properties and EventStreams are used for dealing with asynchrous requests. Promises can be conveniently wrapped in. Let's have a look at an example.
 
@@ -877,21 +884,21 @@ Let's consider the search example. Starting from SearchResults component, it mig
 
 ```typescript
 type SearchState =
-  | { state: 'initial' }
-  | { state: 'searching'; searchString: string }
-  | { state: 'done'; results: string[]; searchString: string }
+    | { state: "initial" }
+    | { state: "searching"; searchString: string }
+    | { state: "done"; results: string[]; searchString: string }
 
 const SearchResults = ({ state }: { state: L.Property<SearchState> }) => {
-  // ?
+    // ?
 }
 ```
 
 I didn't want to make this too simple, because simple things are always easy to do. In this case, we want to
 
-- Show the results if any
-- Show "nothing found" in case the result is an empty array
-- Show an empty component in case there's nothing to show (state=initial)
-- Show "Searching..." when search is in progress, or show previous search results with `opacity:0.5` in case there are any
+-   Show the results if any
+-   Show "nothing found" in case the result is an empty array
+-   Show an empty component in case there's nothing to show (state=initial)
+-   Show "Searching..." when search is in progress, or show previous search results with `opacity:0.5` in case there are any
 
 For starters we might try a simplistic approach:
 
@@ -917,15 +924,15 @@ good tools for this. For instance,
 
 ```typescript
 const latestResults = state.pipe(
-  L.changes, // Changes as EventStream
-  L.scan(
-    [],
-    (
-      results: string[],
-      newState: SearchState // Start with [], use a Reducer
-    ) => (newState.state === 'done' ? newState.results : results) // Stick with previous unless "done"
-  ),
-  L.applyScope(componentScope()) // Keep up-to-date for component lifetime
+    L.changes, // Changes as EventStream
+    L.scan(
+        [],
+        (
+            results: string[],
+            newState: SearchState // Start with [], use a Reducer
+        ) => (newState.state === "done" ? newState.results : results) // Stick with previous unless "done"
+    ),
+    L.applyScope(componentScope()) // Keep up-to-date for component lifetime
 )
 ```
 
@@ -933,9 +940,9 @@ Then we can determine the message string to show to the user, based on state and
 
 ```typescript
 const message = L.view(state, latestResults, (s, r) => {
-  if (s.state == 'done' && r.length === 0) return 'Nothing found'
-  if (s.state === 'searching' && r.length === 0) return 'Searching...'
-  return ''
+    if (s.state == "done" && r.length === 0) return "Nothing found"
+    if (s.state === "searching" && r.length === 0) return "Searching..."
+    return ""
 })
 ```
 
@@ -946,40 +953,40 @@ The `opacity:0.5` style can be applied similarly using [`L.view`](https://github
 
 ```typescript
 const SearchResults = ({ state }: { state: L.Property<SearchState> }) => {
-  const latestResults = state.pipe(
-    L.changes, // Changes as EventStream
-    L.scan(
-      [],
-      (
-        results: string[],
-        newState: SearchState // Start with [], use a Reducer
-      ) => (newState.state === 'done' ? newState.results : results) // Stick with previous unless "done"
-    ),
-    L.applyScope(componentScope()) // Keep up-to-date for component lifetime
-  )
+    const latestResults = state.pipe(
+        L.changes, // Changes as EventStream
+        L.scan(
+            [],
+            (
+                results: string[],
+                newState: SearchState // Start with [], use a Reducer
+            ) => (newState.state === "done" ? newState.results : results) // Stick with previous unless "done"
+        ),
+        L.applyScope(componentScope()) // Keep up-to-date for component lifetime
+    )
 
-  const message = L.view(state, latestResults, (s, r) => {
-    if (s.state == 'done' && r.length === 0) return 'Nothing found'
-    if (s.state === 'searching' && r.length === 0) return 'Searching...'
-    return ''
-  })
+    const message = L.view(state, latestResults, (s, r) => {
+        if (s.state == "done" && r.length === 0) return "Nothing found"
+        if (s.state === "searching" && r.length === 0) return "Searching..."
+        return ""
+    })
 
-  const style = L.view(state, latestResults, (s, r) => {
-    if (s.state === 'searching' && r.length > 0) return { opacity: 0.5 }
-    return {}
-  })
+    const style = L.view(state, latestResults, (s, r) => {
+        if (s.state === "searching" && r.length > 0) return { opacity: 0.5 }
+        return {}
+    })
 
-  return (
-    <div>
-      {message}
-      <ul style={style}>
-        <ListView
-          observable={latestResults}
-          renderItem={(result) => <li>{result}</li>}
-        />
-      </ul>
-    </div>
-  )
+    return (
+        <div>
+            {message}
+            <ul style={style}>
+                <ListView
+                    observable={latestResults}
+                    renderItem={(result) => <li>{result}</li>}
+                />
+            </ul>
+        </div>
+    )
 }
 ```
 
@@ -989,51 +996,51 @@ But this was supposed to be about dealing with asynchronous requests! Let's get 
 declare function search(searchString: string): Promise<string[]> // implement using fetch()
 
 function searchAsProperty(s: string): L.Property<string[]> {
-  return L.fromPromise(
-    search(s),
-    () => [],
-    (xs) => xs,
-    (error) => []
-  )
+    return L.fromPromise(
+        search(s),
+        () => [],
+        (xs) => xs,
+        (error) => []
+    )
 }
 
 const Search = () => {
-  const searchString = L.atom('')
-  const searchStringChange: L.EventStream<string> = searchString.pipe(
-    L.changes,
-    L.debounce(500, componentScope())
-  )
-  const searchResult = searchStringChange.pipe(
-    L.flatMapLatest<string, string[]>(searchAsProperty)
-  )
-  const state: L.Property<SearchState> = L.update(
-    componentScope(),
-    { state: 'initial' } as SearchState,
-    [
-      searchStringChange,
-      (state, searchString) => ({ state: 'searching', searchString }),
-    ],
-    [
-      searchResult,
-      searchString,
-      (state, results, searchString) => ({
-        state: 'done',
-        results,
-        searchString,
-      }),
-    ]
-  )
+    const searchString = L.atom("")
+    const searchStringChange: L.EventStream<string> = searchString.pipe(
+        L.changes,
+        L.debounce(500, componentScope())
+    )
+    const searchResult = searchStringChange.pipe(
+        L.flatMapLatest<string, string[]>(searchAsProperty)
+    )
+    const state: L.Property<SearchState> = L.update(
+        componentScope(),
+        { state: "initial" } as SearchState,
+        [
+            searchStringChange,
+            (state, searchString) => ({ state: "searching", searchString }),
+        ],
+        [
+            searchResult,
+            searchString,
+            (state, results, searchString) => ({
+                state: "done",
+                results,
+                searchString,
+            }),
+        ]
+    )
 
-  return (
-    <div>
-      <h1>Cobol search</h1>
-      <TextInput
-        value={searchString}
-        placeholder="Enter text to start searching"
-      />
-      <SearchResults state={state} />
-    </div>
-  )
+    return (
+        <div>
+            <h1>Cobol search</h1>
+            <TextInput
+                value={searchString}
+                placeholder="Enter text to start searching"
+            />
+            <SearchResults state={state} />
+        </div>
+    )
 }
 ```
 
@@ -1062,8 +1069,8 @@ To use a 300 millisecond debounce, the change looks like this:
 
 ```typescript
 const searchStringChange: L.EventStream<string> = searchString
-  .changes()
-  .debounce(300)
+    .changes()
+    .debounce(300)
 ```
 
 See the full search implementation at [examples/search](examples/search/index.tsx).
@@ -1078,9 +1085,11 @@ I wrote the following helper for this:
 
 ```typescript
 export function editAtom<A>(source: L.Property<A>): L.Atom<A> {
-  const localValue = L.atom<A | undefined>(undefined)
-  const value = L.view(source, localValue, (s, l) => (l !== undefined ? l : s))
-  return L.atom(value, localValue.set)
+    const localValue = L.atom<A | undefined>(undefined)
+    const value = L.view(source, localValue, (s, l) =>
+        l !== undefined ? l : s
+    )
+    return L.atom(value, localValue.set)
 }
 ```
 
@@ -1106,19 +1115,19 @@ For a long time I've been pondering different state management solutions for Rea
 
 So one day I had some spare time and couldn't go anywhere so I started drafting on what would be my ideal "state management solution". I wrote down the design goals, which are in no particular priority order at the moment.
 
-- G1 Intuitive: construction, updates, teardown
-- G2 Safe: no accidental updates to nonexisting components etc.
-- G3 Type-safe (Typescript)
-- G4 Immutable data all the way
-- G5 Minimum magic (no behind-the-scenes watching of js object property changes etc)
-- G6 Small API surface area
-- G7 Small runtime footprint
-- G8 Easy mapping of (changing) array of data items to UI elements
-- G9 Easy to interact with code outside the "framework": don't get in the way, this is just programming
-- GA Minimal boilerplate
-- GB Composability, state decomposition (Redux is composing, Calmm.js with lenses is decomposing)
-- GC Easy and intuitive way of creating local state (and pushing it up the tree when need arises)
-- GD Performant updates with minimal hassle. No rendering the full page when something changes
+-   G1 Intuitive: construction, updates, teardown
+-   G2 Safe: no accidental updates to nonexisting components etc.
+-   G3 Type-safe (Typescript)
+-   G4 Immutable data all the way
+-   G5 Minimum magic (no behind-the-scenes watching of js object property changes etc)
+-   G6 Small API surface area
+-   G7 Small runtime footprint
+-   G8 Easy mapping of (changing) array of data items to UI elements
+-   G9 Easy to interact with code outside the "framework": don't get in the way, this is just programming
+-   GA Minimal boilerplate
+-   GB Composability, state decomposition (Redux is composing, Calmm.js with lenses is decomposing)
+-   GC Easy and intuitive way of creating local state (and pushing it up the tree when need arises)
+-   GD Performant updates with minimal hassle. No rendering the full page when something changes
 
 Calmm.js, by [Vesa] (https://github.com/polytypic), is pretty close! It uses Atoms and Observables for state management and treats React function components essentially as constructors. This approach makes it straightforward to introduce, for example, local state variables as regular javascript variables in the "constructor" function. It treats local and global state similarly and makes it easy to refactor when something needs to change from local to higher-up in the tree.
 
@@ -1134,10 +1143,10 @@ This is an experimental library. I have no idea whether it will evolve into some
 
 Next challenge:
 
-- JSX typings, including allowing Properties as attribute values. Currently using React's typings which are not correct and cause compiler errors which require using `any` here and there
+-   JSX typings, including allowing Properties as attribute values. Currently using React's typings which are not correct and cause compiler errors which require using `any` here and there
 
 More work
 
-- Support list of elements as render result
-- Remove the `span` wrapper from smartarray
-- Render directly as DOM elements instead of creating VDOM (when typings are there)
+-   Support list of elements as render result
+-   Remove the `span` wrapper from smartarray
+-   Render directly as DOM elements instead of creating VDOM (when typings are there)

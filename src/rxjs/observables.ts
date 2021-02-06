@@ -1,7 +1,7 @@
-import * as Rx from 'rxjs'
-import * as RxOps from 'rxjs/operators'
-import * as A from './atom'
-import * as L from './lens'
+import * as Rx from "rxjs"
+import * as RxOps from "rxjs/operators"
+import * as A from "./atom"
+import * as L from "./lens"
 
 // Re-export native observable types for external usage
 export type NativeProperty<T> = Rx.Observable<T>
@@ -9,19 +9,19 @@ export type NativeAtom<T> = A.Atom<T>
 export type NativeEventStream<T> = Rx.Observable<T>
 export type Lens<A, B> = L.Lens<A, B>
 export type Scope = {
-  start(): void
-  end(): void
+    start(): void
+    end(): void
 }
 const mockScope = {
-  start() {},
-  end() {},
+    start() {},
+    end() {},
 }
 export function createScope() {
-  return mockScope
+    return mockScope
 }
 
 export function mkScope(scopeFn: Function) {
-  return mockScope
+    return mockScope
 }
 
 // Local narrow interfaces used internally
@@ -34,110 +34,110 @@ export interface Bus<T> extends NativeEventStream<T> {}
 export type Unsub = () => void
 
 export function bus<T>(): Bus<T> {
-  return new Rx.Subject<T>()
+    return new Rx.Subject<T>()
 }
 
 export function pushAndEnd<T>(bus: Bus<T>, value: T) {
-  const subject = bus as Rx.Subject<T>
-  subject.next(value)
-  subject.complete()
+    const subject = bus as Rx.Subject<T>
+    subject.next(value)
+    subject.complete()
 }
 
 export function get<A>(prop: Property<A>): A {
-  return getCurrentValue(prop as Rx.Observable<A>)
+    return getCurrentValue(prop as Rx.Observable<A>)
 }
 
 export function set<A>(atom: Atom<A>, value: A) {
-  ;(atom as A.Atom<A>).set(value)
+    ;(atom as A.Atom<A>).set(value)
 }
 
 export function isProperty(x: any): x is Property<any> {
-  return !!(x && x.subscribe && x.forEach)
+    return !!(x && x.subscribe && x.forEach)
 }
 export function forEach<V>(x: Observable<V>, fn: (value: V) => void): Unsub {
-  return _forEach(x as Rx.Observable<V>, fn)
+    return _forEach(x as Rx.Observable<V>, fn)
 }
 
 export function view<A, K extends keyof A>(
-  a: Atom<A>,
-  key: number
+    a: Atom<A>,
+    key: number
 ): Atom<A[K] | undefined>
 export function view<A, K extends keyof A>(
-  a: Property<A>,
-  key: number
+    a: Property<A>,
+    key: number
 ): Property<A[K] | undefined>
 export function view<A, B>(a: Property<A>, fn: (a: A) => B): Property<B>
 export function view<A, K extends keyof A>(a: any, key: any): any {
-  if (typeof key === 'function') {
-    const obs = a as Rx.Observable<A>
-    return obs.pipe(RxOps.map(key), RxOps.distinctUntilChanged())
-  } else if (A.isAtom(a)) {
-    return a.view(key as any)
-  } else if (isProperty(a)) {
-    const obs = a as Rx.Observable<A>
-    if (L.isLens(key)) {
-      return obs.pipe(RxOps.map(key.get))
+    if (typeof key === "function") {
+        const obs = a as Rx.Observable<A>
+        return obs.pipe(RxOps.map(key), RxOps.distinctUntilChanged())
+    } else if (A.isAtom(a)) {
+        return a.view(key as any)
+    } else if (isProperty(a)) {
+        const obs = a as Rx.Observable<A>
+        if (L.isLens(key)) {
+            return obs.pipe(RxOps.map(key.get))
+        }
+        return obs.pipe(RxOps.map((x: any) => x[key]))
+    } else {
+        throw Error("Unknown observable: " + a)
     }
-    return obs.pipe(RxOps.map((x: any) => x[key]))
-  } else {
-    throw Error('Unknown observable: ' + a)
-  }
 }
 
 export function filter<A>(a: Atom<A>, fn: Predicate<A>, scope: Scope): Atom<A>
 export function filter<A>(
-  a: Property<A>,
-  fn: Predicate<A>,
-  scope: Scope
+    a: Property<A>,
+    fn: Predicate<A>,
+    scope: Scope
 ): Property<A>
 export function filter<A>(a: any, fn: Predicate<A>, scope: Scope): any {
-  if (A.isAtom(a)) {
-    return a.freezeUnless(fn as any)
-  } else if (isProperty(a)) {
-    return (a as Rx.Observable<A>).pipe(RxOps.filter(fn))
-  } else {
-    throw Error('Unknown observable: ' + a)
-  }
+    if (A.isAtom(a)) {
+        return a.freezeUnless(fn as any)
+    } else if (isProperty(a)) {
+        return (a as Rx.Observable<A>).pipe(RxOps.filter(fn))
+    } else {
+        throw Error("Unknown observable: " + a)
+    }
 }
 
 export const valueMissing = {}
 export type ValueMissing = typeof valueMissing
 
 export function _forEach<V>(
-  x: Rx.Observable<V>,
-  fn: (value: V) => void
+    x: Rx.Observable<V>,
+    fn: (value: V) => void
 ): Unsub {
-  const subscription = x
-    .pipe(
-      RxOps.tap((value) => {
-        fn(value)
-      })
-    )
-    .subscribe(
-      () => {},
-      (error) => {
-        console.error('Caught error event', error)
-        throw new Error(
-          `Got error from observable ${x}: ${error}. Harmaja does not handle errors.`
+    const subscription = x
+        .pipe(
+            RxOps.tap((value) => {
+                fn(value)
+            })
         )
-      },
-      () => {}
-    )
-  return () => subscription.unsubscribe()
+        .subscribe(
+            () => {},
+            (error) => {
+                console.error("Caught error event", error)
+                throw new Error(
+                    `Got error from observable ${x}: ${error}. Harmaja does not handle errors.`
+                )
+            },
+            () => {}
+        )
+    return () => subscription.unsubscribe()
 }
 
 export function getCurrentValue<A>(observable: Rx.Observable<A>): A {
-  let currentV: any = valueMissing
-  if ((observable as any).get) {
-    currentV = (observable as any).get() // For Atoms
-  } else {
-    _forEach(observable.pipe(RxOps.take(1)), (v) => (currentV = v))
-  }
-  if (currentV === valueMissing) {
-    console.log('Current value not found!', observable)
-    throw new Error('Current value missing. Cannot render. ' + observable)
-  }
-  return currentV
+    let currentV: any = valueMissing
+    if ((observable as any).get) {
+        currentV = (observable as any).get() // For Atoms
+    } else {
+        _forEach(observable.pipe(RxOps.take(1)), (v) => (currentV = v))
+    }
+    if (currentV === valueMissing) {
+        console.log("Current value not found!", observable)
+        throw new Error("Current value missing. Cannot render. " + observable)
+    }
+    return currentV
 }
 
-export const observablesImplementationName: string = 'RxJs'
+export const observablesImplementationName: string = "RxJs"

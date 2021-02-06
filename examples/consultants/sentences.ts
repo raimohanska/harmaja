@@ -75,6 +75,6 @@ The object system within Rust is based around implementations, traits and struct
 
 
 `
-  .split('.')
-  .filter((x) => !x.includes('['))
-  .map((x) => x.trim() + '. ')
+    .split(".")
+    .filter((x) => !x.includes("["))
+    .map((x) => x.trim() + ". ")
