@@ -194,16 +194,16 @@ function addContentEditableController(
 
 const placeholders = (function () {
     let counter = 1
+    const placeholderIds = new WeakMap<Node, number>()
 
     return {
         create: (): Text => {
             const placeholder = document.createTextNode("")
-            ;(placeholder as any)._h_id = counter++
+            placeholderIds.set(placeholder, counter++)
             return placeholder
         },
-        isPlaceholder: (node: Node): boolean =>
-            (node as any)._h_id !== undefined,
-        getId: (node: Node): number | undefined => (node as any)._h_id,
+        isPlaceholder: (node: Node): boolean => placeholderIds.has(node),
+        getId: (node: Node): number | undefined => placeholderIds.get(node),
     }
 })()
 
