@@ -22,9 +22,9 @@ export type DOMNode = ChildNode
 
 let transientStateStack: TransientState[] = []
 type TransientState = {
-    mountCallbacks: Callback[] | undefined
+    mountCallbacks: Callback[]
     mountE: O.EventStream<void> | undefined
-    unmountCallbacks: Callback[] | undefined
+    unmountCallbacks: Callback[]
     unmountE: O.EventStream<void> | undefined
     scope: O.Scope | undefined
     mountsController: NodeController | undefined
@@ -32,9 +32,9 @@ type TransientState = {
 
 function emptyTransientState(): TransientState {
     return {
-        mountCallbacks: undefined,
+        mountCallbacks: [],
         mountE: undefined,
-        unmountCallbacks: undefined,
+        unmountCallbacks: [],
         unmountE: undefined,
         scope: undefined,
         mountsController: undefined,
@@ -108,15 +108,13 @@ const handleMounts = (transientState: TransientState) => (
     if (transientState.scope) {
         transientState.mountsController = controller
     }
-    if (transientState.mountCallbacks)
-        for (const callback of transientState.mountCallbacks) {
+    for (const callback of transientState.mountCallbacks) {
+        callback()
+    }
+    return () => {
+        for (const callback of transientState.unmountCallbacks) {
             callback()
         }
-    return () => {
-        if (transientState.unmountCallbacks)
-            for (const callback of transientState.unmountCallbacks) {
-                callback()
-            }
     }
 }
 
@@ -384,7 +382,6 @@ export function unmount(harmajaElement: HarmajaOutput) {
  */
 export function onMount(callback: Callback) {
     const transientState = getTransientState("onMount")
-    if (!transientState.mountCallbacks) transientState.mountCallbacks = []
     transientState.mountCallbacks.push(callback)
 }
 
@@ -394,7 +391,6 @@ export function onMount(callback: Callback) {
  */
 export function onUnmount(callback: Callback) {
     const transientState = getTransientState("onUnmount")
-    if (!transientState.unmountCallbacks) transientState.unmountCallbacks = []
     transientState.unmountCallbacks.push(callback)
 }
 
