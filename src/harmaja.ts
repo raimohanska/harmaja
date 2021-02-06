@@ -317,15 +317,17 @@ type NodeControllerOptions = {
 type NodeControllerFn = (controller: NodeController) => Callback
 
 const nodeState = (function () {
+    const state = new WeakMap<Node, NodeState>()
+
     return {
         getIfExists(node: Node): NodeState | undefined {
-            return (node as any).__h
+            return state.get(node)
         },
         getOrInstantiate(node: Node): NodeState {
-            let currentNodeState = (node as any).__h
+            let currentNodeState = state.get(node)
             if (currentNodeState === undefined) {
                 currentNodeState = {}
-                ;(node as any).__h = currentNodeState
+                state.set(node, currentNodeState)
             }
             return currentNodeState
         },
