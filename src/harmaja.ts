@@ -30,10 +30,20 @@ type TransientState = {
     mountsController?: NodeController
 }
 
+// If we need an empty object or empty array for no-oping purposes,
+// Reuse the same frozen objects each time
+// We also use these for constructing NodeState so that
+// the object shape is guaranteed to be uniform (which may garner some JIT optimizations),
+//without allocating any meaningful extra memory.
+const EMPTY_OBJECT = Object.freeze({})
+const EMPTY_ARRAY: any[] = []
+// separate freezing to trick TSC
+Object.freeze(EMPTY_ARRAY)
+
 function emptyTransientState(): TransientState {
     return {
-        mountCallbacks: [],
-        unmountCallbacks: [],
+        mountCallbacks: EMPTY_ARRAY as Callback[],
+        unmountCallbacks: EMPTY_ARRAY as Callback[],
     }
 }
 
@@ -47,7 +57,7 @@ export function createElement(
 ): HarmajaOutput {
     const flattenedChildren = children.flatMap(flattenChildren)
     if (!props) {
-        props = {}
+        props = EMPTY_OBJECT
     } else if (props.children) {
         delete props.children // TODO: ugly hack, occurred in todoapp example
     }
@@ -134,7 +144,9 @@ function renderElement(
 ): DOMNode {
     const el = document.createElement(type)
     let contentEditable = false
-    for (let [key, value] of Object.entries(props || {})) {
+    const props_ = props || EMPTY_OBJECT
+    for (let key of Object.keys(props_)) {
+        const value = props_[key]
         if (key === "contentEditable") {
             contentEditable = true
         }
@@ -152,7 +164,7 @@ function renderElement(
     if (contentEditable) {
         addContentEditableController(el, children)
     } else {
-        ;(children || [])
+        ;(children || EMPTY_ARRAY)
             .map(render)
             .flatMap(toDOMNodes)
             .forEach((node) => el.appendChild(node))
@@ -260,13 +272,13 @@ function setProp(el: Element, key: string, value: any) {
     }
 
     if (key.startsWith("on")) {
-        key = key.toLowerCase()
-        key = key === "ondoubleclick" ? "ondblclick" : key
-        ;(el as any)[key] = value
+        key = key.toLowerCase();
+        key = key === "ondoubleclick" ? "ondblclick" : key;
+        (el as any)[key] = value
     } else if (key === "style") {
-        const styles = Object.entries(value)
-            .filter(([key, value]) => key !== "")
-            .map(([key, value]) => `${toKebabCase(key)}: ${value};`)
+        const styles = Object.keys(value)
+            .filter(key => key !== "")
+            .map(key => `${toKebabCase(key)}: ${value[key]};`)
             .join("\n")
         el.setAttribute("style", styles)
     } else if (key === "className") {
@@ -303,11 +315,11 @@ function getTransientState(forMethod: string) {
 export type Callback = () => void
 
 type NodeState = {
-    mounted?: boolean
-    unmounted?: boolean
-    onUnmounts?: Callback[]
-    onMounts?: Callback[]
-    controllers?: NodeController[]
+    mounted: boolean
+    unmounted: boolean
+    onUnmounts: Callback[]
+    onMounts: Callback[],
+    controllers: NodeController[]
 }
 
 export type NodeController = {
@@ -329,7 +341,13 @@ function maybeGetNodeState(node: Node): NodeState | undefined {
 function getNodeState(node: Node): NodeState {
     let nodeAny = node as any
     if (!nodeAny.__h) {
-        const state: NodeState = {}
+        const state: NodeState = {
+            mounted: false,
+            unmounted: false,
+            onMounts: EMPTY_ARRAY,
+            onUnmounts: EMPTY_ARRAY,
+            controllers: EMPTY_ARRAY
+        }
         nodeAny.__h = state
     }
     return nodeAny.__h
@@ -378,6 +396,7 @@ export function unmount(harmajaElement: HarmajaOutput) {
  */
 export function onMount(callback: Callback) {
     const transientState = getTransientState("onMount")
+    if (transientState.mountCallbacks === EMPTY_ARRAY) transientState.mountCallbacks = []
     transientState.mountCallbacks.push(callback)
 }
 
@@ -387,6 +406,7 @@ export function onMount(callback: Callback) {
  */
 export function onUnmount(callback: Callback) {
     const transientState = getTransientState("onUnmount")
+    if (transientState.unmountCallbacks === EMPTY_ARRAY) transientState.unmountCallbacks = []
     transientState.unmountCallbacks.push(callback)
 }
 
@@ -461,10 +481,8 @@ export function callOnMounts(element: Node) {
     }
 
     state.mounted = true
-    if (state.onMounts) {
-        for (const sub of state.onMounts) {
-            sub()
-        }
+    for (const sub of state.onMounts) {
+        sub()
     }
 
     for (const child of element.childNodes) {
@@ -479,11 +497,9 @@ function callOnUnmounts(element: Node) {
         return
     }
 
-    if (state.onUnmounts) {
-        for (const unsub of state.onUnmounts) {
-            //console.log("Calling unsub in " + debug(element))
-            unsub()
-        }
+    for (const unsub of state.onUnmounts) {
+        //console.log("Calling unsub in " + debug(element))
+        unsub()
     }
 
     for (const child of element.childNodes) {
@@ -499,7 +515,7 @@ function attachOnMount(element: DOMNode, onMount: Callback) {
         throw Error("not a function: " + onMount)
     }
     let state = getNodeState(element)
-    if (!state.onMounts) {
+    if (state.onMounts === EMPTY_ARRAY) {
         state.onMounts = []
     }
     state.onMounts.push(onMount)
@@ -509,7 +525,7 @@ function attachOnUnmount(element: DOMNode, onUnmount: Callback) {
         throw Error("not a function: " + onUnmount)
     }
     let state = getNodeState(element)
-    if (!state.onUnmounts) {
+    if (state.onUnmounts === EMPTY_ARRAY) {
         state.onUnmounts = []
     }
     if (state.onUnmounts.includes(onUnmount)) {
@@ -521,7 +537,7 @@ function attachOnUnmount(element: DOMNode, onUnmount: Callback) {
 
 function detachOnUnmount(element: DOMNode, onUnmount: Callback) {
     let state = maybeGetNodeState(element)
-    if (state === undefined || !state.onUnmounts) {
+    if (state === undefined || state.onUnmounts === EMPTY_ARRAY) {
         return
     }
     for (let i = 0; i < state.onUnmounts.length; i++) {
@@ -539,8 +555,8 @@ function detachController(
     for (const el of oldElements) {
         const state = getNodeState(el)
         //console.log("Detach controller from " + debug(el))
-        const index = state.controllers?.indexOf(controller)
-        if (index === undefined || index < 0) {
+        const index = state.controllers.indexOf(controller)
+        if (index === -1) {
             throw Error("Controller not attached to " + el)
         }
         // Not removing controller from list. Even though the element is discarded, it's still not ok to
@@ -570,9 +586,9 @@ function attachController(
 ) {
     for (let i = 0; i < elements.length; i++) {
         let el = elements[i]
-        const state = getNodeState(el)
-        // Checking for double controllers
-        if (!state.controllers) {
+        const state = getNodeState(el)    
+        // Checking for double controllers    
+        if (state.controllers === EMPTY_ARRAY) {
             state.controllers = [controller]
             //console.log("Attach first controller to " + debug(el) + " (now with " + state.controllers.length + ")")
         } else if (state.controllers.includes(controller)) {
@@ -646,17 +662,13 @@ function replacedByController(
 ) {
     if (!controller) return
     // Controllers are in leaf-to-root order (because leaf controllers are added first)
-    const controllers = getNodeState(oldNodes[0]).controllers
-    if (!controllers)
-        throw new Error(
-            "Assertion failed: Controllers not found for " + debug(oldNodes[0])
-        )
-    const index = controllers.indexOf(controller)
+    const controllers = getNodeState(oldNodes[0]).controllers 
+    const index = controllers.indexOf(controller)    
     //console.log(`${debug(oldNodes)} replaced by ${debug(newNodes)} controller ${index} of ${controllers.length}`)
     const parentControllers = controllers.slice(index + 1)
     // This loop is just about assertion of invariables
     for (let i = 1; i < oldNodes.length; i++) {
-        const controllersHere = getNodeState(oldNodes[i]).controllers || []
+        const controllersHere = getNodeState(oldNodes[i]).controllers
         const indexHere = controllersHere.indexOf(controller)
         if (indexHere < 0) {
             throw new Error(
@@ -688,11 +700,7 @@ function appendedByController(
     if (!controller) return
     // Controllers are in leaf-to-root order (because leaf controllers are added first)
     const controllers = getNodeState(cursorNode).controllers
-    if (!controllers)
-        throw new Error(
-            "Assertion failed: Controllers not found for " + debug(cursorNode)
-        )
-    const index = controllers.indexOf(controller)
+    const index = controllers.indexOf(controller)    
     if (index < 0) {
         throw new Error(
             `Controller ${controller} not found in ${debug(cursorNode)}`
@@ -701,10 +709,8 @@ function appendedByController(
     //console.log(`${debug(newNode)} added after ${debug(cursorNode)} by controller ${index} of ${controllers.length}`)
     const parentControllers = controllers.slice(index + 1)
     // We need to replace the upper controllers
-    for (let parentController of parentControllers) {
-        const indexForCursor = parentController.currentElements.indexOf(
-            cursorNode
-        )
+    for (let parentController of parentControllers) {   
+        const indexForCursor = parentController.currentElements.indexOf(cursorNode)
         if (indexForCursor < 0) {
             throw new Error(
                 `Element ${debug(
