@@ -130,7 +130,7 @@ function renderElement(
     const el = document.createElement(type)
     let contentEditable = false
     for (let [key, value] of Object.entries(props || {})) {
-        if (key === "contentEditable") {
+        if (key === "contentEditable" && value !== false && value !== "false") {
             contentEditable = true
         }
         if (O.isProperty(value)) {

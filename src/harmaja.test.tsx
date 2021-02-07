@@ -297,7 +297,9 @@ describe("Harmaja", () => {
             const c = mounted(<span contentEditable={true}></span>)
             expect(getHtml(c)).toEqual(`<span contenteditable="true"></span>`)
         })
+        it("With contentEditable=false", () => {
+            const c = mounted(<span contentEditable={false}>HOLA</span>)
+            expect(getHtml(c)).toEqual(`<span contenteditable="false">HOLA</span>`)
+        })
     })
-
-
 })
