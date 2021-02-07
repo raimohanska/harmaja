@@ -20,7 +20,7 @@
   "dependencies": {},
   "peerDependencies": {},
   "engines": {
-    "node": ">13.0"
+    "node": "14.x"
   },
   "files": [
     "lonna",
