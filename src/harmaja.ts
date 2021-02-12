@@ -23,11 +23,11 @@ export type DOMNode = ChildNode
 let transientStateStack: TransientState[] = []
 type TransientState = {
     mountCallbacks: Callback[]
-    mountE?: O.EventStream<void>
+    mountE: O.EventStream<void> | undefined
     unmountCallbacks: Callback[]
-    unmountE?: O.EventStream<void>
-    scope?: O.Scope
-    mountsController?: NodeController
+    unmountE: O.EventStream<void> | undefined
+    scope: O.Scope | undefined
+    mountsController: NodeController | undefined
 }
 
 // If we need an empty object or empty array for no-oping purposes,
@@ -43,7 +43,11 @@ Object.freeze(EMPTY_ARRAY)
 function emptyTransientState(): TransientState {
     return {
         mountCallbacks: EMPTY_ARRAY as Callback[],
+        mountE: undefined,
         unmountCallbacks: EMPTY_ARRAY as Callback[],
+        unmountE: undefined,
+        scope: undefined,
+        mountsController: undefined,
     }
 }
 
@@ -68,7 +72,7 @@ export function createElement(
         const transientState = transientStateStack.pop()!
         if (O.isProperty(result)) {
             return createController(
-                [createPlaceholder()],
+                [placeholders.create()],
                 composeControllers(
                     handleMounts(transientState),
                     startUpdatingNodes(result as HarmajaObservableChild)
@@ -209,13 +213,20 @@ function addContentEditableController(
     )
 }
 
-function createPlaceholder() {
-    const placeholder = document.createTextNode("")
-    ;(placeholder as any)._h_id = counter++
-    return placeholder
-}
+const placeholders = (function () {
+    let counter = 1
 
-let counter = 1
+    return {
+        create: (): Text => {
+            const placeholder = document.createTextNode("")
+            ;(placeholder as any)._h_id = counter++
+            return placeholder
+        },
+        isPlaceholder: (node: Node): boolean =>
+            (node as any)._h_id !== undefined,
+        getId: (node: Node): number | undefined => (node as any)._h_id,
+    }
+})()
 
 function render(child: HarmajaChild | HarmajaOutput): HarmajaStaticOutput {
     if (child instanceof Array) {
@@ -225,11 +236,11 @@ function render(child: HarmajaChild | HarmajaOutput): HarmajaStaticOutput {
         return document.createTextNode(child.toString())
     }
     if (child === null || child === false) {
-        return createPlaceholder()
+        return placeholders.create()
     }
     if (O.isProperty(child)) {
         return createController(
-            [createPlaceholder()],
+            [placeholders.create()],
             startUpdatingNodes(child as HarmajaObservableChild)
         )
     }
@@ -248,7 +259,7 @@ const startUpdatingNodes = (observable: HarmajaObservableChild) => (
             .flatMap(render)
             .flatMap(toDOMNodes)
         if (newNodes.length === 0) {
-            newNodes = [createPlaceholder()]
+            newNodes = [placeholders.create()]
         }
         //console.log("New values", debug(controller.currentElements))
         //console.log(`${debug(oldElements)} replaced by ${debug(controller.currentElements)} in observable`)
@@ -333,25 +344,27 @@ type NodeControllerOptions = {
 
 type NodeControllerFn = (controller: NodeController) => Callback
 
-function maybeGetNodeState(node: Node): NodeState | undefined {
-    let nodeAny = node as any
-    return nodeAny.__h
-}
-
-function getNodeState(node: Node): NodeState {
-    let nodeAny = node as any
-    if (!nodeAny.__h) {
-        const state: NodeState = {
-            mounted: false,
-            unmounted: false,
-            onMounts: EMPTY_ARRAY,
-            onUnmounts: EMPTY_ARRAY,
-            controllers: EMPTY_ARRAY,
-        }
-        nodeAny.__h = state
+const nodeState = (function () {
+    return {
+        getIfExists(node: Node): NodeState | undefined {
+            return (node as any).__h
+        },
+        getOrInstantiate(node: Node): NodeState {
+            let currentNodeState: NodeState = (node as any).__h
+            if (currentNodeState === undefined) {
+                currentNodeState = {
+                    mounted: false,
+                    unmounted: false,
+                    onMounts: EMPTY_ARRAY,
+                    onUnmounts: EMPTY_ARRAY,
+                    controllers: EMPTY_ARRAY,
+                }
+                ;(node as any).__h = currentNodeState
+            }
+            return currentNodeState
+        },
     }
-    return nodeAny.__h
-}
+})()
 
 /**
  *  Mounts the given element to the document, replacing the given root element.
@@ -456,7 +469,7 @@ export function componentScope(): O.Scope {
                 if (unsub) unsub()
             })
             if (transientState.mountsController) {
-                const state = getNodeState(
+                const state = nodeState.getOrInstantiate(
                     transientState.mountsController.currentElements[0]
                 )
                 if (state.mounted) {
@@ -474,7 +487,7 @@ export function componentScope(): O.Scope {
 
 export function callOnMounts(element: Node) {
     //console.log("callOnMounts in " + debug(element) + " mounted=" + getNodeState(element).mounted)
-    let state = getNodeState(element)
+    let state = nodeState.getOrInstantiate(element)
     if (state.mounted) {
         return
     }
@@ -494,7 +507,7 @@ export function callOnMounts(element: Node) {
 
 function callOnUnmounts(element: Node) {
     //console.log("callOnUnmounts " + debug(element))
-    let state = getNodeState(element)
+    let state = nodeState.getOrInstantiate(element)
     if (!state.mounted) {
         return
     }
@@ -516,7 +529,7 @@ function attachOnMount(element: DOMNode, onMount: Callback) {
     if (typeof onMount !== "function") {
         throw Error("not a function: " + onMount)
     }
-    let state = getNodeState(element)
+    let state = nodeState.getOrInstantiate(element)
     if (state.onMounts === EMPTY_ARRAY) {
         state.onMounts = []
     }
@@ -526,7 +539,7 @@ function attachOnUnmount(element: DOMNode, onUnmount: Callback) {
     if (typeof onUnmount !== "function") {
         throw Error("not a function: " + onUnmount)
     }
-    let state = getNodeState(element)
+    let state = nodeState.getOrInstantiate(element)
     if (state.onUnmounts === EMPTY_ARRAY) {
         state.onUnmounts = []
     }
@@ -538,7 +551,7 @@ function attachOnUnmount(element: DOMNode, onUnmount: Callback) {
 }
 
 function detachOnUnmount(element: DOMNode, onUnmount: Callback) {
-    let state = maybeGetNodeState(element)
+    let state = nodeState.getIfExists(element)
     if (state === undefined || state.onUnmounts === EMPTY_ARRAY) {
         return
     }
@@ -555,7 +568,7 @@ function detachController(
     controller: NodeController
 ) {
     for (const el of oldElements) {
-        const state = getNodeState(el)
+        const state = nodeState.getOrInstantiate(el)
         //console.log("Detach controller from " + debug(el))
         const index = state.controllers.indexOf(controller)
         if (index === -1) {
@@ -588,7 +601,7 @@ function attachController(
 ) {
     for (let i = 0; i < elements.length; i++) {
         let el = elements[i]
-        const state = getNodeState(el)
+        const state = nodeState.getOrInstantiate(el)
         // Checking for double controllers
         if (state.controllers === EMPTY_ARRAY) {
             state.controllers = [controller]
@@ -664,13 +677,13 @@ function replacedByController(
 ) {
     if (!controller) return
     // Controllers are in leaf-to-root order (because leaf controllers are added first)
-    const controllers = getNodeState(oldNodes[0]).controllers
+    const controllers = nodeState.getOrInstantiate(oldNodes[0]).controllers
     const index = controllers.indexOf(controller)
     //console.log(`${debug(oldNodes)} replaced by ${debug(newNodes)} controller ${index} of ${controllers.length}`)
     const parentControllers = controllers.slice(index + 1)
     // This loop is just about assertion of invariables
     for (let i = 1; i < oldNodes.length; i++) {
-        const controllersHere = getNodeState(oldNodes[i]).controllers
+        const controllersHere = nodeState.getOrInstantiate(oldNodes[i]).controllers
         const indexHere = controllersHere.indexOf(controller)
         if (indexHere < 0) {
             throw new Error(
@@ -701,7 +714,7 @@ function appendedByController(
 ) {
     if (!controller) return
     // Controllers are in leaf-to-root order (because leaf controllers are added first)
-    const controllers = getNodeState(cursorNode).controllers
+    const controllers = nodeState.getOrInstantiate(cursorNode).controllers
     const index = controllers.indexOf(controller)
     if (index < 0) {
         throw new Error(
@@ -745,7 +758,7 @@ function replaceNode(
     detachController([oldNode], controller)
     attachController([newNode], controller)
 
-    let wasMounted = maybeGetNodeState(oldNode)?.mounted
+    let wasMounted = nodeState.getIfExists(oldNode)?.mounted
 
     if (wasMounted) {
         callOnUnmounts(oldNode)
@@ -908,15 +921,15 @@ export function debug(element: HarmajaStaticOutput | Node): string {
     } else {
         return (
             element.textContent ||
-            ((element as any)._h_id != undefined
-                ? `<placeholder ${(element as any)._h_id}>`
+            (placeholders.isPlaceholder(element)
+                ? `<placeholder ${placeholders.getId(element)}>`
                 : "<empty text node>")
         )
     }
 }
 
 export const LowLevelApi = {
-    createPlaceholder,
+    createPlaceholder: placeholders.create,
     attachOnMount,
     attachOnUnmount,
     createController,
