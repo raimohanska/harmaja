@@ -683,7 +683,8 @@ function replacedByController(
     const parentControllers = controllers.slice(index + 1)
     // This loop is just about assertion of invariables
     for (let i = 1; i < oldNodes.length; i++) {
-        const controllersHere = nodeState.getOrInstantiate(oldNodes[i]).controllers
+        const controllersHere = nodeState.getOrInstantiate(oldNodes[i])
+            .controllers
         const indexHere = controllersHere.indexOf(controller)
         if (indexHere < 0) {
             throw new Error(
