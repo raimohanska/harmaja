@@ -1,4 +1,5 @@
 import * as O from "./observable/observables"
+import { SVG_TAGS } from "./special-casing"
 
 export type HarmajaComponent = (props: HarmajaProps) => HarmajaOutput
 export type JSXElementType = string | HarmajaComponent
@@ -146,7 +147,11 @@ function renderElement(
     props: HarmajaProps,
     children: HarmajaChild[]
 ): DOMNode {
-    const el = document.createElement(type)
+    // Creating svg elements in the default HTML namespace results in them e.g. not having
+    // widths and heights in the DOM.
+    const el = SVG_TAGS.has(type)
+        ? document.createElementNS("http://www.w3.org/2000/svg", type)
+        : document.createElement(type)
     let contentEditable = false
     const props_ = props || EMPTY_OBJECT
     for (let key of Object.keys(props_)) {
@@ -166,7 +171,7 @@ function renderElement(
         }
     }
     if (contentEditable) {
-        addContentEditableController(el, children)
+        addContentEditableController(el as HTMLElement, children)
     } else {
         ;(children || EMPTY_ARRAY)
             .map(render)
@@ -294,6 +299,12 @@ function setProp(el: Element, key: string, value: any) {
         el.setAttribute("style", styles)
     } else if (key === "className") {
         el.setAttribute("class", value)
+    } else if (el.namespaceURI === "http://www.w3.org/2000/svg") {
+        // Assigning directly gives e.g. Uncaught TypeError: Cannot set property cx of #<SVGCircleElement> which has only a getter
+        // in JSDom 'key in el' returns false for e.g. 'cx' attribute of <circle>,
+        // so a test would return a false positive because the 'else' branch would
+        // be hit and do el.setAttribute(), which we want to do anyway.
+        el.setAttribute(key, value)
     } else if (key in el) {
         ;(el as any)[key] = value
     } else {
