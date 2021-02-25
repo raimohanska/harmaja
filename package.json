@@ -13,7 +13,7 @@
     "lonna": "^0.8.2",
     "parcel-bundler": "^1.12.4",
     "prettier": "^2.2.1",
-    "rxjs": "^6.6.3",
+    "rxjs": "^6.6.6",
     "ts-jest": "^26.5.2",
     "typescript": "^4"
   },
