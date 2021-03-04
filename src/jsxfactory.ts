@@ -1913,7 +1913,7 @@ declare global {
             bivarianceHack(instance: T): void
         }["bivarianceHack"]
 
-        type Ref<T> = RefCallback<T> | null
+        type Ref<T> = B.NativeAtom<T | null> | RefCallback<T> | null
 
         interface Attributes {}
 

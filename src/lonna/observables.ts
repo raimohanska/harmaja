@@ -34,6 +34,9 @@ export function set<A>(atom: Atom<A>, value: A) {
     ;(atom as O.Atom<A>).set(value)
 }
 
+export function isAtom(x: any): x is Atom<unknown> {
+    return O.isAtom(x)
+}
 export function isProperty(x: any): x is Property<any> {
     return O.isProperty(x)
 }

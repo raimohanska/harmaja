@@ -156,6 +156,10 @@ function renderElement(
     const props_ = props || EMPTY_OBJECT
     for (let key of Object.keys(props_)) {
         const value = props_[key]
+        if (key === "ref") {
+            setRefProp(el, key, value)
+            continue
+        }
         if (key === "contentEditable" && value !== false && value !== "false") {
             contentEditable = true
         }
@@ -277,16 +281,23 @@ function isDOMElement(child: any): child is DOMNode {
     return child instanceof Element || child instanceof Text
 }
 
-function setProp(el: Element, key: string, value: any) {
-    if (key === "ref") {
-        if (typeof value !== "function") {
-            throw Error("Expecting ref prop to be a function, got " + value)
-        }
+function setRefProp(el: Element, key: string, value: any) {
+    if (O.isAtom(value)) {
+        O.set(value, null)
+        attachOnMount(el, () => O.set(value, el))
+        attachOnUnmount(el, () => O.set(value, null))
+    } else if (typeof value === "function") {
         const refFn = value as Function
         attachOnMount(el, () => refFn(el))
-        return
+    } else {
+        throw Error(
+            "Expecting ref prop to be an atom or a function, got " + value
+        )
     }
+    return
+}
 
+function setProp(el: Element, key: string, value: any) {
     if (key.startsWith("on")) {
         key = key.toLowerCase()
         key = key === "ondoubleclick" ? "ondblclick" : key

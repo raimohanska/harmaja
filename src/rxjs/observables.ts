@@ -51,6 +51,9 @@ export function set<A>(atom: Atom<A>, value: A) {
     ;(atom as A.Atom<A>).set(value)
 }
 
+export function isAtom(x: any): x is A.Atom<unknown> {
+    return A.isAtom(x)
+}
 export function isProperty(x: any): x is Property<any> {
     return !!(x && x.subscribe && x.forEach)
 }
