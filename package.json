@@ -17,7 +17,10 @@
     "ts-jest": "^26.5.3",
     "typescript": "^4"
   },
-  "dependencies": {},
+  "dependencies": {
+    "husky": "4",
+    "lint-staged": "^10.5.4"
+  },
   "peerDependencies": {},
   "engines": {
     "node": "14.x"
