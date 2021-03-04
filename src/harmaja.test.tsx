@@ -16,14 +16,34 @@ describe("Harmaja", () => {
         expect(renderAsString(el)).toEqual("<h1>yes</h1>")
     })
 
-    it("Supports refs", () => {
-        let reffed: HTMLSpanElement | null = null;
-        let span = <span id="x" ref={input => { reffed = input }}>Hello</span>
-        let el = <div>{span}</div>
-        expect(reffed).toEqual(null)
-        mount(el, body())
-        expect(reffed).toEqual(span)
-        expect(() => <span id="x" ref={"not-a-function" as any}/>).toThrow("Expecting ref prop to be a function, got not-a-function")
+    describe("refs", () => {
+        it("Throws if a string is passed as a ref", () => {
+            expect(() => <span id="x" ref={"not-a-function" as any}/>).toThrow("Expecting ref prop to be an atom or a function, got not-a-function")
+        })
+
+        it("Function ref is not called before mounting", () => {
+            // setting to false with an any cast to get in a value that should never occur really
+            let reffed: HTMLSpanElement  | null = false as any;
+            let span = <span id="x" ref={input => { reffed = input }}>Hello</span>
+            expect(reffed).toEqual(false)
+        })
+
+        it("function ref is called with element ref when mounted", () => {
+            let reffed: HTMLSpanElement | null = null;
+            let span = <span id="x" ref={input => { reffed = input }}>Hello</span>
+            let el = <div>{span}</div>
+            mount(el, body())
+            expect(reffed).toEqual(span)
+        })
+
+        it("function ref is not called when unmounted", () => {
+            let reffed: HTMLSpanElement | null = null;
+            let span = <span id="x" ref={input => { reffed = input }}>Hello</span>
+            let el = <div>{span}</div>
+            mount(el, body())
+            unmount(el)
+            expect(reffed).toEqual(span)
+        })
     })
 
     it("Supports assigning standard and nonstandard attributes", () => {
