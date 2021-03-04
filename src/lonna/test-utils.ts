@@ -16,7 +16,7 @@ export function testRender<T>(
     expect((property as any)._dispatcher.hasObservers()).toEqual(false)
 }
 export type Property<T> = L.Property<T>
-export type Atom<T> = L.Property<T>
+export type Atom<T> = L.Atom<T>
 export type EventStream<T> = L.EventStream<T>
 export function map<A, B>(p: L.Property<A>, fn: (a: A) => B): L.Property<B> {
     return L.map(fn)(p)

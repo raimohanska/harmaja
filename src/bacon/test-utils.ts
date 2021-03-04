@@ -14,7 +14,7 @@ export function testRender<T>(
     expect((property as any).dispatcher.subscriptions.length).toEqual(0)
 }
 export type Property<T> = B.Property<T>
-export type Atom<T> = B.Property<T>
+export type Atom<T> = A.Atom<T>
 export type EventStream<T> = B.EventStream<T>
 export function map<A, B>(
     observable: B.Property<A>,

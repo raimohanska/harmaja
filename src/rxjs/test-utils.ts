@@ -14,7 +14,7 @@ export function testRender<T>(
     expect(subject.observers.length).toEqual(0)
 }
 export type Property<T> = Rx.Observable<T>
-export type Atom<T> = Rx.Observable<T>
+export type Atom<T> = A.Atom<T>
 export type EventStream<T> = Rx.Observable<T>
 
 export const atom = A.atom
