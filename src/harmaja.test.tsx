@@ -44,6 +44,32 @@ describe("Harmaja", () => {
             unmount(el)
             expect(reffed).toEqual(span)
         })
+
+        it("atom ref is set to null when assigned to an eleement", () => {
+            // setting to false with an any cast to get in a value that should never occur really
+            let reffed: O.Atom<HTMLSpanElement | null> = O.atom(false as any);
+            let span = <span id="x" ref={reffed}>Hello</span>
+            let el = <div>{span}</div>
+            expect(reffed.get()).toEqual(null)
+        })
+
+        it("atom ref is set with the element when mounted", () => {
+            let reffed: O.Atom<HTMLSpanElement | null> = O.atom(null);
+            let span = <span id="x" ref={reffed}>Hello</span>
+            let el = <div>{span}</div>
+            mount(el, body())
+            expect(reffed.get()).toEqual(span)
+        })
+
+        it("atom ref is set to null when unmounted", () => {
+            // setting to false with an any cast to get in a value that should never occur really
+            let reffed: O.Atom<HTMLSpanElement | null> = O.atom(false as any);
+            let span = <span id="x" ref={reffed}>Hello</span>
+            let el = <div>{span}</div>
+            mount(el, body())
+            unmount(el)
+            expect(reffed.get()).toEqual(null)
+        })
     })
 
     it("Supports assigning standard and nonstandard attributes", () => {
