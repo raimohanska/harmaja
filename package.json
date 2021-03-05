@@ -18,7 +18,7 @@
     "typescript": "^4"
   },
   "dependencies": {
-    "husky": "4",
+    "husky": "5",
     "lint-staged": "^10.5.4"
   },
   "peerDependencies": {},
