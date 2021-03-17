@@ -46,7 +46,7 @@ Install from NPM `npm install harmaja` or `yarn add harmaja`.
 
 Tweak your tsconfig.json for the custom JSX factory.
 
-```json with comments
+```jsonc
 {
     "compilerOptions": {
         // ...
@@ -169,7 +169,7 @@ When the harmaja element is mounted to the dom, this function will get called wi
 
 Harmaja supports JSX Fragments. This feature requires TypeScript 4 or higher. In your tsconfig.json:
 
-```json with comments
+```jsonc
 {
     "compilerOptions": {
         // ...
