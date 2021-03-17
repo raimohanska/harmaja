@@ -46,7 +46,7 @@ Install from NPM `npm install harmaja` or `yarn add harmaja`.
 
 Tweak your tsconfig.json for the custom JSX factory.
 
-```json
+```json with comments
 {
     "compilerOptions": {
         // ...
@@ -65,7 +65,7 @@ import { h } from "harmaja"
 
 Then you can start using JSX, creating your application components and mounting them to the DOM.
 
-```typescript
+```tsx
 const App = () => <h1>yes</h1>
 mount(<App />, document.getElementById("root")!)
 ```
@@ -78,7 +78,7 @@ You can select the desired Observable library with imports. Currently [Lonna](ht
 
 To use the default Lonna Observables, install `lonna` from NPM and then:
 
-```
+```typescript
 import { h } from "harmaja";
 import * as L from "lonna";
 ```
@@ -89,7 +89,7 @@ Lonna includes Atoms and Lenses in addition to Properties, EventStreams and Buse
 
 To use Bacon.js Observables, install `baconjs` from NPM and then:
 
-```
+```typescript
 import { h } from "harmaja/bacon";
 import * as L from "baconjs";
 ```
@@ -103,7 +103,7 @@ your application is a very bad idea.
 
 To use RxJs Observables, install `rxjs` from NPM and then:
 
-```
+```typescript
 import { h } from "harmaja/rxjs";
 import * as Rx from "rxjs";
 ```
@@ -146,7 +146,7 @@ When the harmaja element is mounted in the dom, the atom value is set to the dom
 Note that the atom value will be set to null when the harmaja element it is passed to is constructed, as well as when it is unmounted.
 Setting the atom will not have any effect on the dom.
 
-```typescript
+```tsx
 const atom = L.atom<RefType<'span'>>(null)
 atom.forEach((el) => alert("Mounted " + el))
 
@@ -159,7 +159,7 @@ To use function refs, pass in a function that takes in a single parameter.
 You can use the `DomElementType<ElementName>` type to get the correct type for the function parameter.
 When the harmaja element is mounted to the dom, this function will get called with the dom element as the first parameter.
 
-```typescript
+```tsx
 <span id="x" ref={(el: DomElementType<'span'>) => alert("Mounted " + el)}>
     Hello
 </span>
@@ -169,7 +169,7 @@ When the harmaja element is mounted to the dom, this function will get called wi
 
 Harmaja supports JSX Fragments. This feature requires TypeScript 4 or higher. In your tsconfig.json:
 
-```json
+```json with comments
 {
     "compilerOptions": {
         // ...
@@ -183,7 +183,7 @@ Harmaja supports JSX Fragments. This feature requires TypeScript 4 or higher. In
 
 Then in your component code:
 
-```typescript
+```tsx
 import { h, Fragment } from "harmaja"
 const App = () => (
     <h1>
@@ -216,7 +216,7 @@ const getKey: (item: A) => string
 
 Then you can render the items using ListView thus:
 
-```typescript
+```tsx
 <ListView
     observable={items}
     renderObservable={renderObservable}
@@ -241,7 +241,7 @@ const keyFunction: (item: A) => string
 
 You can have read-write access to the items by using ListView thus:
 
-```typescript
+```tsx
 <ListView atom={items} renderAtom={renderAtom} getKey={keyFunction} />
 ```
 
@@ -252,7 +252,7 @@ so that in your ItemView you can implement item removal by calling this function
 
 There's a third variation of TextView still, for read-only views:
 
-```typescript
+```tsx
 <ListView
     observable={items}
     renderItem={(item: TodoItem) => (
@@ -272,7 +272,7 @@ views into small views of data.
 
 My component reloads all the time => make sure you've eliminated duplicates in the Property that you use for switching components.
 
-```typescript
+```tsx
 <div>
     { L.view(someProperty, thing => thing.state === "success" ? <HugeComponent/> : <ErrorComponent/> }
 </div>
@@ -282,7 +282,7 @@ In the above, the nested components will be re-constructed each time `someProper
 extracting the discriminator value and then constructing components, only when
 the discriminator changes:
 
-```typescript
+```tsx
 <div>
     {L.view(
         someProperty,
@@ -296,7 +296,7 @@ the discriminator changes:
 
 When embedding observables in to the DOM, Harmaja will automatically subscribe an unsubscribe to the source observable. So, this is ok:
 
-```typescript
+```tsx
 const scrollPos = L.toStatelessProperty(L.fromEvent(window, "scroll"), () =>
     Math.floor(window.scrollY)
 )
@@ -473,7 +473,7 @@ listen to relevant changes in your components and render on change. I wrote abou
 Now if we consider the case of Harmaja, the situation is different from any React based approaches. First of all, Harmaja doesn't have VDOM diffing or Hooks. But the
 fact that you can pass reactive properties as props fits the bill very nicely, so in the case of a TodoItem view, you can
 
-```typescript
+```tsx
 import { React, mount } from "../.."
 
 const ItemView = ({ item }: { item: L.Property<TodoItem> }) => {
@@ -504,7 +504,7 @@ need to change the mechanism when moving from local to global. More on this topi
 
 Anyway, let's put the Todo App together right now! To simplify a bit, if were were just rendering the first TodoItem (There's a chapter on array rendering down there), the root element of the application could look like this:
 
-```typescript
+```tsx
 const App = () => {
     const firstItem: Property<TodoItem> = L.view(allItems, (items) => items[0])
     return <ItemView item={firstItem} />
@@ -513,7 +513,7 @@ const App = () => {
 
 Then you can mount it and it'll start reacting to changes in the store:
 
-```typescript
+```tsx
 mount(<App />, document.getElementById("root")!)
 ```
 
@@ -540,7 +540,7 @@ So instead of having to care about all the possible modifications to items on th
 As shown earlierly, decomposition works nicely as you can call `L.view(item, i => i.someField)` to get views into its components parts.
 Now let's revisit ItemView from the previous section and add a `onUpdate` callback.
 
-```typescript
+```tsx
 import { React, mount } from "../.."
 
 const ItemView = ({
@@ -607,7 +607,7 @@ So you're into decomposing read-write access into data. This is where atoms come
 An `Atom<A>` simply represents a two-way interface to data by extending [`Property<A>`](https://github.com/raimohanska/lonna/blob/master/src/abstractions.ts#L126) and adding
 a `set: (newValue: A)` method for changing the value. Let's try it by changing our TextInput to
 
-```typescript
+```tsx
 import { Atom, atom } from "lonna"
 const TextInput = ({ value }: { text: Atom<string> }) => {
     return (
@@ -621,7 +621,7 @@ and the callback for data update (through the `set` method), it can often be the
 To create an Atom in our unidirectional data flow context, we can construct an "dependent atom" from a `Property` and a `set` function
 like so:
 
-```typescript
+```tsx
 const ItemView = ({
     item,
     onChange,
@@ -683,7 +683,7 @@ That's when standalone Atoms come into play.
 
 To use our ItemView as a standalone component you can change it to use the Atom interface just like the lower level TextInput component:
 
-```typescript
+```tsx
 const ItemView = ({ item }: { item: Atom<TodoItem> }) => {
     return (
         <span>
@@ -695,7 +695,7 @@ const ItemView = ({ item }: { item: Atom<TodoItem> }) => {
 
 and use it in your App like this:
 
-```typescript
+```tsx
 const App = () => {
     const item: Atom<TodoItem> = atom({
         id: 1,
@@ -761,7 +761,7 @@ const allItems: L.Property<TodoItem[]> = L.update(
 
 To render the TodoItems represented by the `allItems` property you can use ListView thus:
 
-```typescript
+```tsx
 ;<ListView
     observable={allItems}
     renderObservable={(item: L.Property<TodoItem>) => <ItemView item={item} />}
@@ -789,7 +789,7 @@ const allItems: Atom<TodoItem[]> = atom([])
 
 You can have read-write access to the items by using ListView thus:
 
-```typescript
+```tsx
 <ListView
     atom={items}
     renderAtom={(item, removeItem) => {
@@ -806,7 +806,7 @@ You can have read-write access to the items by using ListView thus:
 As you can see ListView provides a `removeItem` callback for Atom based views,
 so that in your ItemView you can implement removal simply thus:
 
-```typescript
+```tsx
 const Item = ({
     item,
     removeItem,
@@ -824,7 +824,7 @@ const Item = ({
 This item view implementation only gives a readonly view with a remove link.
 To make the name editable, you could now easily use the TextInput component we created earlierly:
 
-```typescript
+```tsx
 const Item = ({
     item,
     removeItem,
@@ -845,7 +845,7 @@ See the full atomic implementation of TodoApp in [examples/todoapp-atom](example
 
 There's a third variation of TextView still, for read-only views:
 
-```typescript
+```tsx
 <ListView
     observable={items}
     renderItem={(item: TodoItem) => (
@@ -922,7 +922,7 @@ I didn't want to make this too simple, because simple things are always easy to 
 
 For starters we might try a simplistic approach:
 
-```typescript
+```tsx
 const SearchResultsSimplest = ({ state } : { state: L.Property<SearchState> }) => {
     const currentResults: L.Property<string[] | null = L.view(state, s => s.state === "done" ? s.results : null)
     const message: L.Property<string> = L.view(currentResults, r => r.length === 0 ? "Nothing found" : null)
@@ -971,7 +971,7 @@ applying the given mapping function to the values.
 
 The `opacity:0.5` style can be applied similarly using [`L.view`](https://github.com/raimohanska/lonna/blob/master/src/view.ts) and the final SearchResults component looks like this:
 
-```typescript
+```tsx
 const SearchResults = ({ state }: { state: L.Property<SearchState> }) => {
     const latestResults = state.pipe(
         L.changes, // Changes as EventStream
@@ -1012,7 +1012,7 @@ const SearchResults = ({ state }: { state: L.Property<SearchState> }) => {
 
 But this was supposed to be about dealing with asynchronous requests! Let's get to the main Search component now.
 
-```typescript
+```tsx
 declare function search(searchString: string): Promise<string[]> // implement using fetch()
 
 function searchAsProperty(s: string): L.Property<string[]> {
