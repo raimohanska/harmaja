@@ -134,15 +134,33 @@ Methods documented [here](dist/harmaja.d.ts).
 
 ### Refs
 
-Harmaja supports _refs_ similarly to React. If you supply a prop names `ref` to an element,
-it will be expected to be a function and will be called when the particular element has been
-mounted on the DOM. As a parameter, your function will receive the actual HTMLElement that was
-mounted on the DOM.
+With a ref, you can get access to the actual DOM element created by Harmaja, when the element mounted to the DOM.
+This is similar to the ref concept in React.
 
-For instance:
+There are two styles of refs available: atom refs and function refs.
+
+To use an atom ref, pass in an atom to the ref prop of the element.
+The type of the atom must be a union of null and the type of the dom element matching the harmaja element.
+You can use the helper type `RefType<ElementName>` that is exported from Harmaja to automatically determine the correct type for a given element.
+When the harmaja element is mounted in the dom, the atom value is set to the dom element.
+Note that the atom value will be set to null when the harmaja element it is passed to is constructed, as well as when it is unmounted.
+Setting the atom will not have any effect on the dom.
 
 ```typescript
-<span id="x" ref={(el: HTMLSpanElement) => alert("Mounted " + el)}>
+const atom = L.atom<RefType<'span'>>(null)
+atom.forEach((el) => alert("Mounted " + el))
+
+<span id="x" ref={atom}>
+    Hello
+</span>
+```
+
+To use function refs, pass in a function that takes in a single parameter.
+You can use the `DomElementType<ElementName>` type to get the correct type for the function parameter.
+When the harmaja element is mounted to the dom, this function will get called with the dom element as the first parameter.
+
+```typescript
+<span id="x" ref={(el: DomElementType<'span'>) => alert("Mounted " + el)}>
     Hello
 </span>
 ```
