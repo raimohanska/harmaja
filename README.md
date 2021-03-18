@@ -79,8 +79,8 @@ You can select the desired Observable library with imports. Currently [Lonna](ht
 To use the default Lonna Observables, install `lonna` from NPM and then:
 
 ```typescript
-import { h } from "harmaja";
-import * as L from "lonna";
+import { h } from "harmaja"
+import * as L from "lonna"
 ```
 
 Lonna includes Atoms and Lenses in addition to Properties, EventStreams and Buses, so you should use `import { atom, Atom } from "lonna"`.
@@ -90,8 +90,8 @@ Lonna includes Atoms and Lenses in addition to Properties, EventStreams and Buse
 To use Bacon.js Observables, install `baconjs` from NPM and then:
 
 ```typescript
-import { h } from "harmaja/bacon";
-import * as L from "baconjs";
+import { h } from "harmaja/bacon"
+import * as L from "baconjs"
 ```
 
 Bacon.js doesn't include Atoms and Lenses, but Harmaja includes them so you should use `import { atom, Atom } from "harmaja/bacon"`.
@@ -104,8 +104,8 @@ your application is a very bad idea.
 To use RxJs Observables, install `rxjs` from NPM and then:
 
 ```typescript
-import { h } from "harmaja/rxjs";
-import * as Rx from "rxjs";
+import { h } from "harmaja/rxjs"
+import * as Rx from "rxjs"
 ```
 
 RxJs doesn't include Atoms and Lenses, but Harmaja includes them so you should use `import { atom, Atom } from "harmaja/rxjs"`.
@@ -160,7 +160,7 @@ You can use the `DomElementType<ElementName>` type to get the correct type for t
 When the harmaja element is mounted to the dom, this function will get called with the dom element as the first parameter.
 
 ```tsx
-<span id="x" ref={(el: DomElementType<'span'>) => alert("Mounted " + el)}>
+<span id="x" ref={(el: DomElementType<"span">) => alert("Mounted " + el)}>
     Hello
 </span>
 ```

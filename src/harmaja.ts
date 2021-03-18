@@ -21,8 +21,16 @@ export type HarmajaOutput = DOMNode | HarmajaDynamicOutput | HarmajaOutput[]
 export interface HarmajaDynamicOutput extends O.Property<HarmajaOutput> {}
 export type DOMNode = ChildNode
 
-export type DomElementType<K extends keyof JSX.IntrinsicElements> = JSX.IntrinsicElements[K] extends JSX.DetailedHTMLProps<any, infer H> ? H : JSX.IntrinsicElements[K] extends JSX.SVGProps<infer S> ? S : never
-export type RefType<K extends keyof JSX.IntrinsicElements> = DomElementType<K> | null
+export type DomElementType<
+    K extends keyof JSX.IntrinsicElements
+> = JSX.IntrinsicElements[K] extends JSX.DetailedHTMLProps<any, infer H>
+    ? H
+    : JSX.IntrinsicElements[K] extends JSX.SVGProps<infer S>
+    ? S
+    : never
+export type RefType<
+    K extends keyof JSX.IntrinsicElements
+> = DomElementType<K> | null
 
 let transientStateStack: TransientState[] = []
 type TransientState = {
