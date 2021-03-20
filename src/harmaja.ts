@@ -176,13 +176,15 @@ function renderElement(
         }
         if (O.isProperty(value)) {
             attachOnMount(el, () => {
+                let previousValue: any = undefined
                 const unsub = O.forEach(value, (nextValue) => {
-                    setProp(el, key, nextValue)
+                    setProp(el, key, nextValue, previousValue)
+                    previousValue = nextValue
                 })
                 attachOnUnmount(el, unsub)
             })
         } else {
-            setProp(el, key, value)
+            setProp(el, key, value, undefined)
         }
     }
     if (contentEditable) {
@@ -308,17 +310,13 @@ function setRefProp(el: Element, key: string, value: any) {
     return
 }
 
-function setProp(el: Element, key: string, value: any) {
+function setProp(el: Element, key: string, value: any, previousValue: any) {
     if (key.startsWith("on")) {
         key = key.toLowerCase()
         key = key === "ondoubleclick" ? "ondblclick" : key
         ;(el as any)[key] = value
     } else if (key === "style") {
-        const styles = Object.keys(value)
-            .filter((key) => key !== "")
-            .map((key) => `${toKebabCase(key)}: ${value[key]};`)
-            .join("\n")
-        el.setAttribute("style", styles)
+        setStyleProp(el as HTMLElement, value, previousValue)
     } else if (key === "className") {
         el.setAttribute("class", value)
     } else if (el.namespaceURI === "http://www.w3.org/2000/svg") {
@@ -334,17 +332,33 @@ function setProp(el: Element, key: string, value: any) {
     }
 }
 
-function toKebabCase(inputString: string) {
-    return inputString
-        .split("")
-        .map((character) => {
-            if (character == character.toUpperCase()) {
-                return "-" + character.toLowerCase()
-            } else {
-                return character
+type StyleProp = Record<string, string> | undefined
+function setStyleProp(el: HTMLElement, value: StyleProp, oldValue: StyleProp) {
+    if (oldValue) {
+        for (let name in oldValue) {
+            if (!(value && name in value)) {
+                setStyle(el.style, name, "")
             }
-        })
-        .join("")
+        }
+    }
+
+    if (value) {
+        for (let name in value) {
+            if (!oldValue || value[name] !== oldValue[name]) {
+                setStyle(el.style, name, value[name])
+            }
+        }
+    }
+}
+function setStyle(style: CSSStyleDeclaration, key: string, value: string) {
+    if (key[0] === "-") {
+        // TODO: not sure why. This is how Preact does it :) See https://github.com/preactjs/preact/blob/master/src/diff/props.js#L36
+        style.setProperty(key, value)
+    } else if (value === null || value === undefined) {
+        style[key as any] = ""
+    } else {
+        style[key as any] = value
+    }
 }
 
 function getTransientState(forMethod: string) {

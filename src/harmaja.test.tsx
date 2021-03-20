@@ -163,6 +163,23 @@ describe("Harmaja", () => {
         return el
     }))
 
+    describe("element style", () => {
+        it("Supports setting and unsetting style attributes", () => testRender({display: "inline"} as Record<string, string>, (style, setStyle) => {
+            const el = mounted(<span style={style}/>) as HTMLSpanElement
+            expect(el.style.display).toEqual("inline")
+            expect(el.style.border).toEqual("")
+            setStyle({display:"block", border: "1px solid black"})
+            expect(el.style.display).toEqual("block")
+            expect(el.style.border).toEqual("1px solid black")
+            expect(el.style.borderBottom).toEqual("1px solid black")
+            setStyle({})
+            expect(el.style.display).toEqual("")
+            expect(el.style.border).toEqual("")
+            expect(el.style.borderBottom).toEqual("")
+            return el
+        }))
+    })
+
     it("Accepted and rejected child types", () => {
         expect(renderAsString(<h1>{"asdf"}</h1>)).toEqual(`<h1>asdf</h1>`)
         expect(renderAsString(<h1>{42}</h1>)).toEqual(`<h1>42</h1>`)
