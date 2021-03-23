@@ -22,7 +22,7 @@ I present my views on these topics openly, with the goal to paint the whole pict
 API document, but more like a research project. I'm very open to discussion and criticism so correct me if I'm wrong. On the other hand, I hope you to understand
 that many topics here are subjective and I'm presenting my own views of the day.
 
-**NOTE: the documentation below uses Bacon.js observables in examples and API links. Should use Lonna or more generic terms **
+Thanks to [Reaktor](https://reaktor.com) and my lovely co-Reaktorians for the support in the development of this library!
 
 ## Key concepts
 
