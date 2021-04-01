@@ -3,29 +3,29 @@ import { DOMNode, HarmajaOutput, HarmajaStaticOutput, LowLevelApi as H, NodeCont
 
 
 // Find starting from hint
-function findIndex<A>(xs: A[], test: (value: A) => boolean, hint: number): number {
+function findIndex<A>(xs: A[], test: (value: A, index: number) => boolean, hint: number): number {
     const len = xs.length
     let u = hint
     if (u >= len) u = len - 1
     if (u < 0) u = 0
     let d = u - 1
     for (; 0 <= d && u < len; ++u, --d) {
-        if (test(xs[u])) return u
-        if (test(xs[d])) return d
+        if (test(xs[u], u)) return u
+        if (test(xs[d], d)) return d
     }
     for (; u < len; ++u) {
-        if (test(xs[u])) return u
+        if (test(xs[u], u)) return u
     }
     for (; 0 <= d; --d) {
-        if (test(xs[d])) return d
+        if (test(xs[d], d)) return d
     }
 
     // Not found
     return -1
 }
 
-function findKey<A, K>(getKey: (value: A) => K, expected: K): O.Lens<A[], A | undefined> {
-    const test = (x: A) => getKey(x) === expected
+function findKey<A, K>(getKey: (value: A, index: number) => K, expected: K): O.Lens<A[], A | undefined> {
+    const test = (x: A, index: number) => getKey(x, index) === expected
 
     // Cache the previous index. When items are moved they tend to end up near
     // the previous index, it makes the search faster to start from the previous
@@ -54,15 +54,15 @@ function findKey<A, K>(getKey: (value: A) => K, expected: K): O.Lens<A[], A | un
 export type ListViewProps<A, K = A> = {
     observable: O.NativeProperty<A[]>, 
     renderObservable: (key: K, x: O.NativeProperty<A>) => HarmajaOutput, // Actually requires a DOMNode but JSX forces this wider type
-    getKey: (x: A) => K
+    getKey: (x: A, index: number) => K
 } | {
     observable: O.NativeProperty<A[]>, 
     renderItem: (x: A) => HarmajaOutput,
-    getKey?: (x: A) => K
+    getKey?: (x: A, index: number) => K
 } | {
     atom: O.NativeAtom<A[]>, 
     renderAtom: (key: K, x: O.NativeAtom<A>, remove: () => void) => HarmajaOutput, 
-    getKey: (x: A) => K
+    getKey: (x: A, index: number) => K
 }
 export function ListView<A, K>(props: ListViewProps<A, K>) {
     const observable: O.Property<A[]> = ("atom" in props) ? props.atom : props.observable
@@ -194,7 +194,7 @@ export function ListView<A, K>(props: ListViewProps<A, K>) {
 
 type RenderItem<A, K> = (key: K, values: A[], index: number) => HarmajaOutput
 
-function getItemRenderer<A, K>(props: ListViewProps<A, K>, getKey: (a: A) => K, scope: O.Scope): RenderItem<A, K> {
+function getItemRenderer<A, K>(props: ListViewProps<A, K>, getKey: (a: A, index: number) => K, scope: O.Scope): RenderItem<A, K> {
     if ("renderAtom" in props) {
         return (k, values, index) => {
             const lens = findKey(getKey, k)

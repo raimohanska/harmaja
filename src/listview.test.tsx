@@ -218,6 +218,57 @@ describe("Listview", () => {
                 return el
             }))
         })
+
+        describe("Re-using nodes with index-based keying", () => {
+            const items1: Item[] = [{ id: 1, name: "first" }]
+            const items2: Item[] = [{ id: 2, name: "second" }]
+            const items12: Item[] = [{ id: 1, name: "first" }, { id: 2, name: "second" }]
+            const items23: Item[] = [{ id: 2, name: "second" }, { id: 3, name: "third" }]
+            const items123: Item[] = [{ id: 1, name: "first" }, { id: 2, name: "second" }, { id: 3, name: "third" }]
+
+            let renderedIds: number[] = []
+            beforeEach(() => {
+                renderedIds = []
+            })
+
+            const make = (value: O.Property<Item[]>) =>
+                mounted(<ul><ListView
+                    observable={value}
+                    renderObservable={(id: number, item) => {
+                        renderedIds.push(id)
+                        return <li>{O.map(item, i => i.name)}</li>
+                    }}
+                    getKey={(item, index) => index + 1}
+                /></ul>)
+
+            it("When adding items", () => testRender([] as Item[], (value, set) => {
+                const el = make(value)
+                expect(getHtml(el)).toEqual("<ul></ul>")
+                set(items12)
+                expect(getHtml(el)).toEqual("<ul><li>first</li><li>second</li></ul>")
+                expect(renderedIds).toEqual([1, 2]) // Render both items once first
+                set(items1)
+                expect(getHtml(el)).toEqual("<ul><li>first</li></ul>")
+                expect(renderedIds).toEqual([1, 2]) // re-using existing component "first"
+                set(items12)
+                expect(getHtml(el)).toEqual("<ul><li>first</li><li>second</li></ul>")
+                expect(renderedIds).toEqual([1, 2, 2]) // re-using existing component "first", rendering "second" again, because it was not present on previous rendering round.
+                return el
+            }))
+
+            it("When deleting items", () => testRender(items123, (value, set) => {
+                const el = make(value)
+                expect(getHtml(el)).toEqual("<ul><li>first</li><li>second</li><li>third</li></ul>")
+                expect(renderedIds).toEqual([1, 2, 3]) // Render all items once first
+                set(items23)
+                expect(getHtml(el)).toEqual("<ul><li>second</li><li>third</li></ul>")
+                expect(renderedIds).toEqual([1, 2, 3]) // Nothing should be rendered when removing items, existing items are recycled based on index
+                set(items2)
+                expect(getHtml(el)).toEqual("<ul><li>second</li></ul>")
+                expect(renderedIds).toEqual([1, 2, 3]) // Nothing should be rendered when removing the last item
+                return el
+            }))            
+        })
     })
 
     describe("Observable-in-ListView", () => {
