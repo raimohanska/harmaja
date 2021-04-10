@@ -3,7 +3,6 @@ import { h, mount, ListView } from "../../src/index"
 
 const numbers = L.bus<number>()
 
-// TODO: API ergonomics
 const multiplier = numbers.pipe(L.scan(1, (a, b) => a + b, L.globalScope))
 const interval = L.interval(3000, 1)
 const ticker = interval.pipe(L.scan(1, (a, b) => a + b, L.globalScope))
@@ -36,10 +35,10 @@ const Root = () =>
     <div id="root">
         <ReactiveProps/>
         <Plus bus={numbers}/>   
-        <H1>Hello <b>World { multiplier.pipe(L.map((multiplier: number) => <TickerWithMultiplier {...{multiplier, ticker}}/>)) }</b>!</H1>
+        <H1>Hello <b>World { multiplier.pipe(L.map(multiplier => <TickerWithMultiplier {...{multiplier, ticker}}/>)) }</b>!</H1>
         Multiplier <Plus bus={numbers}/>{ multiplier }<Minus bus={numbers}/>
         <br/> Naive array handling 
-        { L.view(dots, dots => <span>{ dots.map((n: number) => <span>{L.view(ticker, m => m * n)} </span>) } </span>) }
+        { L.view(dots, dots => <span>{ dots.map(n => <span>{L.view(ticker, m => m * n)} </span>) } </span>) }
         <br/> Smart array handling 
         <ListView<number, number> {...{ 
             observable: dots, 

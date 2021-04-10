@@ -36,7 +36,7 @@ const Search = () => {
 const SearchResults = ({ state } : { state: L.Property<SearchState> }) => {
     const latestResults = state.pipe(
         L.changes,                                                  // Changes as EventStream
-        L.scan([], ((results: string[], newState: SearchState) =>   // Start with [], use a Reducer
+        L.scan([] as string[], ((results, newState) =>   // Start with [], use a Reducer
           newState.state === "done" ? newState.results : results    // Stick with previous unless "done"
         )),
         L.applyScope(componentScope())                              // Keep up-to-date for component lifetime       
@@ -66,7 +66,7 @@ const SearchResults = ({ state } : { state: L.Property<SearchState> }) => {
 
 const SearchResultsSimplest = ({ state } : { state: L.Property<SearchState> }) => {
     const currentResults: L.Property<string[]> = L.view(state, s => s.state === "done" ? s.results : [])
-    const message: L.Property<string> = L.view(currentResults, r => r.length === 0 ? "Nothing found" : null)
+    const message: L.Property<string> = L.view(currentResults, r => r.length === 0 ? "Nothing found" : "")
     
     return <div>
         { message }
@@ -78,7 +78,7 @@ const SearchResultsSimplest = ({ state } : { state: L.Property<SearchState> }) =
 }
 
 const SearchResults2 = ({ state } : { state: L.Property<SearchState> }) => {
-    const currentResults: L.Property<string[]> = L.view(state, s => s.state === "done" ? s.results : [])
+    const currentResults = L.view(state, s => s.state === "done" ? s.results : [])
 
     const message: L.Property<string> = L.view(state, s => {
         if (s.state === "searching") return "Searching..."
