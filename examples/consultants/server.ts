@@ -13,10 +13,11 @@ export type UpsertConsultants = {
 }
 export type ServerFeedEvent = InitConsultants | UpsertConsultants
 
+let counter = 0
+
 export const initialConsultants = generate(3, randomConsultant)
 
 let consultants: Consultant[] = initialConsultants
-let counter = 0
 
 function serverFeed(): L.EventStream<ServerFeedEvent> {
     console.log("Start server feed")
