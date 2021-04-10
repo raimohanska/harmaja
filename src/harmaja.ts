@@ -106,7 +106,7 @@ export function createElement(
         return renderElement(type, props, flattenedChildren)
     } else {
         console.error("Unexpected createElement call with arguments", arguments)
-        throw Error(`Unknown type ${type}`)
+        throw Error(`Cannot create element of type ${type}`)
     }
 }
 
