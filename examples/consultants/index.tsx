@@ -1,3 +1,4 @@
+import 'regenerator-runtime/runtime'
 import * as L from "lonna"
 import { globalScope } from "lonna";
 import { h, mount, ListView } from "../../src/index"
