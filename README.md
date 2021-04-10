@@ -270,7 +270,7 @@ views into small views of data.
 
 I'm not entirely happy with the ergonomics of Harmaja+Lonna yet. Here are some of the rough edges.
 
-1. Dealing with polymorphism. See [this example](https://codesandbox.io/s/harmajalonna-obd-tf46t?file=/src/App.tsx), line 51. The explicit cast is nasty. 
+1. Dealing with polymorphism. See [this example](https://codesandbox.io/s/harmajalonna-obd-tf46t?file=/src/App.tsx), line 51. The explicit cast is nasty.
 2. Lonna type inference, or the lack of thereof. Lonna uses overload signatures and therefore TypeScript type inference cannot keep up when using, for instance, map/filter.
 
 ## Pitfalls, be aware!
