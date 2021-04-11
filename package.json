@@ -2,6 +2,20 @@
   "name": "harmaja",
   "version": "0.23.0",
   "main": "lonna/index.js",
+  "exports": {
+    ".": "lonna/index.js",
+    "./jsx-runtime": "lonna/jsx-runtime.js",
+    "./jsx-dev-runtime": "lonna/jsx-dev-runtime.js",
+    "./lonna": "lonna/index.js",
+    "./lonna/jsx-runtime": "lonna/jsx-runtime.js",
+    "./lonna/jsx-dev-runtime": "lonna/jsx-dev-runtime.js",
+    "./bacon": "bacon/index.js",
+    "./bacon/jsx-runtime": "bacon/jsx-runtime.js",
+    "./bacon/jsx-dev-runtime": "bacon/jsx-dev-runtime.js",
+    "./rxjs": "rxjs/index.js",
+    "./rxjs/jsx-runtime": "rxjs/jsx-runtime.js",
+    "./rxjs/jsx-dev-runtime": "rxjs/jsx-dev-runtime.js"
+  },
   "types": "lonna/index.d.ts",
   "license": "MIT",
   "devDependencies": {

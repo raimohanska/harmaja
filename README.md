@@ -50,17 +50,11 @@ Tweak your tsconfig.json for the custom JSX factory.
 {
     "compilerOptions": {
         // ...
-        "jsx": "react",
-        "jsxFactory": "h"
+        "jsx": "react-jsx", // or react-jsxdev for dev mode builds
+        "jsxImportSource": "harmaja/lonna" // or harmaja/bacon or harmaja/rxjs if you are using bacon.js or rxjs respectively instead of lonna
     }
     // ...
 }
-```
-
-In your component code you'll need to import the `h` function from Harmaja like this, so that the TypeScript compiler can use it for creating DOM nodes when you use JSX.
-
-```typescript
-import { h } from "harmaja"
 ```
 
 Then you can start using JSX, creating your application components and mounting them to the DOM.
@@ -68,6 +62,25 @@ Then you can start using JSX, creating your application components and mounting 
 ```tsx
 const App = () => <h1>yes</h1>
 mount(<App />, document.getElementById("root")!)
+```
+
+If your build tool doesn't support the new `react-jsx` transform for JSX, you can use the old method:
+
+```jsonc
+{
+    "compilerOptions": {
+        // ...
+        "jsx": "react",
+        "jsxFactory": "h"
+    }
+    // ...
+}
+```
+
+When using the old transform, you'll need to import the `h` function from Harmaja in any files that use JSX, so that the TypeScript compiler can use it for creating DOM nodes.
+
+```typescript
+import { h } from "harmaja"
 ```
 
 ## Observable Library Selection
