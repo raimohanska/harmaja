@@ -198,6 +198,58 @@ mount(<App />, document.getElementById("root")!)
 
 There are larger examples [here](examples).
 
+### Context
+
+Harmaja has limited support for `Context`, that allows you to bind values in parent components and use them in children,
+without passing references all the way in the stack. This is in some cases preferable for convenience, and instead of
+using values as global variables.
+
+First, you'll need to introduce a "context key" in a globally shared const like here.
+
+```ts
+import * as H from "harmaja"
+
+const MEANING_OF_LIFE = H.createContext<number>("MEANING_OF_LIFE")
+```
+
+This key can then be used for binding a value like this:
+
+```ts
+const ComponentWithStaticContextUsage = () => {
+    H.setContext(MEANING_OF_LIFE, 42)
+    return (
+        <div id="parent">
+            <ContextUser label="meaning" />
+        </div>
+    )
+}
+```
+
+Now the context value `MEANING_OF_LIFE` will be bound to the value `42` in the child components, namely `ContextUser`.
+You can now use the context value thus.
+
+```ts
+const ContextUser = ({ label }: { label: string }) => {
+    const contextValue = O.atom<number>(0)
+    H.onContext(MEANING_OF_LIFE, contextValue.set)
+    return (
+        <label>
+            {label}: {contextValue}
+        </label>
+    )
+}
+```
+
+Restrictions of the Harmaja Context API are:
+
+-   Context API only gives you this kind of asynchronous access to values (I'd speculate that it'll be impossible
+    to get synchronous access without some major re-design)
+-   You can only bind the value once, so the API cannot be used as a way to propagate changes to children. If you want to
+    propagate changes, you can of course pass something like a `Property` as the context value.
+-   If you try to use an unbound context value with `onContext`, you'll get an exception.
+-   The API only works for components that emit a single JSX element as their root. If you emit a dynamic value or a Fragment,
+    you'll get an exception. This is a limitation of the current implementation and may change later.
+
 ### ListView
 
 ```typescript
