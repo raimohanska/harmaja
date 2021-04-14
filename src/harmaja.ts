@@ -89,7 +89,7 @@ export function createElement(
         if (O.isProperty(result)) {
             if (transientState.contextFns.length > 0) {
                 throw Error(
-                    "setContext/onContext supported only for components that returns a static piece of DOM, i.e. not a Property"
+                    "setContext/onContext supported only for components that return a single static element (not a Property)"
                 )
             }
             return createController(
@@ -105,6 +105,11 @@ export function createElement(
             transientState.contextFns.length > 0 ||
             transientState.scope
         ) {
+            if (Array.isArray(result) && transientState.contextFns.length > 0) {
+                throw Error(
+                    "setContext/onContext supported only for components that return a single static element (not a Fragment)"
+                )
+            }
             return createController(
                 toDOMNodes(render(result)),
                 handleMounts(transientState)

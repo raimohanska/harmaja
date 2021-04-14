@@ -379,7 +379,10 @@ describe("Harmaja", () => {
             return c
         }))
         it("Not supported for components that yield a Property", () => {
-            expect(() => mounted(<ComponentWithDynamicContextUsageAndPropertyOutput label={O.atom("hello")}/>)).toThrow("setContext/onContext supported only for components that returns a static piece of DOM")
+            expect(() => mounted(<ComponentWithDynamicContextUsageAndPropertyOutput label={O.atom("hello")}/>)).toThrow("setContext/onContext supported only for components that return a single static element (not a Property)")
+        })
+        it("Not supported for components that yield a Fragment", () => {
+            expect(() => mounted(<ComponentFragmentAndContextUsage/>)).toThrow("setContext/onContext supported only for components that return a single static element (not a Fragment)")
         })
         it("Context is static, i.e. setting same context twice not supported.", () => {
             expect(() => mounted(<ComponentThatSetsContextTwice/>)).toThrow("Context MEANING_OF_LIFE already set")
@@ -398,6 +401,12 @@ describe("Harmaja", () => {
         return <div id="parent">
             <ContextUser label="meaning"/>
         </div>
+    }
+    const ComponentFragmentAndContextUsage = () => {
+        H.setContext(MEANING_OF_LIFE, 42)
+        return <>
+            <ContextUser label="meaning"/>
+        </>
     }
     const ComponentWithDynamicContextUsage = ({ label }: { label: O.Property<string>}) => {
         H.setContext(MEANING_OF_LIFE, 42)
