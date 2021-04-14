@@ -381,6 +381,9 @@ describe("Harmaja", () => {
         it("Not supported for components that yield a Property", () => {
             expect(() => mounted(<ComponentWithDynamicContextUsageAndPropertyOutput label={O.atom("hello")}/>)).toThrow("setContext/onContext supported only for components that returns a static piece of DOM")
         })
+        it("Context is static, i.e. setting same context twice not supported.", () => {
+            expect(() => mounted(<ComponentThatSetsContextTwice/>)).toThrow("Context MEANING_OF_LIFE already set")
+        })
         it("Throws when using context that's not set", () => {
             expect(() => mounted(<ContextUser label="hello"/>)).toThrow("Context value MEANING_OF_LIFE not set")
         })
@@ -397,6 +400,11 @@ describe("Harmaja", () => {
         return <div id="parent">
             { O.map(label, l => <ContextUser label={l}/>) }
         </div>
+    }
+    const ComponentThatSetsContextTwice = () => {
+        H.setContext(MEANING_OF_LIFE, 42)
+        H.setContext(MEANING_OF_LIFE, 42)
+        return null
     }
     const ComponentWithDynamicContextUsageAndPropertyOutput = ({ label }: { label: O.Property<string>}) => {
         H.setContext(MEANING_OF_LIFE, 42)
