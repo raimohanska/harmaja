@@ -100,8 +100,8 @@ export function createElement(
                 )
             )
         } else if (
-            transientState.unmountCallbacks ||
-            transientState.mountCallbacks ||
+            transientState.unmountCallbacks.length > 0 ||
+            transientState.mountCallbacks.length > 0 ||
             transientState.scope
         ) {
             return createController(
