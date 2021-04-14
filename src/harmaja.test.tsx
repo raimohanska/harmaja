@@ -365,4 +365,74 @@ describe("Harmaja", () => {
             expect(getHtml(c)).toEqual(`<span contenteditable="false">HOLA</span>`)
         })
     })
+
+    const MEANING_OF_LIFE = H.createContext<number>("MEANING_OF_LIFE");
+
+    describe("Context", () => {
+        it("Static usage", () => {
+            const c = mounted(<ComponentWithStaticContextUsage/>)
+            expect(getHtml(c)).toEqual(`<div id="parent"><label>meaning: 42</label></div>`)
+        })
+        it("Dynamic usage", () => testRender("meaning", (value, set) => {
+            const c = mounted(<ComponentWithDynamicContextUsage label={value}/>)
+            expect(getHtml(c)).toEqual(`<div id="parent"><label>meaning: 42</label></div>`)
+            return c
+        }))
+        it("Not supported for components that yield a Property", () => {
+            expect(() => mounted(<ComponentWithDynamicContextUsageAndPropertyOutput label={O.atom("hello")}/>)).toThrow("setContext/onContext supported only for components that return a single static element (not a Property)")
+        })
+        it("Not supported for components that yield a Fragment", () => {
+            expect(() => mounted(<ComponentFragmentAndContextUsage/>)).toThrow("setContext/onContext supported only for components that return a single static element (not a Fragment)")
+        })
+        it("Context is static, i.e. setting same context twice not supported.", () => {
+            expect(() => mounted(<ComponentThatSetsContextTwice/>)).toThrow("Context MEANING_OF_LIFE already set")
+        })
+        it("Context override in child component is supported, given it has its own root element", () => {
+            const c = mounted(<OverridingContext/>)
+            expect(getHtml(c)).toEqual(`<div><div id="parent"><label>meaning: 42</label></div></div>`)
+        })
+        it("Throws when using context that's not set", () => {
+            expect(() => mounted(<ContextUser label="hello"/>)).toThrow("Context value MEANING_OF_LIFE not set")
+        })
+    })
+
+    const ComponentWithStaticContextUsage = () => {
+        H.setContext(MEANING_OF_LIFE, 42)
+        return <div id="parent">
+            <ContextUser label="meaning"/>
+        </div>
+    }
+    const ComponentFragmentAndContextUsage = () => {
+        H.setContext(MEANING_OF_LIFE, 42)
+        return <>
+            <ContextUser label="meaning"/>
+        </>
+    }
+    const ComponentWithDynamicContextUsage = ({ label }: { label: O.Property<string>}) => {
+        H.setContext(MEANING_OF_LIFE, 42)
+        return <div id="parent">
+            { O.map(label, l => <ContextUser label={l}/>) }
+        </div>
+    }
+    const ComponentThatSetsContextTwice = () => {
+        H.setContext(MEANING_OF_LIFE, 42)
+        H.setContext(MEANING_OF_LIFE, 42)
+        return null
+    }
+    const OverridingContext = () => {
+        H.setContext(MEANING_OF_LIFE, 41)
+        return <div><ComponentWithStaticContextUsage/></div>
+    }
+    const ComponentWithDynamicContextUsageAndPropertyOutput = ({ label }: { label: O.Property<string>}) => {
+        H.setContext(MEANING_OF_LIFE, 42)
+        const result = O.atom(<div id="parent">
+            { O.map(label, l => <ContextUser label={l}/>) }
+        </div>)
+        return result
+    }
+    const ContextUser = ({label}: {label: string}) => {
+        const contextValue = O.atom<number>(0)
+        H.onContext(MEANING_OF_LIFE, contextValue.set)
+        return <label>{label}: {contextValue}</label>
+    }
 })

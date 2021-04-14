@@ -33,6 +33,8 @@ export type RefType<
 > = DomElementType<K> | null
 
 let transientStateStack: TransientState[] = []
+type ContextMap = Map<Context<any>, any>
+type ContextFn = (e: DOMNode) => void
 type TransientState = {
     mountCallbacks: Callback[]
     mountE: O.EventStream<void> | undefined
@@ -40,6 +42,7 @@ type TransientState = {
     unmountE: O.EventStream<void> | undefined
     scope: O.Scope | undefined
     mountsController: NodeController | undefined
+    contextFns: ContextFn[]
 }
 
 // If we need an empty object or empty array for no-oping purposes,
@@ -60,6 +63,7 @@ function emptyTransientState(): TransientState {
         unmountE: undefined,
         scope: undefined,
         mountsController: undefined,
+        contextFns: EMPTY_ARRAY as ContextFn[],
     }
 }
 
@@ -83,6 +87,11 @@ export function createElement(
         const result = constructor({ ...props, children: flattenedChildren })
         const transientState = transientStateStack.pop()!
         if (O.isProperty(result)) {
+            if (transientState.contextFns.length > 0) {
+                throw Error(
+                    "setContext/onContext supported only for components that return a single static element (not a Property)"
+                )
+            }
             return createController(
                 [placeholders.create()],
                 composeControllers(
@@ -91,10 +100,16 @@ export function createElement(
                 )
             )
         } else if (
-            transientState.unmountCallbacks ||
-            transientState.mountCallbacks ||
+            transientState.unmountCallbacks.length > 0 ||
+            transientState.mountCallbacks.length > 0 ||
+            transientState.contextFns.length > 0 ||
             transientState.scope
         ) {
+            if (Array.isArray(result) && transientState.contextFns.length > 0) {
+                throw Error(
+                    "setContext/onContext supported only for components that return a single static element (not a Fragment)"
+                )
+            }
             return createController(
                 toDOMNodes(render(result)),
                 handleMounts(transientState)
@@ -130,6 +145,7 @@ const handleMounts = (transientState: TransientState) => (
     if (transientState.scope) {
         transientState.mountsController = controller
     }
+    transientState.contextFns.forEach((fn) => fn(controller.currentElements[0]))
     for (const callback of transientState.mountCallbacks) {
         callback()
     }
@@ -277,6 +293,7 @@ const startUpdatingNodes = (observable: HarmajaObservableChild) => (
 ): Callback => {
     return O.forEach(observable, (nextChildren: HarmajaChildOrChildren) => {
         let oldElements = controller.currentElements.slice()
+
         let newNodes = flattenChildren(nextChildren)
             .flatMap(render)
             .flatMap(toDOMNodes)
@@ -362,7 +379,7 @@ function setStyle(style: CSSStyleDeclaration, key: string, value: string) {
 }
 
 function getTransientState(forMethod: string) {
-    if (transientStateStack.length == 0) {
+    if (transientStateStack.length === 0) {
         throw Error(
             `Illegal ${forMethod} call outside component constructor call`
         )
@@ -378,6 +395,7 @@ type NodeState = {
     onUnmounts: Callback[]
     onMounts: Callback[]
     controllers: NodeController[]
+    contextMap: ContextMap | undefined
 }
 
 export type NodeController = {
@@ -405,6 +423,7 @@ const nodeState = (function () {
                     onMounts: EMPTY_ARRAY,
                     onUnmounts: EMPTY_ARRAY,
                     controllers: EMPTY_ARRAY,
+                    contextMap: undefined,
                 }
                 ;(node as any).__h = currentNodeState
             }
@@ -959,6 +978,56 @@ function removeNode(
         replacedByController(controller, [oldNode], [])
         //console.log("Removed " + debug(oldElement))
     }
+}
+
+declare const contextBrand: unique symbol
+export type Context<T> = {
+    [contextBrand]: true
+    name: string
+}
+
+export function createContext<T>(name: string): Context<T> {
+    return {
+        name,
+    } as Context<T>
+}
+
+const nop = () => {}
+export function setContext<T>(ctx: Context<T>, value: T) {
+    const transientState = getTransientState("setContext") // Ensures that can be called in component constructors
+    if (transientState.contextFns === EMPTY_ARRAY)
+        transientState.contextFns = []
+    transientState.contextFns.push((el) => {
+        const ns = nodeState.getOrInstantiate(el)
+        if (!ns.contextMap) ns.contextMap = new Map()
+        if (ns.contextMap.has(ctx)) {
+            throw Error(`Context ${ctx.name} already set`)
+        }
+        ns.contextMap.set(ctx, value)
+        return nop
+    })
+}
+
+export function onContext<T>(
+    ctx: Context<T>,
+    callback: (value: T) => void
+): void {
+    const transientState = getTransientState("setContext") // Ensures that can be called in component constructors
+    if (transientState.contextFns === EMPTY_ARRAY)
+        transientState.contextFns = []
+    function getFrom(el: Node): Callback {
+        const ns = nodeState.getIfExists(el)
+        if (ns && ns.contextMap && ns.contextMap.has(ctx)) {
+            const value = ns.contextMap.get(ctx)
+            callback(value)
+            return nop
+        }
+        if (el.parentNode) {
+            return getFrom(el.parentNode)
+        }
+        throw Error(`Context value ${ctx.name} not set`)
+    }
+    transientState.contextFns.push(getFrom)
 }
 
 export function debug(element: HarmajaStaticOutput | Node): string {
