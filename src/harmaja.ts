@@ -42,7 +42,7 @@ type TransientState = {
     unmountE: O.EventStream<void> | undefined
     scope: O.Scope | undefined
     mountsController: NodeController | undefined
-    contextFns: ContextFn[] | undefined
+    contextFns: ContextFn[]
 }
 
 // If we need an empty object or empty array for no-oping purposes,
@@ -63,7 +63,7 @@ function emptyTransientState(): TransientState {
         unmountE: undefined,
         scope: undefined,
         mountsController: undefined,
-        contextFns: undefined,
+        contextFns: EMPTY_ARRAY as ContextFn[],
     }
 }
 
@@ -87,7 +87,7 @@ export function createElement(
         const result = constructor({ ...props, children: flattenedChildren })
         const transientState = transientStateStack.pop()!
         if (O.isProperty(result)) {
-            if (transientState.contextFns) {
+            if (transientState.contextFns.length > 0) {
                 throw Error(
                     "setContext/onContext supported only for components that returns a static piece of DOM, i.e. not a Property"
                 )
@@ -102,6 +102,7 @@ export function createElement(
         } else if (
             transientState.unmountCallbacks.length > 0 ||
             transientState.mountCallbacks.length > 0 ||
+            transientState.contextFns.length > 0 ||
             transientState.scope
         ) {
             return createController(
@@ -139,10 +140,7 @@ const handleMounts = (transientState: TransientState) => (
     if (transientState.scope) {
         transientState.mountsController = controller
     }
-    if (transientState.contextFns) {
-        const el = controller.currentElements[0]
-        transientState.contextFns.forEach((fn) => fn(el))
-    }
+    transientState.contextFns.forEach((fn) => fn(controller.currentElements[0]))
     for (const callback of transientState.mountCallbacks) {
         callback()
     }
@@ -992,7 +990,8 @@ export function createContext<T>(name: string): Context<T> {
 const nop = () => {}
 export function setContext<T>(ctx: Context<T>, value: T) {
     const transientState = getTransientState("setContext") // Ensures that can be called in component constructors
-    if (!transientState.contextFns) transientState.contextFns = []
+    if (transientState.contextFns === EMPTY_ARRAY)
+        transientState.contextFns = []
     transientState.contextFns.push((el) => {
         const ns = nodeState.getOrInstantiate(el)
         if (!ns.contextMap) ns.contextMap = new Map()
@@ -1009,7 +1008,8 @@ export function onContext<T>(
     callback: (value: T) => void
 ): void {
     const transientState = getTransientState("setContext") // Ensures that can be called in component constructors
-    if (!transientState.contextFns) transientState.contextFns = []
+    if (transientState.contextFns === EMPTY_ARRAY)
+        transientState.contextFns = []
     function getFrom(el: Node): Callback {
         const ns = nodeState.getIfExists(el)
         if (ns && ns.contextMap && ns.contextMap.has(ctx)) {
