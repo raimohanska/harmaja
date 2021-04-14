@@ -274,7 +274,6 @@ function render(child: HarmajaChild | HarmajaOutput): HarmajaStaticOutput {
         return placeholders.create()
     }
     if (O.isProperty(child)) {
-        // TODO: we should be in constructor stack now and could capture context, pass to startUpdatingNodes
         return createController(
             [placeholders.create()],
             startUpdatingNodes(child as HarmajaObservableChild)
@@ -377,7 +376,7 @@ function setStyle(style: CSSStyleDeclaration, key: string, value: string) {
 }
 
 function getTransientState(forMethod: string) {
-    if (transientStateStack.length < 1) {
+    if (transientStateStack.length === 0) {
         throw Error(
             `Illegal ${forMethod} call outside component constructor call`
         )
