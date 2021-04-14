@@ -384,6 +384,10 @@ describe("Harmaja", () => {
         it("Context is static, i.e. setting same context twice not supported.", () => {
             expect(() => mounted(<ComponentThatSetsContextTwice/>)).toThrow("Context MEANING_OF_LIFE already set")
         })
+        it("Context override in child component is supported, given it has its own root element", () => {
+            const c = mounted(<OverridingContext/>)
+            expect(getHtml(c)).toEqual(`<div><div id="parent"><label>meaning: 42</label></div></div>`)
+        })
         it("Throws when using context that's not set", () => {
             expect(() => mounted(<ContextUser label="hello"/>)).toThrow("Context value MEANING_OF_LIFE not set")
         })
@@ -405,6 +409,10 @@ describe("Harmaja", () => {
         H.setContext(MEANING_OF_LIFE, 42)
         H.setContext(MEANING_OF_LIFE, 42)
         return null
+    }
+    const OverridingContext = () => {
+        H.setContext(MEANING_OF_LIFE, 41)
+        return <div><ComponentWithStaticContextUsage/></div>
     }
     const ComponentWithDynamicContextUsageAndPropertyOutput = ({ label }: { label: O.Property<string>}) => {
         H.setContext(MEANING_OF_LIFE, 42)
