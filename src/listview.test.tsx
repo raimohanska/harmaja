@@ -15,6 +15,16 @@ const testItems3: Item[] = [secondItem]
 const isRx = observablesImplementationName === "RxJs"
 
 describe("Listview", () => {
+    it("Renders Observables as children", () => testRender(testItems, (value, set) => {
+        const el = mounted(<ul><ListView
+            observable={value}
+            renderItem={item => { 
+                return O.atom(item.name)
+            }}
+        /></ul>)
+        expect(getHtml(el)).toEqual("<ul>first</ul>")
+        return el
+    }))
     describe("With renderItem", () => {
         it("Without getKey", () => testRender(testItems, (value, set) => {
             let renderedIds: number[] = [];
