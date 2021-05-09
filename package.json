@@ -1,6 +1,6 @@
 {
   "name": "harmaja",
-  "version": "0.23.0",
+  "version": "0.24.0",
   "main": "lonna/index.js",
   "exports": {
     ".": "lonna/index.js",
