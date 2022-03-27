@@ -1,5 +1,6 @@
 import * as O from "./observable/observables"
 import { SVG_TAGS } from "./special-casing"
+import { Stats } from "./stats"
 
 export type HarmajaComponent = (props: HarmajaProps) => HarmajaOutput
 export type JSXElementType = string | HarmajaComponent
@@ -82,6 +83,7 @@ export function createElement(
         delete props.children // TODO: ugly hack, occurred in todoapp example
     }
     if (typeof type == "function") {
+        Stats.componentCount++
         const constructor = type as HarmajaComponent
         transientStateStack.push(emptyTransientState())
         const result = constructor({ ...props, children: flattenedChildren })
