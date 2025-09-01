@@ -1,5 +1,5 @@
 import { HarmajaOutput, HarmajaStaticOutput, mount, unmount } from "./harmaja"
-import { atomFromValue, Bus, Signal } from "./observables"
+import { atomFromValue, Bus, Signal } from "./signal"
 
 export function mounted(element: HarmajaOutput) {
     const parent = document.createElement("html")

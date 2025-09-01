@@ -1,14 +1,12 @@
-import * as O from "./observables"
+import { isAtom, Bus, isSignal, EventStream, Signal } from "./signal"
 import { SVG_TAGS } from "./special-casing"
-
-// TODO get rid of scopes, render immediately
 
 export type HarmajaComponent = (props: HarmajaProps) => HarmajaOutput
 export type JSXElementType = string | HarmajaComponent
 
 export type HarmajaProps = Record<string, any>
 export type HarmajaChild =
-    | O.Signal<HarmajaChildOrChildren>
+    | Signal<HarmajaChildOrChildren>
     | DOMNode
     | string
     | number
@@ -17,7 +15,7 @@ export type HarmajaChildren = (HarmajaChild | HarmajaChildren)[]
 export type HarmajaChildOrChildren = HarmajaChild | HarmajaChildren
 // TODO: naming sucks
 export type HarmajaStaticOutput = DOMNode | DOMNode[] // Can be one or more, but an empty array is not allowed
-export type HarmajaOutput = DOMNode | O.Signal<HarmajaOutput> | HarmajaOutput[]
+export type HarmajaOutput = DOMNode | Signal<HarmajaOutput> | HarmajaOutput[]
 export type DOMNode = ChildNode
 
 export type DomElementType<K extends keyof JSX.IntrinsicElements> =
@@ -34,9 +32,9 @@ type ContextMap = Map<Context<any>, any>
 type ContextFn = (e: DOMNode) => void
 type TransientState = {
     mountCallbacks: Callback[]
-    mountE: O.EventStream<void> | undefined
+    mountE: EventStream<void> | undefined
     unmountCallbacks: Callback[]
-    unmountE: O.EventStream<void> | undefined
+    unmountE: EventStream<void> | undefined
     mountsController: NodeController | undefined
     contextFns: ContextFn[]
 }
@@ -81,7 +79,7 @@ export function createElement(
         transientStateStack.push(emptyTransientState())
         const result = constructor({ ...props, children: flattenedChildren })
         const transientState = transientStateStack.pop()!
-        if (O.isSignal(result)) {
+        if (isSignal(result)) {
             if (transientState.contextFns.length > 0) {
                 throw Error(
                     "setContext/onContext supported only for components that return a single static element (not a Signal)"
@@ -187,7 +185,7 @@ function renderElement(
         if (key === "contentEditable" && value !== false && value !== "false") {
             contentEditable = true
         }
-        if (O.isSignal(value)) {
+        if (isSignal(value)) {
             const initValue = value.get()
             setProp(el, key, initValue, undefined)
             attachOnMount(el, () => {
@@ -227,12 +225,12 @@ function addContentEditableController(
         )
     }
     const child = children[0]
-    if (!O.isSignal(child)) {
+    if (!isSignal(child)) {
         throw Error(
             "contentEditable element must have an Observable<string> as child"
         )
     }
-    const observable = child as O.Signal<string>
+    const observable = child as Signal<string>
 
     function applyValue() {
         const nextValue = observable.get()
@@ -277,7 +275,7 @@ function render(child: HarmajaChild | HarmajaOutput): HarmajaStaticOutput {
     if (!child) {
         return placeholders.create()
     }
-    if (O.isSignal(child)) {
+    if (isSignal(child)) {
         return createController(
             createChildrenFromObservable(child),
             startUpdatingNodes(child)
@@ -290,7 +288,7 @@ function render(child: HarmajaChild | HarmajaOutput): HarmajaStaticOutput {
 }
 
 function createChildrenFromObservable(
-    observable: O.Signal<HarmajaChildOrChildren>
+    observable: Signal<HarmajaChildOrChildren>
 ) {
     const children = observable.get()
     let newNodes = flattenChildren(children).flatMap(render).flatMap(toDOMNodes)
@@ -301,7 +299,7 @@ function createChildrenFromObservable(
 }
 
 const startUpdatingNodes =
-    (observable: O.Signal<HarmajaChildOrChildren>) =>
+    (observable: Signal<HarmajaChildOrChildren>) =>
     (controller: NodeController): Callback => {
         return observable.observe(() => {
             let oldElements = controller.currentElements.slice()
@@ -319,7 +317,7 @@ function isDOMElement(child: any): child is DOMNode {
 }
 
 function setRefProp(el: Element, key: string, value: any) {
-    if (O.isAtom(value)) {
+    if (isAtom(value)) {
         value.set(null)
         attachOnMount(el, () => value.set(el))
         attachOnUnmount(el, () => value.set(null))
@@ -463,7 +461,7 @@ export function mount(
  *  - `onUnmountEvent` will be triggered
  */
 export function unmount(harmajaElement: HarmajaOutput) {
-    if (O.isSignal(harmajaElement)) {
+    if (isSignal(harmajaElement)) {
         // A dynamic component, let's try to find the current mounted nodes
         //console.log("Unmounting dynamic", harmajaElement)
         unmount(harmajaElement.get())
@@ -504,32 +502,32 @@ export function onUnmount(callback: Callback) {
  *  The onMount event as EventStream, emitting a value after the component has been mounted to the document.
  *  NOTE: Call only in component constructors. Otherwise will not do anything useful.
  */
-export function mountEvent(): O.EventStream<void> {
+export function mountEvent(): EventStream<void> {
     const transientState = getTransientState("mountEvent")
     if (!transientState.mountE) {
-        const event = O.Bus<void>()
+        const event = Bus<void>()
         onMount(() => {
             event.push(undefined)
         })
         transientState.mountE = event
     }
-    return transientState.mountE! as O.EventStream<void>
+    return transientState.mountE! as EventStream<void>
 }
 
 /**
  *  The onUnmount event as EventStream, emitting a value after the component has been unmounted from the document.
  *  NOTE: Call only in component constructors. Otherwise will not do anything useful.
  */
-export function unmountEvent(): O.EventStream<void> {
+export function unmountEvent(): EventStream<void> {
     const transientState = getTransientState("unmountEvent")
     if (!transientState.unmountE) {
-        const event = O.Bus<void>()
+        const event = Bus<void>()
         onUnmount(() => {
             event.push(undefined)
         })
         transientState.unmountE = event
     }
-    return transientState.unmountE! as O.EventStream<void>
+    return transientState.unmountE! as EventStream<void>
 }
 
 export function callOnMounts(element: Node) {

@@ -1,5 +1,5 @@
-import * as O from "./observables"
 import { DOMNode, HarmajaOutput, HarmajaStaticOutput, LowLevelApi as H, NodeController } from "./harmaja"
+import { Atom, cached, mapCached, Lens, Signal } from "./signal"
 
 
 // Find starting from hint
@@ -24,7 +24,7 @@ function findIndex<A>(xs: A[], test: (value: A, index: number) => boolean, hint:
     return -1
 }
 
-function findKeyLens<A, K>(getKey: (value: A, index: number) => K, expected: K): O.Lens<A[], A | undefined> {
+function findKeyLens<A, K>(getKey: (value: A, index: number) => K, expected: K): Lens<A[], A | undefined> {
     const test = (x: A, index: number) => getKey(x, index) === expected
 
     // Cache the previous index. When items are moved they tend to end up near
@@ -52,20 +52,20 @@ function findKeyLens<A, K>(getKey: (value: A, index: number) => K, expected: K):
 }
 
 export type ListViewProps<A, K = A> = {
-    observable: O.Signal<A[]>, 
-    renderObservable: (key: K, x: O.Signal<A>) => HarmajaOutput, // Actually requires a DOMNode but JSX forces this wider type
+    observable: Signal<A[]>, 
+    renderObservable: (key: K, x: Signal<A>) => HarmajaOutput, // Actually requires a DOMNode but JSX forces this wider type
     getKey: (x: A, index: number) => K
 } | {
-    observable: O.Signal<A[]>, 
+    observable: Signal<A[]>, 
     renderItem: (x: A) => HarmajaOutput,
     getKey?: (x: A, index: number) => K
 } | {
-    atom: O.Atom<A[]>, 
-    renderAtom: (key: K, x: O.Signal<A>, remove: () => void) => HarmajaOutput, 
+    atom: Atom<A[]>, 
+    renderAtom: (key: K, x: Signal<A>, remove: () => void) => HarmajaOutput, 
     getKey: (x: A, index: number) => K
 }
 export function ListView<A, K>(props: ListViewProps<A, K>) {
-    const observable: O.Signal<A[]> = ("atom" in props) ? props.atom : props.observable
+    const observable: Signal<A[]> = ("atom" in props) ? props.atom : props.observable
     const { getKey = defaultKey } = props    
     const itemRenderer = getItemRenderer(props, getKey)
 
@@ -227,8 +227,8 @@ function getItemRenderer<A, K>(props: ListViewProps<A, K>, getKey: (a: A, index:
             return props.renderObservable(k, mapped.filter(notNull))            
         }
     } else {
-        const renderObservable = (key: K, x: O.Signal<A>): HarmajaOutput => {
-            return x.cached().mapCached(props.renderItem)
+        const renderObservable = (key: K, x: Signal<A>): HarmajaOutput => {
+            return mapCached(cached(x), props.renderItem)
         }
         return getItemRenderer({ ...props, renderObservable }, getKey)
     }

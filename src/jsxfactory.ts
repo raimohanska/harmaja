@@ -1,7 +1,7 @@
 import * as CSS from "csstype"
 
 import * as H from "./harmaja"
-import { Atom, Signal } from "./observables"
+import { Atom, Signal } from "./signal"
 
 type ChildrenType = H.HarmajaChildren | H.HarmajaChild
 
