@@ -1,12 +1,14 @@
-import * as O from "./observable/observables"
+import * as O from "./observables"
 import { SVG_TAGS } from "./special-casing"
+
+// TODO get rid of scopes, render immediately
 
 export type HarmajaComponent = (props: HarmajaProps) => HarmajaOutput
 export type JSXElementType = string | HarmajaComponent
 
 export type HarmajaProps = Record<string, any>
 export type HarmajaChild =
-    | HarmajaObservableChild
+    | O.Signal<HarmajaChildOrChildren>
     | DOMNode
     | string
     | number
@@ -14,23 +16,18 @@ export type HarmajaChild =
 export type HarmajaChildren = (HarmajaChild | HarmajaChildren)[]
 export type HarmajaChildOrChildren = HarmajaChild | HarmajaChildren
 // TODO: naming sucks
-export interface HarmajaObservableChild
-    extends O.Property<HarmajaChildOrChildren> {}
 export type HarmajaStaticOutput = DOMNode | DOMNode[] // Can be one or more, but an empty array is not allowed
-export type HarmajaOutput = DOMNode | HarmajaDynamicOutput | HarmajaOutput[]
-export interface HarmajaDynamicOutput extends O.Property<HarmajaOutput> {}
+export type HarmajaOutput = DOMNode | O.Signal<HarmajaOutput> | HarmajaOutput[]
 export type DOMNode = ChildNode
 
-export type DomElementType<
-    K extends keyof JSX.IntrinsicElements
-> = JSX.IntrinsicElements[K] extends JSX.DetailedHTMLProps<any, infer H>
-    ? H
-    : JSX.IntrinsicElements[K] extends JSX.SVGProps<infer S>
-    ? S
-    : never
-export type RefType<
-    K extends keyof JSX.IntrinsicElements
-> = DomElementType<K> | null
+export type DomElementType<K extends keyof JSX.IntrinsicElements> =
+    JSX.IntrinsicElements[K] extends JSX.DetailedHTMLProps<any, infer H>
+        ? H
+        : JSX.IntrinsicElements[K] extends JSX.SVGProps<infer S>
+          ? S
+          : never
+export type RefType<K extends keyof JSX.IntrinsicElements> =
+    DomElementType<K> | null
 
 let transientStateStack: TransientState[] = []
 type ContextMap = Map<Context<any>, any>
@@ -40,7 +37,6 @@ type TransientState = {
     mountE: O.EventStream<void> | undefined
     unmountCallbacks: Callback[]
     unmountE: O.EventStream<void> | undefined
-    scope: O.Scope | undefined
     mountsController: NodeController | undefined
     contextFns: ContextFn[]
 }
@@ -61,7 +57,6 @@ function emptyTransientState(): TransientState {
         mountE: undefined,
         unmountCallbacks: EMPTY_ARRAY as Callback[],
         unmountE: undefined,
-        scope: undefined,
         mountsController: undefined,
         contextFns: EMPTY_ARRAY as ContextFn[],
     }
@@ -86,24 +81,23 @@ export function createElement(
         transientStateStack.push(emptyTransientState())
         const result = constructor({ ...props, children: flattenedChildren })
         const transientState = transientStateStack.pop()!
-        if (O.isProperty(result)) {
+        if (O.isSignal(result)) {
             if (transientState.contextFns.length > 0) {
                 throw Error(
-                    "setContext/onContext supported only for components that return a single static element (not a Property)"
+                    "setContext/onContext supported only for components that return a single static element (not a Signal)"
                 )
             }
             return createController(
-                [placeholders.create()],
+                createChildrenFromObservable(result),
                 composeControllers(
                     handleMounts(transientState),
-                    startUpdatingNodes(result as HarmajaObservableChild)
+                    startUpdatingNodes(result)
                 )
             )
         } else if (
             transientState.unmountCallbacks.length > 0 ||
             transientState.mountCallbacks.length > 0 ||
-            transientState.contextFns.length > 0 ||
-            transientState.scope
+            transientState.contextFns.length > 0
         ) {
             if (Array.isArray(result) && transientState.contextFns.length > 0) {
                 throw Error(
@@ -139,22 +133,25 @@ function composeControllers(
     }
 }
 
-const handleMounts = (transientState: TransientState) => (
-    controller: NodeController
-) => {
+const handleMounts =
+    (transientState: TransientState) => (controller: NodeController) => {
+        /*
+    TODO: was this needed?
     if (transientState.scope) {
         transientState.mountsController = controller
-    }
-    transientState.contextFns.forEach((fn) => fn(controller.currentElements[0]))
-    for (const callback of transientState.mountCallbacks) {
-        callback()
-    }
-    return () => {
-        for (const callback of transientState.unmountCallbacks) {
+    }*/
+        transientState.contextFns.forEach((fn) =>
+            fn(controller.currentElements[0])
+        )
+        for (const callback of transientState.mountCallbacks) {
             callback()
         }
+        return () => {
+            for (const callback of transientState.unmountCallbacks) {
+                callback()
+            }
+        }
     }
-}
 
 export function Fragment({
     children,
@@ -190,10 +187,13 @@ function renderElement(
         if (key === "contentEditable" && value !== false && value !== "false") {
             contentEditable = true
         }
-        if (O.isProperty(value)) {
+        if (O.isSignal(value)) {
+            const initValue = value.get()
+            setProp(el, key, initValue, undefined)
             attachOnMount(el, () => {
-                let previousValue: any = undefined
-                const unsub = O.forEach(value, (nextValue) => {
+                let previousValue: any = initValue
+                const unsub = value.observe(() => {
+                    const nextValue = value.get()
                     setProp(el, key, nextValue, previousValue)
                     previousValue = nextValue
                 })
@@ -227,28 +227,29 @@ function addContentEditableController(
         )
     }
     const child = children[0]
-    if (!O.isProperty(child)) {
+    if (!O.isSignal(child)) {
         throw Error(
             "contentEditable element must have an Observable<string> as child"
         )
     }
-    const observable = child as O.Property<string>
+    const observable = child as O.Signal<string>
 
-    createController(
-        [el],
-        (controller: NodeController): Callback => {
-            return O.forEach(observable, (nextValue) => {
-                if (typeof nextValue !== "string") {
-                    throw Error(
-                        `Value for contentEditable is not string: ${nextValue} is a ${typeof nextValue}.`
-                    )
-                }
-                if (nextValue !== el.textContent) {
-                    el.textContent = nextValue
-                }
-            })
+    function applyValue() {
+        const nextValue = observable.get()
+        if (typeof nextValue !== "string") {
+            throw Error(
+                `Value for contentEditable is not string: ${nextValue} is a ${typeof nextValue}.`
+            )
         }
-    )
+        if (nextValue !== el.textContent) {
+            el.textContent = nextValue
+        }
+    }
+    applyValue()
+
+    createController([el], (): Callback => {
+        return observable.observe(applyValue)
+    })
 }
 
 const placeholders = (function () {
@@ -273,13 +274,13 @@ function render(child: HarmajaChild | HarmajaOutput): HarmajaStaticOutput {
     if (typeof child === "string" || typeof child === "number") {
         return document.createTextNode(child.toString())
     }
-    if (child === null || child === false) {
+    if (!child) {
         return placeholders.create()
     }
-    if (O.isProperty(child)) {
+    if (O.isSignal(child)) {
         return createController(
-            [placeholders.create()],
-            startUpdatingNodes(child as HarmajaObservableChild)
+            createChildrenFromObservable(child),
+            startUpdatingNodes(child)
         )
     }
     if (isDOMElement(child)) {
@@ -288,24 +289,30 @@ function render(child: HarmajaChild | HarmajaOutput): HarmajaStaticOutput {
     throw Error(child + " is not a valid element")
 }
 
-const startUpdatingNodes = (observable: HarmajaObservableChild) => (
-    controller: NodeController
-): Callback => {
-    return O.forEach(observable, (nextChildren: HarmajaChildOrChildren) => {
-        let oldElements = controller.currentElements.slice()
-
-        let newNodes = flattenChildren(nextChildren)
-            .flatMap(render)
-            .flatMap(toDOMNodes)
-        if (newNodes.length === 0) {
-            newNodes = [placeholders.create()]
-        }
-        //console.log("New values", debug(controller.currentElements))
-        //console.log(`${debug(oldElements)} replaced by ${debug(controller.currentElements)} in observable`)
-
-        replaceAll(controller, oldElements, newNodes)
-    })
+function createChildrenFromObservable(
+    observable: O.Signal<HarmajaChildOrChildren>
+) {
+    const children = observable.get()
+    let newNodes = flattenChildren(children).flatMap(render).flatMap(toDOMNodes)
+    if (newNodes.length === 0) {
+        newNodes = [placeholders.create()]
+    }
+    return newNodes
 }
+
+const startUpdatingNodes =
+    (observable: O.Signal<HarmajaChildOrChildren>) =>
+    (controller: NodeController): Callback => {
+        return observable.observe(() => {
+            let oldElements = controller.currentElements.slice()
+
+            let newNodes = createChildrenFromObservable(observable)
+            //console.log("New values", debug(controller.currentElements))
+            //console.log(`${debug(oldElements)} replaced by ${debug(controller.currentElements)} in observable`)
+
+            replaceAll(controller, oldElements, newNodes)
+        })
+    }
 
 function isDOMElement(child: any): child is DOMNode {
     return child instanceof Element || child instanceof Text
@@ -313,9 +320,9 @@ function isDOMElement(child: any): child is DOMNode {
 
 function setRefProp(el: Element, key: string, value: any) {
     if (O.isAtom(value)) {
-        O.set(value, null)
-        attachOnMount(el, () => O.set(value, el))
-        attachOnUnmount(el, () => O.set(value, null))
+        value.set(null)
+        attachOnMount(el, () => value.set(el))
+        attachOnUnmount(el, () => value.set(null))
     } else if (typeof value === "function") {
         const refFn = value as Function
         attachOnMount(el, () => refFn(el))
@@ -456,16 +463,18 @@ export function mount(
  *  - `onUnmountEvent` will be triggered
  */
 export function unmount(harmajaElement: HarmajaOutput) {
-    if (O.isProperty(harmajaElement)) {
+    if (O.isSignal(harmajaElement)) {
         // A dynamic component, let's try to find the current mounted nodes
         //console.log("Unmounting dynamic", harmajaElement)
-        unmount(O.get(harmajaElement))
+        unmount(harmajaElement.get())
     } else if ((harmajaElement as any) instanceof Array) {
         //console.log("Unmounting array")
         ;(harmajaElement as Array<any>).forEach(unmount)
-    } else {
+    } else if (isDOMElement(harmajaElement)) {
         //console.log("Unmounting node", debug(harmajaElement))
         removeNode(null, 0, harmajaElement)
+    } else {
+        throw Error("Unmounting invalid element " + harmajaElement)
     }
 }
 
@@ -495,60 +504,32 @@ export function onUnmount(callback: Callback) {
  *  The onMount event as EventStream, emitting a value after the component has been mounted to the document.
  *  NOTE: Call only in component constructors. Otherwise will not do anything useful.
  */
-export function mountEvent(): O.NativeEventStream<void> {
+export function mountEvent(): O.EventStream<void> {
     const transientState = getTransientState("mountEvent")
     if (!transientState.mountE) {
-        const event = O.bus<void>()
+        const event = O.Bus<void>()
         onMount(() => {
-            O.pushAndEnd(event, undefined)
+            event.push(undefined)
         })
         transientState.mountE = event
     }
-    return transientState.mountE! as O.NativeEventStream<void>
+    return transientState.mountE! as O.EventStream<void>
 }
 
 /**
  *  The onUnmount event as EventStream, emitting a value after the component has been unmounted from the document.
  *  NOTE: Call only in component constructors. Otherwise will not do anything useful.
  */
-export function unmountEvent(): O.NativeEventStream<void> {
+export function unmountEvent(): O.EventStream<void> {
     const transientState = getTransientState("unmountEvent")
     if (!transientState.unmountE) {
-        const event = O.bus<void>()
+        const event = O.Bus<void>()
         onUnmount(() => {
-            O.pushAndEnd(event, undefined)
+            event.push(undefined)
         })
         transientState.unmountE = event
     }
-    return transientState.unmountE! as O.NativeEventStream<void>
-}
-
-export function componentScope(): O.Scope {
-    const transientState = getTransientState("unmountEvent")
-    if (!transientState.scope) {
-        const unmountE = unmountEvent()
-        const mountE = mountEvent()
-
-        transientState.scope = O.mkScope((onIn: () => O.Unsub) => {
-            let unsub: O.Unsub | null = null
-            O.forEach(unmountE, () => {
-                if (unsub) unsub()
-            })
-            if (transientState.mountsController) {
-                const state = nodeState.getOrInstantiate(
-                    transientState.mountsController.currentElements[0]
-                )
-                if (state.mounted) {
-                    unsub = onIn()
-                    return
-                }
-            }
-            O.forEach(mountE, () => {
-                unsub = onIn()
-            })
-        })
-    }
-    return transientState.scope
+    return transientState.unmountE! as O.EventStream<void>
 }
 
 export function callOnMounts(element: Node) {
@@ -749,8 +730,9 @@ function replacedByController(
     const parentControllers = controllers.slice(index + 1)
     // This loop is just about assertion of invariables
     for (let i = 1; i < oldNodes.length; i++) {
-        const controllersHere = nodeState.getOrInstantiate(oldNodes[i])
-            .controllers
+        const controllersHere = nodeState.getOrInstantiate(
+            oldNodes[i]
+        ).controllers
         const indexHere = controllersHere.indexOf(controller)
         if (indexHere < 0) {
             throw new Error(
@@ -792,9 +774,8 @@ function appendedByController(
     const parentControllers = controllers.slice(index + 1)
     // We need to replace the upper controllers
     for (let parentController of parentControllers) {
-        const indexForCursor = parentController.currentElements.indexOf(
-            cursorNode
-        )
+        const indexForCursor =
+            parentController.currentElements.indexOf(cursorNode)
         if (indexForCursor < 0) {
             throw new Error(
                 `Element ${debug(

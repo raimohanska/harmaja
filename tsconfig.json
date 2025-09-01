@@ -17,5 +17,5 @@
         "allowJs": false,
         "downlevelIteration": true
     },
-    "exclude": ["dist", "baconjs", "lonna", "rxjs"]
+    "exclude": ["dist"]
 }

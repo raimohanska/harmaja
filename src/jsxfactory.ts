@@ -1,14 +1,14 @@
-import * as B from "./observable/observables"
 import * as CSS from "csstype"
 
 import * as H from "./harmaja"
+import { Atom, Signal } from "./observables"
 
 type ChildrenType = H.HarmajaChildren | H.HarmajaChild
 
 export const h = H.createElement
 
 type WithObservablesInFields<T> = {
-    [K in keyof T]: T[K] | B.NativeProperty<T[K]>
+    [K in keyof T]: T[K] | Signal<T[K]>
 }
 type NativeElement = Element
 
@@ -656,9 +656,8 @@ declare global {
         }["bivarianceHack"]
 
         type ClipboardEventHandler<T = Element> = EventHandler<ClipboardEvent>
-        type CompositionEventHandler<
-            T = Element
-        > = EventHandler<CompositionEvent>
+        type CompositionEventHandler<T = Element> =
+            EventHandler<CompositionEvent>
         type DragEventHandler<T = Element> = EventHandler<DragEvent>
         type FocusEventHandler<T = Element> = EventHandler<FocusEvent>
         type KeyboardEventHandler<T = Element> = EventHandler<KeyboardEvent>
@@ -676,7 +675,7 @@ declare global {
 
         type DetailedHTMLProps<
             E extends HTMLAttributes<T>,
-            T
+            T,
         > = ClassAttributes<T> & WithObservablesInFields<E>
 
         type SVGProps<T> = ClassAttributes<T> &
@@ -1913,7 +1912,7 @@ declare global {
             bivarianceHack(instance: T): void
         }["bivarianceHack"]
 
-        type Ref<T> = B.NativeAtom<T | null> | RefCallback<T> | null
+        type Ref<T> = Atom<T | null> | RefCallback<T> | null
 
         interface Attributes {}
 

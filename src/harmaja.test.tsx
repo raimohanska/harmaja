@@ -2,7 +2,7 @@ import { h, Fragment, mount, mountEvent, onMount, onUnmount, unmount, unmountEve
 import * as H from "./index"
 import { renderAsString, getHtml, mounted, testRender } from "./test-utils"
 import { HarmajaOutput } from "./harmaja"
-import * as O from "./test-utils"
+import { describe, expect, it } from "vitest"
 
 function body() {
     let body = <body/>
@@ -47,14 +47,14 @@ describe("Harmaja", () => {
 
         it("atom ref is set to null when assigned to an eleement", () => {
             // setting to false with an any cast to get in a value that should never occur really
-            let reffed: O.Atom<HTMLSpanElement | null> = O.atom(false as any);
+            let reffed: H.Atom<HTMLSpanElement | null> = H.atomFromValue(false as any);
             let span = <span id="x" ref={reffed}>Hello</span>
             let el = <div>{span}</div>
             expect(reffed.get()).toEqual(null)
         })
 
         it("atom ref is set with the element when mounted", () => {
-            let reffed: O.Atom<HTMLSpanElement | null> = O.atom(null);
+            let reffed: H.Atom<HTMLSpanElement | null> = H.atomFromValue(null);
             let span = <span id="x" ref={reffed}>Hello</span>
             let el = <div>{span}</div>
             mount(el, body())
@@ -63,7 +63,7 @@ describe("Harmaja", () => {
 
         it("atom ref is set to null when unmounted", () => {
             // setting to false with an any cast to get in a value that should never occur really
-            let reffed: O.Atom<HTMLSpanElement | null> = O.atom(false as any);
+            let reffed: H.Atom<HTMLSpanElement | null> = H.atomFromValue(false as any);
             let span = <span id="x" ref={reffed}>Hello</span>
             let el = <div>{span}</div>
             mount(el, body())
@@ -180,19 +180,19 @@ describe("Harmaja", () => {
         }))
     })
 
-    it("Accepted and rejected child types", () => {
+    it("Accepted and child types", () => {
         expect(renderAsString(<h1>{"asdf"}</h1>)).toEqual(`<h1>asdf</h1>`)
         expect(renderAsString(<h1>{42}</h1>)).toEqual(`<h1>42</h1>`)
         expect(renderAsString(<h1>{null}</h1>)).toEqual(`<h1></h1>`)
         expect(renderAsString(<h1>{["hell", "yeah"]}</h1>)).toEqual(`<h1>hellyeah</h1>`)
         expect(renderAsString(<h1>{["hell", <br/>]}</h1>)).toEqual(`<h1>hell<br></h1>`)
-        expect(() => (<h1>{undefined}</h1>)).toThrow("undefined is not a valid element")
-        /*
-        // The following do not event compile
+        expect(renderAsString(<h1>{undefined}</h1>)).toEqual(`<h1></h1>`)
+        
+        // The following should not even compile
         expect(() => (<h1>{true}</h1>)).toThrow("true is not a valid element")
         expect(() => (<h1>{new Date()}</h1>)).toThrow()
         expect(() => (<h1>{({})}</h1>)).toThrow()
-        */
+        
     })
 
     it("Supports React-style short circuiting", () => {
@@ -214,8 +214,8 @@ describe("Harmaja", () => {
         })
     
         it("Replaces multiple elements correctly", () => {
-            const Component = ({ things }: { things: O.Atom<string[]> }) => <ul>{O.map(things, ts => ts.map(t => <li>{t}</li>))}</ul>
-            const things = O.atom(["a"])
+            const Component = ({ things }: { things: H.Atom<string[]> }) => <ul>{things.map(ts => ts.map(t => <li>{t}</li>))}</ul>
+            const things = H.atomFromValue(["a"])
             expect(renderAsString(<Component things={things}/>)).toEqual("<ul><li>a</li></ul>")
             things.set([])
             expect(renderAsString(<Component things={things}/>)).toEqual("<ul></ul>")
@@ -238,9 +238,9 @@ describe("Harmaja", () => {
 
             it("Observable-in-observable", () => {
                 const initial = ["init"]
-                const inner = O.atom(["a","b"])
-                const Component = () => O.map(inner, xs => xs.map(x => <span>{x}</span>))
-                const outer = O.atom([1, initial as any])
+                const inner = H.atomFromValue(["a","b"])
+                const Component = () => inner.map(xs => xs.map(x => <span>{x}</span>))
+                const outer = H.atomFromValue([1, initial as any])
                 const c = mounted(<div>{outer}</div>)
                 expect(getHtml(c)).toEqual("<div>1init</div>")
                 outer.set([1, <Component/>])
@@ -257,15 +257,15 @@ describe("Harmaja", () => {
                 
                 
                 const initial = ["init"]
-                const inner = O.atom(["a","b"])
+                const inner = H.atomFromValue(["a","b"])
                 const Component = () => { 
                     onUnmount(() => unmountCalled++)
                     onMount(() => mountCalled++)                    
                     unmountEvent().forEach(() => unmountCalled++)
                     mountEvent().forEach(() => mountCalled++)
-                    return O.map(inner, xs => xs.map(x => <span>{x}</span>)) 
+                    return inner.map(xs => xs.map(x => <span>{x}</span>)) 
                 }
-                const outer = O.atom([1, initial as any])
+                const outer = H.atomFromValue([1, initial as any])
                 const c = mounted(<div>{outer}</div>)
                 expect(getHtml(c)).toEqual("<div>1init</div>")
                 expect(unmountCalled).toEqual(0)
@@ -317,8 +317,8 @@ describe("Harmaja", () => {
     describe("Nested controllers", () => {
         it("Observable-in-observable", () => {
             const initial = ["init"]
-            const inner = O.atom(["a","b"])
-            const outer = O.atom([1, initial as any])
+            const inner = H.atomFromValue(["a","b"])
+            const outer = H.atomFromValue([1, initial as any])
             const c = mounted(<div>{outer}</div>)
             expect(getHtml(c)).toEqual("<div>1init</div>")
             outer.set([1, inner])
@@ -331,15 +331,15 @@ describe("Harmaja", () => {
     })
 
     it("Special - nested dependent", () => testRender(1, (value, set) => {
-        const p = O.atom<number>(value, updated => console.log(updated))
-        const el = mounted(<div>{O.map(p, () => <div>{p}</div>)}</div>)
+        const p = H.atomFromValue(value)
+        const el = mounted(<div>{p.map(() => <div>{p}</div>)}</div>)
         expect(getHtml(el)).toEqual("<div><div>1</div></div>")
         return el as any
     }))
 
     describe("Elements with contentEditable", () => {
         it("With Observable inside", () => {
-            const value = O.atom("asdf")
+            const value = H.atomFromValue("asdf")
             let el: HTMLSpanElement | null = null 
             const c = mounted(<span ref={e => el = e} contentEditable={true}>{value}</span>)
             expect(getHtml(c)).toEqual(`<span contenteditable="true">asdf</span>`)
@@ -353,7 +353,7 @@ describe("Harmaja", () => {
             expect(getHtml(c)).toEqual(`<span contenteditable="true">BOOM</span>`)
         })
         it("With more stuff inside", () => {
-            const value = O.atom("asdf")
+            const value = H.atomFromValue("asdf")
             expect(() => mounted(<span contentEditable={true}>{value}moreStuff</span>)).toThrow("contentEditable elements expected to contain zero to one child")            
         })
         it("With empty body", () => {
@@ -368,6 +368,7 @@ describe("Harmaja", () => {
 
     const MEANING_OF_LIFE = H.createContext<number>("MEANING_OF_LIFE");
 
+    // TODO: context tests still failing
     describe("Context", () => {
         it("Static usage", () => {
             const c = mounted(<ComponentWithStaticContextUsage/>)
@@ -379,7 +380,7 @@ describe("Harmaja", () => {
             return c
         }))
         it("Not supported for components that yield a Property", () => {
-            expect(() => mounted(<ComponentWithDynamicContextUsageAndPropertyOutput label={O.atom("hello")}/>)).toThrow("setContext/onContext supported only for components that return a single static element (not a Property)")
+            expect(() => mounted(<ComponentWithDynamicContextUsageAndPropertyOutput label={H.atomFromValue("hello")}/>)).toThrow("setContext/onContext supported only for components that return a single static element (not a Property)")
         })
         it("Not supported for components that yield a Fragment", () => {
             expect(() => mounted(<ComponentFragmentAndContextUsage/>)).toThrow("setContext/onContext supported only for components that return a single static element (not a Fragment)")
@@ -408,10 +409,10 @@ describe("Harmaja", () => {
             <ContextUser label="meaning"/>
         </>
     }
-    const ComponentWithDynamicContextUsage = ({ label }: { label: O.Property<string>}) => {
+    const ComponentWithDynamicContextUsage = ({ label }: { label: H.Signal<string>}) => {
         H.setContext(MEANING_OF_LIFE, 42)
         return <div id="parent">
-            { O.map(label, l => <ContextUser label={l}/>) }
+            { label.map(l => <ContextUser label={l}/>) }
         </div>
     }
     const ComponentThatSetsContextTwice = () => {
@@ -423,15 +424,15 @@ describe("Harmaja", () => {
         H.setContext(MEANING_OF_LIFE, 41)
         return <div><ComponentWithStaticContextUsage/></div>
     }
-    const ComponentWithDynamicContextUsageAndPropertyOutput = ({ label }: { label: O.Property<string>}) => {
+    const ComponentWithDynamicContextUsageAndPropertyOutput = ({ label }: { label: H.Signal<string>}) => {
         H.setContext(MEANING_OF_LIFE, 42)
-        const result = O.atom(<div id="parent">
-            { O.map(label, l => <ContextUser label={l}/>) }
+        const result = H.atomFromValue(<div id="parent">
+            { label.map(l => <ContextUser label={l}/>) }
         </div>)
         return result
     }
     const ContextUser = ({label}: {label: string}) => {
-        const contextValue = O.atom<number>(0)
+        const contextValue = H.atomFromValue<number>(0)
         H.onContext(MEANING_OF_LIFE, contextValue.set)
         return <label>{label}: {contextValue}</label>
     }
