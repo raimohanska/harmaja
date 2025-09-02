@@ -1,6 +1,7 @@
-import * as L from "lonna"
-
 // Fake server implementation
+
+import { subscribe } from "diagnostics_channel"
+import { Observer, Unsubscribe } from "../../src/signal/observer"
 
 const items = [
     "buy beer",
@@ -20,4 +21,9 @@ const items = [
 const randomInterval = () => Math.random() * 10000 + 5000
 const randomItem = () => items[Math.floor(Math.random() * items.length)]
 
-export default L.repeat(() => L.later(randomInterval(), randomItem()))
+export function subscribeToNewItems(callback: Observer<string>) {
+    setTimeout(() => {
+        callback(randomItem())
+        subscribeToNewItems(callback)
+    }, randomInterval())
+}

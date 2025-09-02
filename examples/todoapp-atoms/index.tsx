@@ -1,6 +1,5 @@
-import * as L from "lonna"
-import { h, mount, ListView } from "../../src/index"
-import itemAddedFromSocketE from "./fake-socket";
+import { h, mount, ListView, atomFromValue, Atom, Signal } from "../../src/index"
+import { subscribeToNewItems } from "./fake-socket";
 
 // The domain object constructor
 let idCounter = 1;
@@ -19,10 +18,10 @@ function todoItem(name: string, id: number = idCounter++, completed: boolean = f
 const initialItems = ["learn typescript", "fix handbrake"].map(s => todoItem(s));
 
 // Application state defined as a single Atom
-const allItems: L.Atom<TodoItem[]> = L.atom(initialItems)
+const allItems: Atom<TodoItem[]> = atomFromValue(initialItems)
 // Helper function for adding a new item
 const addItem = (name: string) => allItems.modify(items => items.concat(todoItem(name)))
-itemAddedFromSocketE.forEach(addItem)
+subscribeToNewItems(addItem)
 
 const App = () => {
   return (
@@ -35,7 +34,7 @@ const App = () => {
   );
 };
 
-const ItemList = ({ items }: { items: L.Atom<TodoItem[]>}) => {
+const ItemList = ({ items }: { items: Atom<TodoItem[]>}) => {
   return (
     <ul>
       <ListView
@@ -51,12 +50,12 @@ const ItemList = ({ items }: { items: L.Atom<TodoItem[]>}) => {
   );
 };
 
-const ItemView = ({ item, removeItem }: { item: L.Atom<TodoItem>, removeItem: () => void }) => {  
-  const completed: L.Atom<boolean> = L.view(item, "completed")
+const ItemView = ({ item, removeItem }: { item: Atom<TodoItem>, removeItem: () => void }) => {  
+  const completed: Atom<boolean> = item.view("completed")
   
   return (
     <span>
-      <span className="name">{L.view(item, "name")}</span>
+      <span className="name">{item.view("name")}</span>
       <Checkbox checked={completed}/>
       <a className="removeItem" onClick={removeItem}>
         remove
@@ -66,7 +65,7 @@ const ItemView = ({ item, removeItem }: { item: L.Atom<TodoItem>, removeItem: (
 };
 
 const NewItem = () => {
-  const name = L.atom("")
+  const name = atomFromValue("")
   const addNew = () => addItem(name.get())
   return (
     <div className="newItem">
@@ -76,7 +75,7 @@ const NewItem = () => {
   );
 };
 
-const TextInput = (props: { value: L.Atom<string> } & any) => {
+const TextInput = (props: { value: Atom<string> } & any) => {
   return <input {...{ 
           type: "text", 
           onInput: e => { 
@@ -87,7 +86,7 @@ const TextInput = (props: { value: L.Atom<string> } & any) => {
         }} />  
 };
 
-const Checkbox = (props: { checked: L.Atom<boolean> } & any) => {
+const Checkbox = (props: { checked: Atom<boolean> } & any) => {
     return <input {...{ 
             type: "checkbox", 
             onInput: e => { 
@@ -99,9 +98,9 @@ const Checkbox = (props: { checked: L.Atom<boolean> } & any) => {
           }} />  
   };
 
-const JsonView = ({ json }: { json: L.Property<any>}) => {
-  return <pre>{L.view(json, st => JSON.stringify(st, null, 2))}</pre>;
-};
-  
+const JsonView = ({ json }: { json: Signal<any>}) => {
+  const s = json.map(st => JSON.stringify(st, null, 2))
+  return <pre>{s}</pre>;
+}
 
 mount(<App/>, document.getElementById("root")!)

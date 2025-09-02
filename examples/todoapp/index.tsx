@@ -1,8 +1,5 @@
-import * as L from "lonna"
-import { globalScope } from "lonna";
-
-import { h, mount, ListView } from "../../src/index"
-import itemAddedFromSocketE from "./fake-socket";
+import { h, mount, ListView, atomFromValue, Signal, atomFromSignalAndSetter, Atom } from "../../src/index"
+import { subscribeToNewItems } from "./fake-socket";
 
 // The domain object constructor
 let idCounter = 1;
@@ -23,15 +20,8 @@ const initialItems = ["learn typescript", "fix handbrake"].map(s => todoItem(s))
 
 type AppEvent = { action: "add", name: string } | { action: "remove", id: Id } | { action: "update", item: TodoItem }
 
-const appEvents = L.bus<AppEvent>()
-// Events/actions
-// New items event stream is merged from use events and events from "server"
-// Merging two streams of strings and finally mapping them into TodoItem objects
-//const newItemE = Rx.map(Rx.merge(itemAddedFromSocketE, addItemBus), todoItem)
 
-itemAddedFromSocketE.forEach(name => appEvents.push({ action: "add", name }))
-
-// The state "megablob" reactive property created by reducing from events
+// The state "megablob" signal created by reducing from events
 
 function reducer(items: TodoItem[], event: AppEvent): TodoItem[] {
   switch (event.action) {
@@ -43,7 +33,12 @@ function reducer(items: TodoItem[], event: AppEvent): TodoItem[] {
       return items
   }
 }
-const allItems = appEvents.pipe(L.scan(initialItems, reducer, globalScope))
+
+const allItems = atomFromValue<TodoItem[]>(initialItems)
+const dispatch = (event: AppEvent) => allItems.modify(items => reducer(items, event))
+
+subscribeToNewItems(name => dispatch({ action: "add", name }))
+
 
 const App = () => {
   return (
@@ -58,35 +53,35 @@ const App = () => {
 
 /*
 ItemList2 uses the "observable" version of ListView. Here the renderObservable function gets
-Property<TodoItem> and is thus able to observe changes in the item. Now we don't have to replace
+Signal<TodoItem> and is thus able to observe changes in the item. Now we don't have to replace
 the whole item view when something changes.
 */
-const ItemList = ({ items }: { items: L.Property<TodoItem[]>}) => {
+const ItemList = ({ items }: { items: Signal<TodoItem[]>}) => {
   return (
     <ul>
       {/* when using this variant of ListView (renderItem) the items
           will be completely replaced with changed (based on the given `equals`) */}
       <ListView 
         observable={items} 
-        renderObservable={(id: number, item: L.Property<TodoItem>) => <li><ItemView id={id} item={item}/></li>}
+        renderObservable={(id: number, item: Signal<TodoItem>) => <li><ItemView id={id} item={item}/></li>}
         getKey={ item => item.id }
       />
     </ul>
   );
 };
 
-const ItemView = ({ id, item }: { id: number, item: L.Property<TodoItem> }) => {  
+const ItemView = ({ id, item }: { id: number, item: Signal<TodoItem> }) => {  
   // Use a "dependent atom", where you can specify what happens when the value is changed. In
   // this case we push changes to the bus which will then cause state changes to propagate back here.
   // A dependent atom provides a bridge between atom-based components and "unidirectional data flow"
   // style state management.
-  const itemAtom = L.atom(item, updated => appEvents.push({ action: "update", item: updated }))
+  const itemAtom = atomFromSignalAndSetter(item, updated => dispatch({ action: "update", item: updated }))
   
   return (
     <span>
-      <span className="name"><TextInput value={L.view(itemAtom, "name")} /></span>
-      <Checkbox checked={L.view(itemAtom, "completed")}/>
-      <a className="removeItem" onClick={() => appEvents.push({ action: "remove", id})}>
+      <span className="name"><TextInput value={itemAtom.view("name")} /></span>
+      <Checkbox checked={itemAtom.view("completed")}/>
+      <a className="removeItem" onClick={() => dispatch({ action: "remove", id})}>
         remove
       </a>
     </span>
@@ -94,8 +89,8 @@ const ItemView = ({ id, item }: { id: number, item: L.Property<TodoItem> }) => 
 };
 
 const NewItem = () => {
-  const name = L.atom("")
-  const addNew = () => appEvents.push({ action: "add", name: name.get() })
+  const name = atomFromValue("")
+  const addNew = () => dispatch({ action: "add", name: name.get() })
   return (
     <div className="newItem">
       <TextInput placeholder="new item name" value={name} />
@@ -104,7 +99,7 @@ const NewItem = () => {
   );
 };
 
-const TextInput = (props: { value: L.Atom<string> } & any) => {
+const TextInput = (props: { value: Atom<string> } & any) => {
   return <input {...{ 
           type: "text", 
           onInput: e => { 
@@ -115,7 +110,7 @@ const TextInput = (props: { value: L.Atom<string> } & any) => {
         }} />  
 };
 
-const Checkbox = (props: { checked: L.Atom<boolean> } & any) => {
+const Checkbox = (props: { checked: Atom<boolean> } & any) => {
     return <input {...{ 
             type: "checkbox", 
             onInput: e => { 
@@ -126,9 +121,9 @@ const Checkbox = (props: { checked: L.Atom<boolean> } & any) => {
           }} />  
   };
 
-const JsonView = ({ json }: { json: L.Property<any>}) => {
-  const s = L.view(json, st => JSON.stringify(st, null, 2))
+const JsonView = ({ json }: { json: Signal<any>}) => {
+  const s = json.map(st => JSON.stringify(st, null, 2))
   return <pre>{s}</pre>;
-};
+}
 
 mount(<App/>, document.getElementById("root")!)

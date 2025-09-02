@@ -1,6 +1,4 @@
 node_modules
 .cache
-/rxjs
-/bacon
-/lonna
 /dist
+.DS_Store
