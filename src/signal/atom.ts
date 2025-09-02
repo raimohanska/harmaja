@@ -1,6 +1,6 @@
 import { Unsubscribe, Observer } from "./observer"
 import { createSignal, isSignal } from "./signal-constructors"
-import { Signal, SignalLike } from "./signal-types"
+import { Signal, SignalLike } from "./signal"
 import { Lens } from "./lens"
 
 export interface AtomLike<T> extends SignalLike<T> {

@@ -1,4 +1,4 @@
-import { isAtom, Bus, isSignal, EventStream, Signal } from "./signal"
+import { isAtom, isSignal, Signal } from "./signal"
 import { SVG_TAGS } from "./special-casing"
 
 export type HarmajaComponent = (props: HarmajaProps) => HarmajaOutput
@@ -32,9 +32,7 @@ type ContextMap = Map<Context<any>, any>
 type ContextFn = (e: DOMNode) => void
 type TransientState = {
     mountCallbacks: Callback[]
-    mountE: EventStream<void> | undefined
     unmountCallbacks: Callback[]
-    unmountE: EventStream<void> | undefined
     mountsController: NodeController | undefined
     contextFns: ContextFn[]
 }
@@ -52,9 +50,7 @@ Object.freeze(EMPTY_ARRAY)
 function emptyTransientState(): TransientState {
     return {
         mountCallbacks: EMPTY_ARRAY as Callback[],
-        mountE: undefined,
         unmountCallbacks: EMPTY_ARRAY as Callback[],
-        unmountE: undefined,
         mountsController: undefined,
         contextFns: EMPTY_ARRAY as ContextFn[],
     }
@@ -496,38 +492,6 @@ export function onUnmount(callback: Callback) {
     if (transientState.unmountCallbacks === EMPTY_ARRAY)
         transientState.unmountCallbacks = []
     transientState.unmountCallbacks.push(callback)
-}
-
-/**
- *  The onMount event as EventStream, emitting a value after the component has been mounted to the document.
- *  NOTE: Call only in component constructors. Otherwise will not do anything useful.
- */
-export function mountEvent(): EventStream<void> {
-    const transientState = getTransientState("mountEvent")
-    if (!transientState.mountE) {
-        const event = Bus<void>()
-        onMount(() => {
-            event.push(undefined)
-        })
-        transientState.mountE = event
-    }
-    return transientState.mountE! as EventStream<void>
-}
-
-/**
- *  The onUnmount event as EventStream, emitting a value after the component has been unmounted from the document.
- *  NOTE: Call only in component constructors. Otherwise will not do anything useful.
- */
-export function unmountEvent(): EventStream<void> {
-    const transientState = getTransientState("unmountEvent")
-    if (!transientState.unmountE) {
-        const event = Bus<void>()
-        onUnmount(() => {
-            event.push(undefined)
-        })
-        transientState.unmountE = event
-    }
-    return transientState.unmountE! as EventStream<void>
 }
 
 export function callOnMounts(element: Node) {

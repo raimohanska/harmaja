@@ -1,7 +1,8 @@
 import { createSignal } from "./signal-constructors"
-import type { Signal } from "./signal-types"
+import type { Signal } from "./signal"
 import { Observer, Unsubscribe } from "./observer"
 import { Lens } from "./lens"
+import { create } from "domain"
 
 const initialValue = {}
 type InitialValue = typeof initialValue

@@ -1,8 +1,9 @@
-import { SignalLike } from "./signal-types"
+import { SignalLike } from "./signal"
 import { mapSignal, filterSignal, viewSignal } from "./signal-transform"
-import type { Signal } from "./signal-types"
+import type { Signal } from "./signal"
 import { Observer, Unsubscribe } from "./observer"
 import { Lens } from "./lens"
+import { log } from "./log"
 
 export function createSignal<T>(s: SignalLike<T>): Signal<T> {
     return {
@@ -17,6 +18,10 @@ export function createSignal<T>(s: SignalLike<T>): Signal<T> {
         },
         filter(predicate: (value: T) => boolean): Signal<T> {
             return filterSignal(this, predicate)
+        },
+        log(message) {
+            log(this, message)
+            return this
         },
     }
 }

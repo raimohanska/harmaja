@@ -1,4 +1,4 @@
-import { h, Fragment, mount, mountEvent, onMount, onUnmount, unmount, unmountEvent } from "./index"
+import { h, Fragment, mount, onMount, onUnmount, unmount } from "./index"
 import * as H from "./index"
 import { renderAsString, getHtml, mounted, testRender } from "./test-utils"
 import { HarmajaOutput } from "./harmaja"
@@ -261,8 +261,6 @@ describe("Harmaja", () => {
                 const Component = () => { 
                     onUnmount(() => unmountCalled++)
                     onMount(() => mountCalled++)                    
-                    unmountEvent().forEach(() => unmountCalled++)
-                    mountEvent().forEach(() => mountCalled++)
                     return inner.map(xs => xs.map(x => <span>{x}</span>)) 
                 }
                 const outer = H.atomFromValue([1, initial as any])
@@ -274,15 +272,15 @@ describe("Harmaja", () => {
                 outer.set([1, <Component/>])
                 expect(getHtml(c)).toEqual("<div>1<span>a</span><span>b</span></div>")
                 expect(unmountCalled).toEqual(0)
-                expect(mountCalled).toEqual(2) // 2 because both callback and eventstream
+                expect(mountCalled).toEqual(1)
     
                 inner.set(["c", "d"])
                 expect(getHtml(c)).toEqual("<div>1<span>c</span><span>d</span></div>")
                 
                 outer.set([1, 2])            
                 expect(getHtml(c)).toEqual("<div>12</div>")
-                expect(unmountCalled).toEqual(2)
-                expect(mountCalled).toEqual(2)    
+                expect(unmountCalled).toEqual(1)
+                expect(mountCalled).toEqual(1)    
             })            
         })
     
@@ -293,8 +291,6 @@ describe("Harmaja", () => {
             const Component = () => {
                 onUnmount(() => unmountCalled++)
                 onMount(() => mountCalled++)
-                unmountEvent().forEach(() => unmountCalled++)
-                mountEvent().forEach(() => mountCalled++)
                 return <div>Teh component</div>
             }
             const el = <Component/>
@@ -302,14 +298,13 @@ describe("Harmaja", () => {
             expect(mountCalled).toEqual(0)
             mounted(<body>{el}</body>)
             expect(unmountCalled).toEqual(0)
-            expect(mountCalled).toEqual(2) // 2 because both callback and eventstream
+            expect(mountCalled).toEqual(1) // 2 because both callback and eventstream
             unmount(el)
-            expect(unmountCalled).toEqual(2)
-            expect(mountCalled).toEqual(2)
+            expect(unmountCalled).toEqual(1)
+            expect(mountCalled).toEqual(1)
     
             expect(() => mount(el, body())).toThrow("Component re-mount not supported")
-    
-            expect(() => unmountEvent()).toThrow("Illegal unmountEvent call outside component constructor call")
+
         })
     })
 

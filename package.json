@@ -15,6 +15,7 @@
     "lint-staged": "^16.1.5",
     "prettier": "^3.6",
     "typescript": "^5.9",
+    "vite": "^7.1.4",
     "vitest": "^3.2.4"
   },
   "dependencies": {
@@ -26,8 +27,8 @@
     "src"
   ],
   "scripts": {
-    "example-content-editable": "parcel --out-dir dist/examples examples/content-editable/index.html",
-    "example-first": "parcel --out-dir dist/examples examples/first/index.html",
+    "example-content-editable": "vite --out-dir dist/examples examples/content-editable/index.html",
+    "example-first": "vite build examples/first/index.html",
     "example-search": "parcel --out-dir dist/examples examples/search/index.html",
     "example-todoapp": "parcel --out-dir dist/examples examples/todoapp/index.html",
     "example-todoapp-atoms": "parcel --out-dir dist/examples examples/todoapp-atoms/index.html",
