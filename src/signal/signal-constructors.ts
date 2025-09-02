@@ -8,7 +8,7 @@ import {
 } from "./signal-transform"
 import type { Signal } from "./signal"
 import { Observer, Unsubscribe } from "./observer"
-import { Lens } from "./lens"
+import { keyOrLens2Lens, Lens } from "./lens"
 import { log } from "./log"
 import { atomFromValue } from "./atom"
 
@@ -27,7 +27,8 @@ export function createSignal<T>(s: SignalLike<T>): Signal<T> {
         map<B>(f: (value: T) => B): Signal<B> {
             return mapSignal(this, f)
         },
-        view<B>(lens: Lens<T, B>): Signal<B> {
+        view<B>(lensOrKey: unknown): Signal<B> {
+            const lens = keyOrLens2Lens(lensOrKey)
             return viewSignal(this, lens)
         },
         filter(predicate: (value: T) => boolean): Signal<T> {

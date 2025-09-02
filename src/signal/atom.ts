@@ -1,7 +1,7 @@
 import { Unsubscribe, Observer } from "./observer"
 import { createSignal, isSignal } from "./signal-constructors"
 import { Signal, SignalLike } from "./signal"
-import { Lens } from "./lens"
+import { item, keyOrLens2Lens, Lens, prop } from "./lens"
 import { Dispatcher } from "./dispatcher"
 
 export interface AtomLike<T> extends SignalLike<T> {
@@ -12,6 +12,7 @@ export interface Atom<T> extends Signal<T> {
     set(value: T): void
     modify(modifier: (current: T) => T): void
     view<B>(lens: Lens<T, B>): Atom<B>
+    view<K extends keyof T>(key: K): Atom<T[K]>
     filter<B extends T>(predicate: (value: T) => value is B): Atom<B>
     filter(predicate: (value: T) => boolean): Atom<T>
 }
@@ -21,7 +22,8 @@ export function Atom<T>(atom: AtomLike<T>): Atom<T> {
     return {
         ...atom,
         ...signal,
-        view<B>(lens: Lens<T, B>): Atom<B> {
+        view<B>(lensOrKey: unknown): Atom<B> {
+            const lens = keyOrLens2Lens(lensOrKey)
             return Atom<B>({
                 get() {
                     return lens.get(atom.get())
@@ -76,6 +78,18 @@ export function atomFromValue<T>(initial: T): Atom<T> {
         },
     }
     return Atom(atomLike)
+}
+
+export function atomFromSignalAndSetter<T>(
+    signal: SignalLike<T>,
+    setter: (value: T) => void
+): Atom<T> {
+    return Atom<T>({
+        ...signal,
+        set(value: T) {
+            setter(value)
+        },
+    })
 }
 
 export function isAtom<T>(obj: any): obj is Atom<T> {
