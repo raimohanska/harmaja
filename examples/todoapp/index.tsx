@@ -124,6 +124,6 @@ const Checkbox = (props: { checked: Atom<boolean> } & any) => {
 const JsonView = ({ json }: { json: Signal<any>}) => {
   const s = json.map(st => JSON.stringify(st, null, 2))
   return <pre>{s}</pre>;
-};
+}
 
 mount(<App/>, document.getElementById("root")!)

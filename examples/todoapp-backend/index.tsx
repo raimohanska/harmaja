@@ -1,54 +1,50 @@
-import * as L from "lonna"
-import { globalScope } from "lonna";
-
-import { h, mount, ListView } from "../../src/index"
+import { h, mount, ListView, Signal, atomFromValue, Atom, combineSignals, atomFromSignalAndSetter } from "../../src/index"
 import { todoItem, TodoItem, Id } from "./domain";
 import { saveChangesToServer, ServerFeedEvent, listenToServerEvents, findIndex } from "./server";
 
 type EditState = { state: "view" } | { state: "edit", item: TodoItem } | { state: "saving", item: TodoItem } | { state: "adding", item: TodoItem }
 type Notification = { type: "info" | "warning" | "error"; text: string };
 
-const updates = L.bus<ServerFeedEvent>()
-const saveRequest = L.bus<TodoItem>()
-const cancelRequest = L.bus<void>()
-const editRequest = L.bus<TodoItem>()
-const addRequest = L.bus<TodoItem>()
-const op = L.flatMap((item: TodoItem) => {
-    const fp = L.fromPromise<void, null | TodoItem>(saveChangesToServer(item), 
-      () => undefined, // this never passes because only changes are monitored
-      () => item, 
-      error => null
-    )
-    return L.changes(fp)
-  },
-  globalScope
-)
-const saveResult = L.merge(saveRequest, addRequest).pipe(op)
+const editState = atomFromValue<EditState>({ state: "view" })
+const notificationState = atomFromValue<Notification | null>(null)
 
-const allItems: L.Property<TodoItem []> = updates.pipe(L.scan([], reducer, globalScope))
-const editState = L.update<EditState>(globalScope, { state: "view" }, 
-  [addRequest, (_, item) => ({ state: "adding", item})],
-  [editRequest, (_, item) => ({ state: "edit", item})],
-  [saveRequest, (_, item) => ({ state: "saving", item})],
-  [saveResult, (state, success) => (!success && state.state == "saving") ? { state: "edit", item: state.item } : { state: "view"}],
-  [cancelRequest, () => ( { state: "view" })]
-)
-const saveFailed = saveResult.pipe(L.filter(success => !success), L.map(() => ({ type: "error", text: "Failed to save"} as Notification)))
-const saveSuccess = saveResult.pipe(L.filter(success => !!success), L.map(() => ({ type: "info", text: "Saved"} as Notification)))
+function saveToServer(item: TodoItem) {
+  saveChangesToServer(item).catch((e) => {
+    // Failed to save
+    console.error("Failed to save", e)
+    editState.set({ state: "view" })
+    showNotification({ type: "error", text: "Failed to save" })
+  }).then(() => {
+    // Successful save
+    showNotification({ type: "info", text: "Saved" })
+    editState.set({ state: "view" })
+    dispatch({ type: "upsert", items: [ item ]})
+  })
+}
 
-const notificationE = L.merge(saveFailed, saveSuccess)
-const notification: L.Property<Notification | null> = notificationE.pipe(
-  L.flatMapLatest((notification: Notification) => L.later(2000, null).pipe(L.toProperty(notification))),
-  L.toProperty(null, globalScope)
-)
+function save(item: TodoItem) {
+  editState.set({ state: "saving", item })
+  saveToServer(item)
+}
+function add(item: TodoItem) {
+  editState.set({ state: "adding", item })
+  saveToServer(item)
+}
+function edit(item: TodoItem) {
+  editState.set({ state: "edit", item })
+}
 
-saveResult.forEach(savedTodoItem => {
-  if (savedTodoItem) {
-    updates.push({ type: "upsert", items: [ savedTodoItem ]})
-  }
-})
+function cancel() {
+  editState.set({ state: "view" })
+}
 
-listenToServerEvents(event => updates.push(event))
+function showNotification(notification: Notification) {
+  notificationState.set(notification)
+  setTimeout(() => notificationState.set(null), 2000)
+}
+
+const allItems = atomFromValue<TodoItem[]>([])
+
 // Helper function for applying a batch of updates to a list of items
 function applyUpdates(initialItems: TodoItem[], updatedItems: TodoItem[]): TodoItem[] {
   return updatedItems.reduce((current: TodoItem[], updatedConsultant: TodoItem) => {
@@ -75,11 +71,14 @@ function reducer(items: TodoItem[], event: ServerFeedEvent) {
       return items;
   }
 }
+const dispatch = (event: ServerFeedEvent) => allItems.modify(items => reducer(items, event))
+listenToServerEvents(dispatch)
+
 
 const App = () => {
   return (
     <div>
-      <NotificationView {...{ notification }} />
+      <NotificationView {...{ notification: notificationState }} />
       <h1>TODO App</h1>
       <ItemList items={allItems} />
       <NewItem />
@@ -92,14 +91,14 @@ ItemList2 uses the "observable" version of ListView. Here the renderObservable f
 Property<TodoItem> and is thus able to observe changes in the item. Now we don't have to replace
 the whole item view when something changes.
 */
-const ItemList = ({ items }: { items: L.Property<TodoItem[]>}) => {
+const ItemList = ({ items }: { items: Signal<TodoItem[]>}) => {
   return (
     <ul>
       {/* when using this variant of ListView (renderItem) the items
           will be completely replaced with changed (based on the given `equals`) */}
       <ListView 
         observable={items} 
-        renderObservable={(id: number, item: L.Property<TodoItem>) => <li><ItemView id={id} item={item} editState={editState}/></li>}
+        renderObservable={(id: number, item: Signal<TodoItem>) => <li><ItemView id={id} item={item} editState={editState}/></li>}
         getKey={ item => item.id }
       />
     </ul>
@@ -107,8 +106,8 @@ const ItemList = ({ items }: { items: L.Property<TodoItem[]>}) => {
 };
 
 type ItemState = "view" | "edit" | "disabled";
-const ItemView = ({ id, item, editState }: { id: number, editState: L.Property<EditState>, item: L.Property<TodoItem> }) => {  
-  const itemState: L.Property<ItemState> = L.combine(item, editState, (c, state) => {
+const ItemView = ({ id, item, editState }: { id: number, editState: Signal<EditState>, item: Signal<TodoItem> }) => {  
+  const itemState: Signal<ItemState> = combineSignals([item, editState], (c, state) => {
     if (state.state === "edit") {
       if (state.item.id === c.id) {
         return "edit"
@@ -120,29 +119,29 @@ const ItemView = ({ id, item, editState }: { id: number, editState: L.Property<
     }
     return "view"
   })
-  const itemToShow: L.Property<TodoItem> = L.combine(item, editState, (c, state) => {
+  const itemToShow: Signal<TodoItem> = combineSignals([item, editState], (c, state) => {
     if (state.state !== "view" && state.item.id === c.id) {
       return state.item
     }
     return c
   })
-  const localItem: L.Atom<TodoItem> = L.atom(itemToShow, editRequest.push)
+  const localItem: Atom<TodoItem> = atomFromSignalAndSetter(itemToShow, edit)
 
   async function saveLocalChanges() {
     const currentItem = localItem.get()
-    saveRequest.push(currentItem)
+    save(currentItem)
   }
 
   function cancelLocalChanges() {
-    cancelRequest.push()
+    cancel()
   }
   
   return (
     <span className={itemState}>
-      <span className="name"><TextInput value={L.view(localItem, "name")} /></span>
-      <Checkbox checked={L.view(localItem, "completed")}/>
+      <span className="name"><TextInput value={localItem.view("name")} /></span>
+      <Checkbox checked={localItem.view("completed")}/>
       {
-        L.view(itemState, s => s === "edit" ? <span className="controls">
+        itemState.map(s => s === "edit" ? <span className="controls">
             <a href="#" onClick={saveLocalChanges}>Save</a>
             <a href="#" onClick={cancelLocalChanges}>Cancel</a>
           </span>
@@ -153,9 +152,9 @@ const ItemView = ({ id, item, editState }: { id: number, editState: L.Property<
 };
 
 const NewItem = () => {
-  const disableNew: L.Property<boolean> = L.view(editState, state => state.state !== "view");
-  const name = L.atom("")
-  const addNew = () => addRequest.push(todoItem(name.get()))
+  const disableNew: Signal<boolean> = editState.map(state => state.state !== "view");
+  const name = atomFromValue("")
+  const addNew = () => add(todoItem(name.get()))
   return (
     <div className="newItem">
       <TextInput placeholder="new item name" value={name} />
@@ -164,7 +163,7 @@ const NewItem = () => {
   );
 };
 
-const TextInput = (props: { value: L.Atom<string> } & any) => {
+const TextInput = (props: { value: Atom<string> } & any) => {
   return <input {...{ 
           type: "text", 
           onInput: e => { 
@@ -175,7 +174,7 @@ const TextInput = (props: { value: L.Atom<string> } & any) => {
         }} />  
 };
 
-const Checkbox = (props: { checked: L.Atom<boolean> } & any) => {
+const Checkbox = (props: { checked: Atom<boolean> } & any) => {
     return <input {...{ 
             type: "checkbox", 
             onInput: e => { 
@@ -186,8 +185,8 @@ const Checkbox = (props: { checked: L.Atom<boolean> } & any) => {
           }} />  
   };
 
-function NotificationView({ notification }: { notification: L.Property<Notification | null> }) {
-  return <span>{L.view(notification, notification => {
+function NotificationView({ notification }: { notification: Signal<Notification | null> }) {
+  return <span>{notification.map(notification => {
     if (!notification) return null;
     return (
       <div

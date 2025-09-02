@@ -1,5 +1,5 @@
+import { Observer } from "../../src/signal/observer"
 import { TodoItem, todoItem } from "./domain"
-import * as L from "lonna"
 
 export type InitTodos = {
     type: "init"
@@ -33,15 +33,13 @@ const moreItems = [
 
 let storedItems: TodoItem[] = initialItems
 
-function serverFeed(): L.EventStream<ServerFeedEvent> {
+export function listenToServerEvents(observer: Observer<ServerFeedEvent>) {
     console.log("Start server feed")
     storedItems = initialItems
-    const b = L.bus<ServerFeedEvent>()
-
     ;(async () => {
         await randomDelay(2000)
 
-        b.push({
+        observer({
             type: "init",
             items: storedItems,
         })
@@ -57,25 +55,17 @@ function serverFeed(): L.EventStream<ServerFeedEvent> {
                 }
                 //console.log("Updating existing", existingConsultant, "to", updated);
                 storedItems[index] = updated
-                b.push({
+                observer({
                     type: "upsert",
                     items: [updated],
                 })
             } else {
                 const newItem = randomItem()
                 storedItems.push(newItem)
-                b.push({ type: "upsert", items: [newItem] })
+                observer({ type: "upsert", items: [newItem] })
             }
         }
     })()
-
-    return b
-}
-
-export async function listenToServerEvents(
-    listener: (e: ServerFeedEvent) => any
-) {
-    serverFeed().forEach(listener)
 }
 
 export async function saveChangesToServer(item: TodoItem): Promise<void> {

@@ -61,7 +61,7 @@ export type ListViewProps<A, K = A> = {
     getKey?: (x: A, index: number) => K
 } | {
     atom: Atom<A[]>, 
-    renderAtom: (key: K, x: Signal<A>, remove: () => void) => HarmajaOutput, 
+    renderAtom: (key: K, x: Atom<A>, remove: () => void) => HarmajaOutput, 
     getKey: (x: A, index: number) => K
 }
 export function ListView<A, K>(props: ListViewProps<A, K>) {
