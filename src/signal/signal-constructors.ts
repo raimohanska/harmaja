@@ -1,5 +1,5 @@
 import { SignalLike } from "./signal-types"
-import { mapSignal, filter, view } from "./signal-transform"
+import { mapSignal, filterSignal, viewSignal } from "./signal-transform"
 import type { Signal } from "./signal-types"
 import { Observer, Unsubscribe } from "./observer"
 import { Lens } from "./lens"
@@ -13,10 +13,10 @@ export function createSignal<T>(s: SignalLike<T>): Signal<T> {
             return mapSignal(this, f)
         },
         view<B>(lens: Lens<T, B>): Signal<B> {
-            return view(this, lens)
+            return viewSignal(this, lens)
         },
         filter(predicate: (value: T) => boolean): Signal<T> {
-            return filter(this, predicate)
+            return filterSignal(this, predicate)
         },
     }
 }

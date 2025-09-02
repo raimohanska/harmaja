@@ -27,47 +27,18 @@ export function cached<T>(s: Signal<T>): Signal<T> {
     })
 }
 
-export function mapCached<T, B>(s: Signal<T>, f: (value: T) => B): Signal<B> {
-    let currentValue: B | InitialValue = initialValue
+export function viewSignal<A, B>(s: Signal<A>, lens: Lens<A, B>): Signal<B> {
     return createSignal<B>({
         get() {
-            if (currentValue === initialValue) {
-                currentValue = f(s.get())
-            }
-            return currentValue as B
+            return lens.get(s.get())
         },
         observe(observer: Observer<void>): Unsubscribe {
-            return s.observe(() => {
-                const newValue = f(s.get())
-                if (newValue !== currentValue) {
-                    currentValue = newValue
-                    observer()
-                }
-            })
+            return s.observe(observer)
         },
     })
 }
 
-export function view<A, B>(s: Signal<A>, lens: Lens<A, B>): Signal<B> {
-    let currentValue: B | InitialValue = initialValue
-    return createSignal<B>({
-        get() {
-            currentValue = lens.get(s.get())
-            return currentValue
-        },
-        observe(observer: Observer<void>): Unsubscribe {
-            return s.observe(() => {
-                const newValue = lens.get(s.get())
-                if (newValue !== currentValue) {
-                    currentValue = newValue
-                    observer()
-                }
-            })
-        },
-    })
-}
-
-export function filter<T>(
+export function filterSignal<T>(
     s: Signal<T>,
     predicate: (value: T) => boolean
 ): Signal<T> {
@@ -95,20 +66,12 @@ export function filter<T>(
 }
 
 export function mapSignal<T, B>(s: Signal<T>, f: (value: T) => B): Signal<B> {
-    let currentValue: B | InitialValue = initialValue
     return createSignal<B>({
         get() {
-            currentValue = f(s.get())
-            return currentValue
+            return f(s.get())
         },
         observe(observer: Observer<void>): Unsubscribe {
-            return s.observe(() => {
-                const newValue = f(s.get())
-                if (newValue !== currentValue) {
-                    currentValue = newValue
-                    observer()
-                }
-            })
+            return s.observe(observer)
         },
     })
 }

@@ -1,5 +1,5 @@
 import { DOMNode, HarmajaOutput, HarmajaStaticOutput, LowLevelApi as H, NodeController } from "./harmaja"
-import { Atom, cached, mapCached, Lens, Signal } from "./signal"
+import { Atom, cached, Lens, Signal, mapSignal } from "./signal"
 
 
 // Find starting from hint
@@ -228,7 +228,7 @@ function getItemRenderer<A, K>(props: ListViewProps<A, K>, getKey: (a: A, index:
         }
     } else {
         const renderObservable = (key: K, x: Signal<A>): HarmajaOutput => {
-            return mapCached(cached(x), props.renderItem)
+            return cached(x).map(props.renderItem)
         }
         return getItemRenderer({ ...props, renderObservable }, getKey)
     }
