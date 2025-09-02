@@ -12,5 +12,7 @@ export interface Signal<T> extends SignalLike<T>, ForEach<T> {
     view<B>(lens: Lens<T, B>): Signal<B>
     filter<B extends T>(predicate: (value: T) => value is B): Signal<B>
     filter(predicate: (value: T) => boolean): Signal<T>
+    debounce(delayMs: number): Signal<T>
     log(message: string): Signal<T>
+    onChange(observer: Observer<T>): Unsubscribe
 }

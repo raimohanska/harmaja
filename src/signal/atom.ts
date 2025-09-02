@@ -2,6 +2,7 @@ import { Unsubscribe, Observer } from "./observer"
 import { createSignal, isSignal } from "./signal-constructors"
 import { Signal, SignalLike } from "./signal"
 import { Lens } from "./lens"
+import { Dispatcher } from "./dispatcher"
 
 export interface AtomLike<T> extends SignalLike<T> {
     set(value: T): void
@@ -57,19 +58,20 @@ export function atomFromValue<T>(initial: T): Atom<T> {
             return current
         },
         observe(observer: Observer<void>): Unsubscribe {
-            observers.push(observer)
+            dispatcher.add(observer)
             return () => {
-                observers = observers.filter((o) => o !== observer)
+                dispatcher.remove(observer)
             }
         },
     })
-    let observers: Observer<void>[] = []
+    const dispatcher = Dispatcher<void>()
+
     const atomLike: AtomLike<T> = {
         ...signal,
         set(value: T) {
             if (value !== current) {
                 current = value
-                observers.forEach((o) => o())
+                dispatcher.dispatch()
             }
         },
     }
